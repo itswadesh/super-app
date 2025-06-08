@@ -1,0 +1,43 @@
+@HOSTNAME = http://localhost:5173
+
+###
+POST {{HOSTNAME}}/api/auth/verify-otp
+Content-Type: application/json
+
+{
+    "phone":"8895092508",
+    "otp": "1111"
+}
+
+###
+GET {{HOSTNAME}}/api/products
+
+###
+POST {{HOSTNAME}}/api/products
+Content-Type: application/json
+
+{
+    "id": "new",
+    "title": "Product1",
+    "description": "Product description",
+    "slug": "product4",
+    "type": "note"
+}
+
+###
+GET {{HOSTNAME}}/api/products/{id}
+
+###
+POST {{HOSTNAME}}/api/products
+Content-Type: application/json
+
+{
+    "id": "MmYLj5banvnH-1NlptZGF",
+    "title": "Product5",
+    "description": "Product description5",
+    "slug": "product5",
+    "type": "note"
+}
+
+###
+DELETE {{HOSTNAME}}/api/products/{id}

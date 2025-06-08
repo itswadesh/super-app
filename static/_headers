@@ -1,0 +1,24 @@
+# Cloudflare Headers Configuration
+# This file defines caching and security headers for specific paths
+
+# Cache all static assets aggressively
+/_app/*
+  Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
+
+# Cache images, fonts, and other media
+/images/*
+  Cache-Control: public, max-age=31536000, stale-while-revalidate=86400
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+/icons/*
+  Cache-Control: public, max-age=31536000, stale-while-revalidate=86400
+
+# Default caching for HTML and dynamic content
+/*
+  Cache-Control: public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()

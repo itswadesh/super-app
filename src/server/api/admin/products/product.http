@@ -1,0 +1,111 @@
+@HOSTNAME = http://localhost:5173
+###
+POST http://localhost:5173/api/checkout/phonepe-capture?order_no=ord_1748766819452_3p0b7147&pg=phonepe
+Content-Type: application/json
+
+{
+    "status": "PAYMENT_SUCCESS",
+    "providerReferenceId": "simulated_1234567890"
+}
+    
+
+HTTP/1.1 404  - Not Found
+vary: Origin
+content-type: text/plain;charset=UTF-8
+date: Sun, 01 Jun 2025 08:36:14 GMT
+connection: close
+transfer-encoding: chunked
+###
+POST {{HOSTNAME}}/api/auth/verify-otp
+Content-Type: application/json
+
+{
+    "phone":"8895092508",
+    "otp": "1111"
+}
+
+HTTP/1.1 200  - OK
+vary: Origin
+content-type: application/json
+set-cookie: auth-session=gEfxIMTBK5nZKCNlGnMdDGf7; Path=/; Expires=Tue, 01 Jul 2025 08:27:53 GMT; HttpOnly; SameSite=Lax
+date: Sun, 01 Jun 2025 08:27:53 GMT
+connection: close
+transfer-encoding: chunked
+###
+GET {{HOSTNAME}}/api/admin/products
+
+HTTP/1.1 500  - Internal Server Error
+vary: Origin
+content-type: application/json
+date: Sun, 01 Jun 2025 08:27:54 GMT
+connection: close
+transfer-encoding: chunked
+###
+POST {{HOSTNAME}}/api/admin/products
+Content-Type: application/json
+
+{
+    "id": "new",
+    "title": "Product2",
+    "description": "Product description2",
+    "slug": "product2",
+    "type": "note"
+}
+
+HTTP/1.1 201  - Created
+vary: Origin
+content-type: application/json
+date: Sun, 01 Jun 2025 08:27:54 GMT
+connection: close
+transfer-encoding: chunked
+###
+GET {{HOSTNAME}}/api/admin/products/{id}
+
+HTTP/1.1 404  - Not Found
+vary: Origin
+content-type: application/json
+date: Sun, 01 Jun 2025 08:27:54 GMT
+connection: close
+transfer-encoding: chunked
+###
+POST {{HOSTNAME}}/api/admin/products
+Content-Type: application/json
+
+{
+    "id": "MmYLj5banvnH-1NlptZGF",
+    "title": "Product5",
+    "description": "Product description5",
+    "slug": "product5",
+    "type": "note"
+}
+
+HTTP/1.1 201  - Created
+vary: Origin
+content-type: application/json
+date: Sun, 01 Jun 2025 08:27:54 GMT
+connection: close
+transfer-encoding: chunked
+###
+POST {{HOSTNAME}}/api/admin/products
+Content-Type: application/json
+
+{
+    "id": "MmYLj5banvnH-1NlptZGF",
+    "categoryId": "yokjw7riz0g4qn63vcyorxum"
+}
+
+HTTP/1.1 400  - Bad Request
+vary: Origin
+content-type: application/json
+date: Sun, 01 Jun 2025 08:27:54 GMT
+connection: close
+transfer-encoding: chunked
+###
+DELETE {{HOSTNAME}}/api/admin/products/{id}
+
+HTTP/1.1 404  - Not Found
+vary: Origin
+content-type: text/plain; charset=UTF-8
+date: Sun, 01 Jun 2025 08:27:54 GMT
+connection: close
+transfer-encoding: chunked
