@@ -1,34 +1,38 @@
-import { Select as SelectPrimitive } from "bits-ui";
+// Import components
+import Select from './select.svelte';
+import SelectItem from './select-item.svelte';
+import SelectLabel from './select-label.svelte';
+import SelectGroup from './select-group.svelte';
+import SelectTrigger from './select-trigger.svelte';
+import SelectContent from './select-content.svelte';
+import SelectSeparator from './select-separator.svelte';
+import SelectScrollUpButton from './select-scroll-up-button.svelte';
+import SelectScrollDownButton from './select-scroll-down-button.svelte';
 
-import Group from "./select-group.svelte";
-import Label from "./select-label.svelte";
-import Item from "./select-item.svelte";
-import Content from "./select-content.svelte";
-import Trigger from "./select-trigger.svelte";
-import Separator from "./select-separator.svelte";
-import ScrollDownButton from "./select-scroll-down-button.svelte";
-import ScrollUpButton from "./select-scroll-up-button.svelte";
-
-const Root = SelectPrimitive.Root;
-
+// Export all components
 export {
-	Root,
-	Group,
-	Label,
-	Item,
-	Content,
-	Trigger,
-	Separator,
-	ScrollDownButton,
-	ScrollUpButton,
-	//
-	Root as Select,
-	Group as SelectGroup,
-	Label as SelectLabel,
-	Item as SelectItem,
-	Content as SelectContent,
-	Trigger as SelectTrigger,
-	Separator as SelectSeparator,
-	ScrollDownButton as SelectScrollDownButton,
-	ScrollUpButton as SelectScrollUpButton,
+  Select,
+  SelectItem,
+  SelectLabel,
+  SelectGroup,
+  SelectTrigger,
+  SelectContent,
+  SelectSeparator,
+  SelectScrollUpButton,
+  SelectScrollDownButton,
 };
+
+// For backward compatibility
+export const Root = Select;
+export const Item = SelectItem;
+export const Label = SelectLabel;
+export const Group = SelectGroup;
+
+// Export with Select prefix
+export const SelectRoot = Select;
+
+// Re-export types
+export type { SelectProps } from './select.svelte';
+export type { SelectItemProps } from './select-item.svelte';
+export type { SelectLabelProps } from './select-label.svelte';
+export type { SelectGroupProps } from './select-group.svelte';

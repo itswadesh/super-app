@@ -444,3 +444,71 @@ export type Product = typeof Product.$inferSelect
 export type ProductRating = typeof ProductRating.$inferSelect
 export type ProductTag = typeof ProductTag.$inferSelect
 export type ErrorLog = typeof ErrorLog.$inferSelect
+
+// Bus Booking Schema
+export const BusRoute = sqliteTable('bus_routes', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => generateId('bus_route')),
+  source: text('source').notNull(),
+  destination: text('destination').notNull(),
+  distance: integer('distance'), // in km
+  estimatedDuration: text('estimated_duration'),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const Bus = sqliteTable('buses', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => generateId('bus')),
+  routeId: text('route_id')
+    .notNull()
+    .references(() => BusRoute.id),
+  name: text('name').notNull(),
+  type: text('type').notNull(), // 'sleeper', 'semi-sleeper', 'seater'
+  totalSeats: integer('total_seats').notNull(),
+  availableSeats: integer('available_seats').notNull(),
+  departureTime: text('departure_time').notNull(),
+  arrivalTime: text('arrival_time').notNull(),
+  price: numeric('price').notNull(),
+  amenities: text('amenities', { mode: 'json' }), // JSON array of amenities
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const BusBooking = sqliteTable('bus_bookings', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => generateId('bus_booking')),
+  userId: text('user_id')
+    .notNull()
+    .references(() => User.id),
+  busId: text('bus_id')
+    .notNull()
+    .references(() => Bus.id),
+  bookingReference: text('booking_reference').notNull().unique(),
+  passengerName: text('passenger_name').notNull(),
+  passengerEmail: text('passenger_email').notNull(),
+  passengerPhone: text('passenger_phone').notNull(),
+  totalSeats: integer('total_seats').notNull(),
+  totalAmount: numeric('total_amount').notNull(),
+  bookingDate: integer('booking_date', { mode: 'timestamp' }).notNull(),
+  travelDate: integer('travel_date', { mode: 'timestamp' }).notNull(),
+  status: text('status').notNull().default('confirmed'), // 'confirmed', 'cancelled', 'completed'
+  paymentStatus: text('payment_status').notNull().default('pending'), // 'pending', 'paid', 'failed'
+  paymentId: text('payment_id'),
+  source: text('source').notNull(),
+  destination: text('destination').notNull(),
+  seatNumbers: text('seat_numbers', { mode: 'json' }), // JSON array of seat numbers
+  notes: text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+})
+
+// Types
+export type BusRoute = typeof BusRoute.$inferSelect
+export type Bus = typeof Bus.$inferSelect
+export type BusBooking = typeof BusBooking.$inferSelect
