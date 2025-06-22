@@ -29,8 +29,8 @@
   let selectedBusName = $state('');
   
   // Default source and destination
-  let source = 'City A';
-  let destination = 'City B';
+  let source = 'Bhubaneswar';
+  let destination = 'Puri'; // Default to a popular route
   
   // Filtered buses based on selections
   let buses = $derived(
@@ -46,7 +46,13 @@
   async function fetchBuses() {
     isLoading = true;
     try {
-      const response = await fetch('/api/bus-booking');
+      const params = new URLSearchParams({
+        source,
+        destination,
+        date: selectedDate
+      });
+      
+      const response = await fetch(`/api/bus-booking?${params.toString()}`);
       const data = await response.json();
       
       if (!response.ok) {
@@ -142,7 +148,7 @@
     <div class="bg-gray-50 p-4 rounded-lg">
       <h2 class="text-sm font-medium text-gray-700 mb-3">Filter Buses</h2>
       <div class="flex flex-col sm:flex-row gap-4">
-        <div class="flex-1">
+        <div class="w-48">
           <Label for="dateFilter" class="block text-sm font-medium text-gray-700 mb-1">Date</Label>
           <Input
             id="dateFilter"
@@ -150,33 +156,55 @@
             min={new Date().toISOString().split('T')[0]}
             bind:value={selectedDate}
             class="w-full"
+            on:change={fetchBuses}
           />
         </div>
         <div class="flex-1">
-          <Label for="busFilter" class="block text-sm font-medium text-gray-700 mb-1">Bus Name</Label>
-          <select
-            id="busFilter"
-            bind:value={selectedBusName}
-            class="w-full p-2 border rounded-md h-10 bg-white text-gray-700"
-          >
-            <option value="">All Buses</option>
-            <option value="City Express">City Express</option>
-            <option value="Metro Shuttle">Metro Shuttle</option>
-          </select>
+          <fieldset class="space-y-2">
+            <legend class="block text-sm font-medium text-gray-700 mb-1">Filter by Bus</legend>
+            <div class="flex items-center space-x-4">
+              <label class="inline-flex items-center">
+                <input
+                  type="radio"
+                  class="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                  bind:group={selectedBusName}
+                  value=""
+                  checked={selectedBusName === ''}
+                />
+                <span class="ml-2 text-gray-700">All Buses</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input
+                  type="radio"
+                  class="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                  bind:group={selectedBusName}
+                  value="City Express"
+                  checked={selectedBusName === 'City Express'}
+                />
+                <span class="ml-2 text-gray-700">City Express</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input
+                  type="radio"
+                  class="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                  bind:group={selectedBusName}
+                  value="Metro Shuttle"
+                  checked={selectedBusName === 'Metro Shuttle'}
+                />
+                <span class="ml-2 text-gray-700">Metro Shuttle</span>
+              </label>
+            </div>
+          </fieldset>
         </div>
-        <div class="flex items-end">
-          <Button 
+      <!--    <div class="flex items-end gap-2">
+         <Button 
             type="button" 
-            variant="outline" 
-            onclick={() => {
-              selectedDate = new Date().toISOString().split('T')[0];
-              selectedBusName = '';
-            }}
+            onclick={fetchBuses}
             class="h-10 w-full sm:w-auto"
           >
-            Reset Filters
-          </Button>
-        </div>
+            Apply Filters
+          </Button> 
+        </div>-->
       </div>
     </div>
   </div>
@@ -194,7 +222,7 @@
       <h3 class="mt-2 text-lg font-medium text-gray-900">No buses available</h3>
       <p class="mt-1 text-gray-500">There are currently no buses available for booking.</p>
       <div class="mt-6">
-        <Button on:click={fetchBuses}>
+        <Button onclick={fetchBuses}>
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
           </svg>
@@ -205,7 +233,7 @@
   {:else}
     <div class="space-y-4">
       {#each buses as bus (bus.id)}
-        <Card class="hover:shadow-md transition-shadow cursor-pointer" on:click={() => selectBus(bus)}>
+        <Card class="hover:shadow-md transition-shadow cursor-pointer" onclick={() => selectBus(bus)}>
           <CardContent class="p-6">
             <div class="flex flex-col md:flex-row md:items-center justify-between">
               <div class="flex-1">
@@ -239,7 +267,7 @@
               <div class="mt-4 md:mt-0 text-right">
                 <p class="text-2xl font-bold text-primary">${parseFloat(bus.price).toFixed(2)}</p>
                 <p class="text-sm text-gray-500">{bus.availableSeats} seats left</p>
-                <Button size="sm" class="mt-2" variant="outline">
+                <Button size="sm" class="mt-2">
                   Book Now
                 </Button>
               </div>

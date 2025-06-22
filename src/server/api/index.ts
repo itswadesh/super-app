@@ -6,6 +6,7 @@ import { categoryRoutes } from './categories'
 import { checkoutRoutes } from './checkout'
 import { ordersRoutes } from './orders'
 import { productRoutes } from './products'
+import { busBookingRoutes } from './bus-booking'
 
 // Inner router for API paths
 const apiRouter = new Hono()
@@ -46,6 +47,7 @@ apiRouter.route('/products', productRoutes)
 apiRouter.route('/auth', authRoutes)
 apiRouter.route('/admin', adminRoutes)
 apiRouter.route('/categories', categoryRoutes)
+apiRouter.route('/bus-booking', busBookingRoutes)
 
 // Global error handler for all API routes
 apiRouter.onError((err: any, c) => {
