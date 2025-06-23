@@ -141,7 +141,7 @@ function createPointsStore() {
 
           if (reward) {
             toast.success(
-              `You've been granted ${reward.subscriptionMonths} month${reward.subscriptionMonths > 1 ? 's' : ''} of free subscription!`,
+              `You've been granted ${reward.subscriptionMonths} month${reward.subscriptionMonths > 1 ? 's' : ''} of free subscription!`
             )
           }
         })

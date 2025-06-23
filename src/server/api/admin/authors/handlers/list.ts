@@ -1,4 +1,4 @@
-import { and, asc, asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
+import { and, asc, desc, ilike, or, sql } from 'drizzle-orm'
 import type { Context } from 'hono'
 import { CONFIG } from '../../../../config'
 import { db } from '../../../../db'

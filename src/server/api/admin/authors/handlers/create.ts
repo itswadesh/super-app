@@ -1,9 +1,9 @@
-import { eq } from 'drizzle-orm';
-import type { Context } from 'hono';
-import { db } from '../../../../db';
-import { getSessionTokenCookie, validateSessionToken } from '../../../../db/auth';
-import { Author } from '../../../../db/schema';
-import type { CreateAuthorRequest } from '../types';
+import { eq } from 'drizzle-orm'
+import type { Context } from 'hono'
+import { db } from '../../../../db'
+import { getSessionTokenCookie, validateSessionToken } from '../../../../db/auth'
+import { Author } from '../../../../db/schema'
+import type { CreateAuthorRequest } from '../types'
 
 /**
  * Create a new author
@@ -11,33 +11,29 @@ import type { CreateAuthorRequest } from '../types';
 export async function createAuthor(c: Context): Promise<Response> {
   try {
     // Validate session
-    const sessionToken = getSessionTokenCookie(c);
-    const session = await validateSessionToken(sessionToken || '');
+    const sessionToken = getSessionTokenCookie(c)
+    const session = await validateSessionToken(sessionToken || '')
 
     if (!session) {
-      return c.json({ error: 'Unauthorized' }, 401);
+      return c.json({ error: 'Unauthorized' }, 401)
     }
 
     // Parse and validate request body
-    const data = await c.req.json<CreateAuthorRequest>();
-    
+    const data = await c.req.json<CreateAuthorRequest>()
+
     if (!data.name) {
-      return c.json({ error: 'Name is required' }, 400);
+      return c.json({ error: 'Name is required' }, 400)
     }
 
     // Check if author with the same name already exists
-    const existingAuthor = await db
-      .select()
-      .from(Author)
-      .where(eq(Author.name, data.name))
-      .get();
+    const existingAuthor = await db.select().from(Author).where(eq(Author.name, data.name)).get()
 
     if (existingAuthor) {
-      return c.json({ error: 'An author with this name already exists' }, 409);
+      return c.json({ error: 'An author with this name already exists' }, 409)
     }
 
     // Create the new author
-    const now = new Date();
+    const now = new Date()
     const newAuthor = {
       id: crypto.randomUUID(),
       name: data.name,
@@ -52,10 +48,10 @@ export async function createAuthor(c: Context): Promise<Response> {
       joinedDate: now,
       createdAt: now,
       updatedAt: now,
-    };
+    }
 
     // Insert into database
-    await db.insert(Author).values(newAuthor);
+    await db.insert(Author).values(newAuthor)
 
     // Return the created author
     return c.json(
@@ -67,9 +63,9 @@ export async function createAuthor(c: Context): Promise<Response> {
         updatedAt: newAuthor.updatedAt.toISOString(),
       },
       201
-    );
+    )
   } catch (error) {
-    console.error('Error creating author:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    console.error('Error creating author:', error)
+    return c.json({ error: 'Internal server error' }, 500)
   }
 }

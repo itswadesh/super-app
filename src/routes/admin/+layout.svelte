@@ -2,10 +2,27 @@
 import { page } from '$app/state'
 import { Button } from '$lib/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '$lib/components/ui/sheet'
-import { Menu, X, LayoutDashboard, Video, FileText, BookCheck, Folder, Users, CreditCard } from '@lucide/svelte'
+import {
+  Menu,
+  X,
+  LayoutDashboard,
+  Video,
+  FileText,
+  BookCheck,
+  Folder,
+  Users,
+  CreditCard,
+} from '@lucide/svelte'
 
 // Icon mapping with type safety
-type IconName = 'layoutDashboard' | 'video' | 'fileText' | 'bookCheck' | 'folder' | 'users' | 'creditCard'
+type IconName =
+  | 'layoutDashboard'
+  | 'video'
+  | 'fileText'
+  | 'bookCheck'
+  | 'folder'
+  | 'users'
+  | 'creditCard'
 
 // Type for Svelte components
 // Using a more specific type for Lucide icons

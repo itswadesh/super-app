@@ -1,11 +1,11 @@
-import { and, eq, isNull, or, notInArray } from 'drizzle-orm';
-import type { Context } from 'hono';
-import { nanoid } from 'nanoid';
-import { db } from '../../../../db';
-import { getSessionTokenCookie, validateSessionToken } from '../../../../db/auth';
-import { Author, Category, Product } from '../../../../db/schema';
-import type { CreateProductRequest, ProductResponse, UpdateProductRequest } from '../types';
-import { generateUniqueSlug } from '../../../../../lib/utils/string-utils';
+import { and, eq, isNull, or, notInArray } from 'drizzle-orm'
+import type { Context } from 'hono'
+import { nanoid } from 'nanoid'
+import { db } from '../../../../db'
+import { getSessionTokenCookie, validateSessionToken } from '../../../../db/auth'
+import { Author, Category, Product } from '../../../../db/schema'
+import type { CreateProductRequest, ProductResponse, UpdateProductRequest } from '../types'
+import { generateUniqueSlug } from '../../../../../lib/utils/string-utils'
 
 /**
  * Create or update a product
@@ -13,16 +13,16 @@ import { generateUniqueSlug } from '../../../../../lib/utils/string-utils';
 export async function createProduct(c: Context): Promise<Response> {
   try {
     // Check authentication
-    const sessionToken = getSessionTokenCookie(c);
-    const session = await validateSessionToken(sessionToken || '');
+    const sessionToken = getSessionTokenCookie(c)
+    const session = await validateSessionToken(sessionToken || '')
 
     if (!session || session.user?.role !== 'admin') {
-      return c.json({ error: 'Unauthorized. Only admin users can manage products.' }, 403);
+      return c.json({ error: 'Unauthorized. Only admin users can manage products.' }, 403)
     }
 
     // Parse and validate request body
-    const data = await c.req.json() as CreateProductRequest | UpdateProductRequest;
-    const isUpdate = 'id' in data && data.id !== 'new';
+    const data = (await c.req.json()) as CreateProductRequest | UpdateProductRequest
+    const isUpdate = 'id' in data && data.id !== 'new'
 
     // Extract common fields
     const {
@@ -43,62 +43,56 @@ export async function createProduct(c: Context): Promise<Response> {
       metaTitle,
       metaDescription,
       tags = [],
-    } = data;
+    } = data
 
     // Validate required fields
     if (!title.trim()) {
-      return c.json({ error: 'Title is required' }, 400);
+      return c.json({ error: 'Title is required' }, 400)
     }
 
     if (!isUpdate && !type) {
-      return c.json({ error: 'Product type is required' }, 400);
+      return c.json({ error: 'Product type is required' }, 400)
     }
 
     // Validate author exists if provided
     if (authorId) {
       const author = await db.query.Author.findFirst({
-        where: and(
-          eq(Author.id, authorId),
-          isNull(Author.deletedAt)
-        )
-      });
+        where: and(eq(Author.id, authorId), isNull(Author.deletedAt)),
+      })
       if (!author) {
-        return c.json({ error: 'Author not found' }, 404);
+        return c.json({ error: 'Author not found' }, 404)
       }
     }
 
     // Validate category exists if provided
     if (categoryId) {
       const category = await db.query.Category.findFirst({
-        where: and(
-          eq(Category.id, categoryId),
-          isNull(Category.deletedAt)
-        )
-      });
+        where: and(eq(Category.id, categoryId), isNull(Category.deletedAt)),
+      })
       if (!category) {
-        return c.json({ error: 'Category not found' }, 404);
+        return c.json({ error: 'Category not found' }, 404)
       }
     }
 
     // Generate a unique slug
-    const baseSlug = inputSlug || title;
+    const baseSlug = inputSlug || title
 
     // Get all existing slugs from the database (excluding current product if updating)
-    const existingSlugs = (await db
-      .select({ slug: Product.slug })
-      .from(Product)
-      .where(isUpdate ? notInArray(Product.id, [id].filter(Boolean)) : undefined))
-      .map(({ slug }) => slug);
+    const existingSlugs = (
+      await db
+        .select({ slug: Product.slug })
+        .from(Product)
+        .where(isUpdate ? notInArray(Product.id, [id].filter(Boolean)) : undefined)
+    ).map(({ slug }) => slug)
 
     // Generate a unique slug
-    const uniqueSlug = await generateUniqueSlug(
-      baseSlug,
-      existingSlugs,
-      { lower: true, strict: true }
-    );
+    const uniqueSlug = await generateUniqueSlug(baseSlug, existingSlugs, {
+      lower: true,
+      strict: true,
+    })
 
-    const now = new Date();
-    const productId = isUpdate ? id : nanoid();
+    const now = new Date()
+    const productId = isUpdate ? id : nanoid()
 
     // Prepare the base values
     const baseValues = {
@@ -119,9 +113,9 @@ export async function createProduct(c: Context): Promise<Response> {
       metaDescription: metaDescription || null,
       tags: tags || [],
       updatedAt: now,
-    };
+    }
     console.log(baseValues, 'cvvvvvv')
-    let product: typeof Product.$inferSelect;
+    let product: typeof Product.$inferSelect
 
     if (!isUpdate) {
       // Create new product
@@ -132,30 +126,25 @@ export async function createProduct(c: Context): Promise<Response> {
           id: productId,
           createdAt: now,
         })
-        .returning();
-      product = result[0];
+        .returning()
+      product = result[0]
     } else {
       // Update existing product
-      const result = await db
-        .update(Product)
-        .set(baseValues)
-        .where(eq(Product.id, id))
-        .returning();
-      product = result[0];
+      const result = await db.update(Product).set(baseValues).where(eq(Product.id, id)).returning()
+      product = result[0]
     }
-    return c.json({
-      success: true,
-      message: 'Product created successfully',
-      product,
-    }, 201);
-
-  } catch (error: unknown) {
-    console.error('Error creating product:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return c.json(
-      { error: 'Failed to create product', details: errorMessage },
-      500
-    );
+      {
+        success: true,
+        message: 'Product created successfully',
+        product,
+      },
+      201
+    )
+  } catch (error: unknown) {
+    console.error('Error creating product:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return c.json({ error: 'Failed to create product', details: errorMessage }, 500)
   }
 }
 

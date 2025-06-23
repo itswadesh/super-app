@@ -1,13 +1,13 @@
 <script context="module" lang="ts">
-  export interface Chapter {
-    id: string;
-    name: string;
-    slug: string;
-    order: number;
-    description?: string;
-  }
+export interface Chapter {
+  id: string
+  name: string
+  slug: string
+  order: number
+  description?: string
+}
 
-  export type { Chapter };
+export type { Chapter }
 </script>
 
 <script lang="ts">

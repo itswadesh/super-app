@@ -7,7 +7,9 @@ import db from '../../db'
 import { Template } from '../../db/schema'
 import env from '../../env'
 sgMail.setApiKey(env.SENDGRID_API_KEY || 'SG.dummy')
-const posmarkClient = new postmark.ServerClient(env.POSTMARK_API_KEY || '6bcb4379-cc83-45f8-9e3e-dfabb121e5cf')
+const posmarkClient = new postmark.ServerClient(
+  env.POSTMARK_API_KEY || '6bcb4379-cc83-45f8-9e3e-dfabb121e5cf'
+)
 const resend = new Resend(env.RESEND_API_KEY || 'dummy')
 
 export const sendEmail = async ({

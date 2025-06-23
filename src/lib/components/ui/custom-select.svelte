@@ -1,29 +1,29 @@
 <script lang="ts">
-  import { cn } from '$lib/utils';
-  
-  // Get all props at once
-  const props = $props<{
-    value?: string;
-    onValueChange?: (value: string) => void;
-    disabled?: boolean;
-    className?: string;
-    children?: any;
-  }>();
-  
-  // Destructure with defaults
-  const { 
-    value = '',
-    onValueChange = (v: string) => {},
-    disabled = false,
-    className = '',
-    children = []
-  } = props;
-  
-  // Handle change event
-  function handleChange(event: Event) {
-    const target = event.target as HTMLSelectElement;
-    onValueChange(target.value);
-  }
+import { cn } from '$lib/utils'
+
+// Get all props at once
+const props = $props<{
+  value?: string
+  onValueChange?: (value: string) => void
+  disabled?: boolean
+  className?: string
+  children?: any
+}>()
+
+// Destructure with defaults
+const {
+  value = '',
+  onValueChange = (v: string) => {},
+  disabled = false,
+  className = '',
+  children = [],
+} = props
+
+// Handle change event
+function handleChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  onValueChange(target.value)
+}
 </script>
 
 <div class={cn('relative w-full', className)}>

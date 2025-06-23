@@ -89,6 +89,9 @@
   "workbench.editor.empty.hint": "hidden",
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
   }
   // "workbench.activityBar.location": "hidden"
 }

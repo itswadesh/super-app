@@ -46,7 +46,7 @@ export class PhonePeWrapper {
   async postPaymentRequestToPhonePe(
     payload: PaymentRequestUPI | PaymentRequestUPICollect | PaymentRequestUPIQr,
 
-    apiNewEndpoint?: string,
+    apiNewEndpoint?: string
   ): Promise<AxiosResponse<PaymentResponse | PaymentCheckStatusResponse>> {
     const apiEndpoint = apiNewEndpoint ?? '/pg/v1/pay'
     const url =
@@ -66,14 +66,17 @@ export class PhonePeWrapper {
       { request: encodedMessage.encodedBody },
       {
         headers,
-      },
+      }
     )
     return result.data
   }
 
   validatePaymentRequest(paymentRequest: PaymentRequest): boolean {
     if (paymentRequest.merchantId.length > 0 && paymentRequest.merchantId.length < 38) {
-      if (paymentRequest.merchantTransactionId.length > 0 && paymentRequest.merchantTransactionId.length < 38) {
+      if (
+        paymentRequest.merchantTransactionId.length > 0 &&
+        paymentRequest.merchantTransactionId.length < 38
+      ) {
         if (
           typeof paymentRequest.amount == 'number' &&
           Number(paymentRequest.amount) === paymentRequest.amount &&
@@ -108,7 +111,8 @@ export class PhonePeWrapper {
     const phonePeRequest: PaymentRequest = {
       merchantId: this.options.merchantId || merchantId,
       redirectMode: this.options.redirectMode,
-      redirectUrl: this.options.redirectUrl?.length == 0 ? 'https://localhost:8000' : this.options.redirectUrl,
+      redirectUrl:
+        this.options.redirectUrl?.length == 0 ? 'https://localhost:8000' : this.options.redirectUrl,
       merchantTransactionId: merchantTransactionId,
       merchantUserId: merchantUserId,
       amount: Number.parseInt(amount),
@@ -142,7 +146,8 @@ export class PhonePeWrapper {
     }
 
     const apiEndpoint = apiNewEndpoint ?? '/pg/v1/status'
-    const url = this.options.mode == 'uat' ? 'https://api-preprod.phonepe.com/apis/pg-sandbox' : this.url
+    const url =
+      this.options.mode == 'uat' ? 'https://api-preprod.phonepe.com/apis/pg-sandbox' : this.url
 
     const encodedMessage = createGetChecksumHeader({
       merchantId,
@@ -167,7 +172,7 @@ export class PhonePeWrapper {
     merchantId: string,
     vpa: string,
 
-    apiNewEndpoint?: string,
+    apiNewEndpoint?: string
   ): Promise<any> {
     const apiEndpoint = apiNewEndpoint ?? '/pg/v1/vpa/validate'
     const url = this.url
@@ -186,7 +191,7 @@ export class PhonePeWrapper {
       { request: encodedMessage.encodedBody },
       {
         headers,
-      },
+      }
     )
     return result.data
   }
@@ -212,7 +217,7 @@ export class PhonePeWrapper {
   async postRefundRequestToPhonePe(
     payload: RefundRequest,
 
-    apiNewEndpoint?: string,
+    apiNewEndpoint?: string
   ): Promise<any> {
     const apiEndpoint = apiNewEndpoint ?? '/pg/v1/refund'
     const url = this.url
@@ -228,7 +233,7 @@ export class PhonePeWrapper {
       { request: encodedMessage.encodedBody },
       {
         headers,
-      },
+      }
     )
     return result.data
   }

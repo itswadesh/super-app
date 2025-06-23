@@ -59,7 +59,8 @@ export const load = (async ({ params, url }) => {
       const searchLower = search.toLowerCase()
       filteredResources = filteredResources.filter(
         (item) =>
-          item.title?.toLowerCase().includes(searchLower) || item.description?.toLowerCase().includes(searchLower),
+          item.title?.toLowerCase().includes(searchLower) ||
+          item.description?.toLowerCase().includes(searchLower)
       )
     }
 
@@ -91,7 +92,10 @@ export const load = (async ({ params, url }) => {
     const paginatedResources = filteredResources.slice(offset, offset + limit)
 
     // Get subcategories
-    const subcategories = await db.select().from(categories).where(eq(categories.parentId, category.id))
+    const subcategories = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.parentId, category.id))
 
     return {
       category,

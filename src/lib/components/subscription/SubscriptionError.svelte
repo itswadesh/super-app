@@ -1,6 +1,6 @@
 <script lang="ts">
-  export let error: string;
-  export let onRetry: () => void;
+export let error: string
+export let onRetry: () => void
 </script>
 
 <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">

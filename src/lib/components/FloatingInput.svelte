@@ -1,62 +1,62 @@
 <script lang="ts">
-  // Props using Svelte 5 runes
-  let {
-    id,
-    name,
-    type = "text",
-    value = "",
-    required = false,
-    label,
-    placeholder = "",
-    error = "",
-    disabled = false,
-    autocomplete = "off",
-    className = "",
-    oninput = (e: Event) => {},
-    onblur = (e: Event) => {},
-    onfocus = (e: Event) => {}
-  } = $props<{
-    id: string;
-    name: string;
-    type?: string;
-    value?: string;
-    required?: boolean;
-    label: string;
-    placeholder?: string;
-    error?: string | boolean;
-    disabled?: boolean;
-    autocomplete?: string;
-    className?: string;
-    oninput?: (e: Event) => void;
-    onblur?: (e: Event) => void;
-    onfocus?: (e: Event) => void;
-  }>();
-  
-  // Local state for the input value
-  let inputValue = $state(value);
-  
-  // Update local value when prop changes
-  $effect(() => {
-    inputValue = value;
-  });
+// Props using Svelte 5 runes
+let {
+  id,
+  name,
+  type = 'text',
+  value = '',
+  required = false,
+  label,
+  placeholder = '',
+  error = '',
+  disabled = false,
+  autocomplete = 'off',
+  className = '',
+  oninput = (e: Event) => {},
+  onblur = (e: Event) => {},
+  onfocus = (e: Event) => {},
+} = $props<{
+  id: string
+  name: string
+  type?: string
+  value?: string
+  required?: boolean
+  label: string
+  placeholder?: string
+  error?: string | boolean
+  disabled?: boolean
+  autocomplete?: string
+  className?: string
+  oninput?: (e: Event) => void
+  onblur?: (e: Event) => void
+  onfocus?: (e: Event) => void
+}>()
 
-  const hasValue = $derived(!!inputValue);
-  const inputId = $derived(id || name);
-  const showError = $derived(!!error);
+// Local state for the input value
+let inputValue = $state(value)
 
-  function handleInput(e: Event) {
-    const target = e.target as HTMLInputElement;
-    inputValue = target.value;
-    oninput?.(e);
-  }
+// Update local value when prop changes
+$effect(() => {
+  inputValue = value
+})
 
-  function handleBlur(e: Event) {
-    if (onblur) onblur(e);
-  }
+const hasValue = $derived(!!inputValue)
+const inputId = $derived(id || name)
+const showError = $derived(!!error)
 
-  function handleFocus(e: Event) {
-    if (onfocus) onfocus(e);
-  }
+function handleInput(e: Event) {
+  const target = e.target as HTMLInputElement
+  inputValue = target.value
+  oninput?.(e)
+}
+
+function handleBlur(e: Event) {
+  if (onblur) onblur(e)
+}
+
+function handleFocus(e: Event) {
+  if (onfocus) onfocus(e)
+}
 </script>
 
 <div class="relative mb-4 pt-4">

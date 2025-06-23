@@ -6,7 +6,7 @@ type EventParams = Record<string, string | number | boolean>
 // Add gtag to window object
 declare global {
   interface Window {
-    gtag?: (command: string, eventName: string, eventParams?: Record<string, unknown>) => void;
+    gtag?: (command: string, eventName: string, eventParams?: Record<string, unknown>) => void
     dataLayer: unknown[]
   }
 }
@@ -66,10 +66,12 @@ export const events = {
     trackEvent('video_play', { video_id: videoId, video_title: videoTitle }),
   videoComplete: (videoId: string, videoTitle: string) =>
     trackEvent('video_complete', { video_id: videoId, video_title: videoTitle }),
-  noteView: (noteId: string, noteTitle: string) => trackEvent('note_view', { note_id: noteId, note_title: noteTitle }),
+  noteView: (noteId: string, noteTitle: string) =>
+    trackEvent('note_view', { note_id: noteId, note_title: noteTitle }),
   quizStart: (quizId: string, quizTitle: string) =>
     trackEvent('quiz_start', { quiz_id: quizId, quiz_title: quizTitle }),
-  quizComplete: (quizId: string, score: number) => trackEvent('quiz_complete', { quiz_id: quizId, score }),
+  quizComplete: (quizId: string, score: number) =>
+    trackEvent('quiz_complete', { quiz_id: quizId, score }),
 
   // Navigation events
   categorySelect: (categoryId: string, categoryName: string) =>

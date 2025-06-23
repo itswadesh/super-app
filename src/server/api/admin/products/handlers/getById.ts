@@ -1,14 +1,14 @@
-import { and, eq, isNull, sql } from 'drizzle-orm';
-import type { Context } from 'hono';
-import { db } from '../../../../db';
-import { getSessionTokenCookie, validateSessionToken } from '../../../../db/auth';
-import { Product, Author, Category } from '../../../../db/schema';
-import type { ProductResponse } from '../types';
+import { and, eq, isNull, sql } from 'drizzle-orm'
+import type { Context } from 'hono'
+import { db } from '../../../../db'
+import { getSessionTokenCookie, validateSessionToken } from '../../../../db/auth'
+import { Product, Author, Category } from '../../../../db/schema'
+import type { ProductResponse } from '../types'
 
 // Helper function to format date from SQLite timestamp to ISO string
 const formatDate = (timestamp: number): string => {
-  return new Date(timestamp).toISOString();
-};
+  return new Date(timestamp).toISOString()
+}
 
 /**
  * Get a single product by ID with related data
@@ -16,23 +16,29 @@ const formatDate = (timestamp: number): string => {
 export async function getProductById(c: Context): Promise<Response> {
   try {
     // Validate authentication
-    const sessionToken = getSessionTokenCookie(c);
-    const session = await validateSessionToken(sessionToken || '');
-    
+    const sessionToken = getSessionTokenCookie(c)
+    const session = await validateSessionToken(sessionToken || '')
+
     if (!session) {
-      return c.json({ 
-        error: 'Unauthorized',
-        message: 'You must be logged in to access this resource' 
-      }, 401);
+      return c.json(
+        {
+          error: 'Unauthorized',
+          message: 'You must be logged in to access this resource',
+        },
+        401
+      )
     }
 
     // Get and validate product ID
-    const id = c.req.param('id');
+    const id = c.req.param('id')
     if (!id) {
-      return c.json({ 
-        error: 'Bad Request',
-        message: 'Product ID is required' 
-      }, 400);
+      return c.json(
+        {
+          error: 'Bad Request',
+          message: 'Product ID is required',
+        },
+        400
+      )
     }
 
     // Fetch product with related data in a single query
@@ -83,20 +89,24 @@ export async function getProductById(c: Context): Promise<Response> {
       .leftJoin(Category, eq(Product.categoryId, Category.id))
       .where(eq(Product.id, id))
       .limit(1)
-      .then(rows => rows[0]);
+      .then((rows) => rows[0])
 
     // Check if product was found
     if (!result) {
-      return c.json({ 
-        error: 'Not Found',
-        message: 'The requested product was not found' 
-      }, 404);
+      return c.json(
+        {
+          error: 'Not Found',
+          message: 'The requested product was not found',
+        },
+        404
+      )
     }
 
-
     // Parse JSON fields
-    const images = result.images ? JSON.parse(result.images) : [];
-    const metaKeywords = result.metaKeywords ? result.metaKeywords.split(',').map((k: string) => k.trim()) : [];
+    const images = result.images ? JSON.parse(result.images) : []
+    const metaKeywords = result.metaKeywords
+      ? result.metaKeywords.split(',').map((k: string) => k.trim())
+      : []
 
     // Map database result to response format
     const response: ProductResponse = {
@@ -125,56 +135,59 @@ export async function getProductById(c: Context): Promise<Response> {
       createdAt: formatDate(result.createdAt as unknown as number),
       updatedAt: formatDate(result.updatedAt as unknown as number),
       // Include related data if available
-      ...(result.author && { 
+      ...(result.author && {
         author: {
           id: result.author.id,
           name: result.author.name,
           avatar: result.author.avatar || undefined,
-        }
+        },
       }),
-      ...(result.category && { 
+      ...(result.category && {
         category: {
           id: result.category.id,
           name: result.category.name,
           slug: result.category.slug,
-        }
+        },
       }),
-    };
+    }
 
-    return c.json(response);
+    return c.json(response)
   } catch (error: unknown) {
-    console.error('Error fetching product:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    
-    return c.json({
-      error: 'Internal Server Error',
-      message: 'Failed to fetch product',
-      ...(process.env.NODE_ENV === 'development' && { details: errorMessage })
-    }, 500);
+    console.error('Error fetching product:', error)
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+
+    return c.json(
+      {
+        error: 'Internal Server Error',
+        message: 'Failed to fetch product',
+        ...(process.env.NODE_ENV === 'development' && { details: errorMessage }),
+      },
+      500
+    )
   }
 }
 
 function mapToProductResponse(product: {
-  id: string;
-  title: string;
-  description: string | null;
-  slug: string;
-  thumbnailUrl: string | null;
-  isPaid: boolean;
-  authorId: string | null;
-  categoryId: string | null;
-  language: string | null;
-  youtubeId: string | null;
-  productUrl: string | null;
-  duration: number | null;
-  quality: string | null;
-  views: number | null;
-  createdAt: Date | string;
-  updatedAt: Date | string;
+  id: string
+  title: string
+  description: string | null
+  slug: string
+  thumbnailUrl: string | null
+  isPaid: boolean
+  authorId: string | null
+  categoryId: string | null
+  language: string | null
+  youtubeId: string | null
+  productUrl: string | null
+  duration: number | null
+  quality: string | null
+  views: number | null
+  createdAt: Date | string
+  updatedAt: Date | string
 }): ProductResponse {
   // Helper to safely convert date to ISO string
-  const toIsoString = (date: Date | string): string => 
-    date instanceof Date ? date.toISOString() : new Date(date).toISOString();
+  const toIsoString = (date: Date | string): string =>
+    date instanceof Date ? date.toISOString() : new Date(date).toISOString()
 
   return {
     id: product.id,
@@ -194,5 +207,5 @@ function mapToProductResponse(product: {
     views: product.views || 0,
     createdAt: toIsoString(product.createdAt),
     updatedAt: toIsoString(product.updatedAt),
-  };
+  }
 }

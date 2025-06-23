@@ -31,7 +31,10 @@ errorLoggerRouter.post('/', async (c) => {
     const errorFingerprint = `${source}:${message}`
 
     // Check if this error has been logged before
-    const existingErrors = await db.select().from(ErrorLog).where(eq(ErrorLog.fingerprint, errorFingerprint))
+    const existingErrors = await db
+      .select()
+      .from(ErrorLog)
+      .where(eq(ErrorLog.fingerprint, errorFingerprint))
 
     const now = new Date()
     let errorId: string
@@ -120,7 +123,7 @@ export class ErrorLogger {
     source: string,
     message: string,
     details?: any,
-    category = 'general',
+    category = 'general'
   ): Promise<{ success: boolean; errorId?: string }> {
     try {
       // Use fetch to call the error logging API

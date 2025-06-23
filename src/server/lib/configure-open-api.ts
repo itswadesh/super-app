@@ -24,6 +24,6 @@ export default function configureOpenAPI(app: AppOpenAPI) {
       spec: {
         url: '/api/doc',
       },
-    }),
+    })
   )
 }

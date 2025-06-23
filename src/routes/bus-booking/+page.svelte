@@ -1,138 +1,139 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button';
-  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-  import { Label } from '$lib/components/ui/label';
-  import { Input } from '$lib/components/ui/input';
-  import { toast } from 'svelte-sonner';
-  import { Loader2 } from '@lucide/svelte';
-  import { onMount } from 'svelte';
+import { Button } from '$lib/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
+import { Label } from '$lib/components/ui/label'
+import { Input } from '$lib/components/ui/input'
+import { toast } from 'svelte-sonner'
+import { Loader2 } from '@lucide/svelte'
+import { onMount } from 'svelte'
 
-  // State using Svelte 5 runes
-  let allBuses = $state<Array<{
-    id: string;
-    name: string;
-    type: string;
-    departureTime: string;
-    arrivalTime: string;
-    price: string;
-    availableSeats: number;
-    totalSeats: number;
-    amenities?: string[];
-  }>>([]);
-  
-  let selectedBus = $state<typeof allBuses[number] | null>(null);
-  let showBookingForm = $state(false);
-  let isLoading = $state(false);
-  let isBooking = $state(false);
-  let selectedSeats = $state('1');
-  let selectedDate = $state(new Date().toISOString().split('T')[0]);
-  let selectedBusName = $state('');
-  
-  // Default source and destination
-  let source = 'Bhubaneswar';
-  let destination = 'Puri'; // Default to a popular route
-  
-  // Filtered buses based on selections
-  let buses = $derived(
-    allBuses.filter(bus => {
-      if (!bus) return false;
-      const matchesDate = true; // Add date matching logic if needed
-      const matchesBus = !selectedBusName || bus.name === selectedBusName;
-      return matchesDate && matchesBus;
+// State using Svelte 5 runes
+let allBuses = $state<
+  Array<{
+    id: string
+    name: string
+    type: string
+    departureTime: string
+    arrivalTime: string
+    price: string
+    availableSeats: number
+    totalSeats: number
+    amenities?: string[]
+  }>
+>([])
+
+let selectedBus = $state<(typeof allBuses)[number] | null>(null)
+let showBookingForm = $state(false)
+let isLoading = $state(false)
+let isBooking = $state(false)
+let selectedSeats = $state('1')
+let selectedDate = $state(new Date().toISOString().split('T')[0])
+let selectedBusName = $state('')
+
+// Default source and destination
+let source = 'Bhubaneswar'
+let destination = 'Puri' // Default to a popular route
+
+// Filtered buses based on selections
+let buses = $derived(
+  allBuses.filter((bus) => {
+    if (!bus) return false
+    const matchesDate = true // Add date matching logic if needed
+    const matchesBus = !selectedBusName || bus.name === selectedBusName
+    return matchesDate && matchesBus
+  })
+)
+
+// Fetch all available buses
+async function fetchBuses() {
+  isLoading = true
+  try {
+    const params = new URLSearchParams({
+      source,
+      destination,
+      date: selectedDate,
     })
-  );
-  
-  // Fetch all available buses
-  async function fetchBuses() {
-    isLoading = true;
-    try {
-      const params = new URLSearchParams({
-        source,
-        destination,
-        date: selectedDate
-      });
-      
-      const response = await fetch(`/api/bus-booking?${params.toString()}`);
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch buses');
-      }
-      
-      allBuses = data.data?.buses || [];
-    } catch (error) {
-      console.error('Error fetching buses:', error);
-      toast.error('Failed to load buses. Please try again.');
-    } finally {
-      isLoading = false;
+
+    const response = await fetch(`/api/bus-booking?${params.toString()}`)
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to fetch buses')
     }
+
+    allBuses = data.data?.buses || []
+  } catch (error) {
+    console.error('Error fetching buses:', error)
+    toast.error('Failed to load buses. Please try again.')
+  } finally {
+    isLoading = false
   }
-  
-  // Format time to 12-hour format
-  function formatTime(timeString: string) {
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+}
+
+// Format time to 12-hour format
+function formatTime(timeString: string) {
+  const [hours, minutes] = timeString.split(':')
+  const hour = parseInt(hours, 10)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const hour12 = hour % 12 || 12
+  return `${hour12}:${minutes} ${ampm}`
+}
+
+// Handle bus selection
+function selectBus(bus: (typeof buses)[number]) {
+  selectedBus = bus
+  showBookingForm = true
+}
+
+// Handle form submission
+async function handleBooking(event: SubmitEvent) {
+  event.preventDefault()
+  if (!selectedBus) return
+
+  const formData = new FormData(event.target as HTMLFormElement)
+  const seats = parseInt(selectedSeats, 10)
+
+  const bookingData = {
+    busId: selectedBus.id,
+    passengerName: formData.get('passengerName') as string,
+    passengerEmail: formData.get('email') as string,
+    passengerPhone: formData.get('phone') as string,
+    travelDate: new Date().toISOString().split('T')[0],
+    totalSeats: seats,
+    seatNumbers: Array.from({ length: seats }, (_, i) => `A${i + 1}`), // Generate seat numbers
   }
-  
-  // Handle bus selection
-  function selectBus(bus: typeof buses[number]) {
-    selectedBus = bus;
-    showBookingForm = true;
-  }
-  
-  // Handle form submission
-  async function handleBooking(event: SubmitEvent) {
-    event.preventDefault();
-    if (!selectedBus) return;
-    
-    const formData = new FormData(event.target as HTMLFormElement);
-    const seats = parseInt(selectedSeats, 10);
-    
-    const bookingData = {
-      busId: selectedBus.id,
-      passengerName: formData.get('passengerName') as string,
-      passengerEmail: formData.get('email') as string,
-      passengerPhone: formData.get('phone') as string,
-      travelDate: new Date().toISOString().split('T')[0],
-      totalSeats: seats,
-      seatNumbers: Array.from({ length: seats }, (_, i) => `A${i + 1}`) // Generate seat numbers
-    };
-    
-    isBooking = true;
-    
-    try {
-      const response = await fetch('/api/bus-booking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookingData)
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to book ticket');
-      }
-      
-      toast.success('Booking confirmed! Your booking reference is ' + data.data.bookingReference);
-      showBookingForm = false;
-      selectedBus = null;
-      fetchBuses(); // Refresh the bus list
-      
-    } catch (error) {
-      console.error('Booking error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to book ticket');
-    } finally {
-      isBooking = false;
+
+  isBooking = true
+
+  try {
+    const response = await fetch('/api/bus-booking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bookingData),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to book ticket')
     }
+
+    toast.success('Booking confirmed! Your booking reference is ' + data.data.bookingReference)
+    showBookingForm = false
+    selectedBus = null
+    fetchBuses() // Refresh the bus list
+  } catch (error) {
+    console.error('Booking error:', error)
+    toast.error(error instanceof Error ? error.message : 'Failed to book ticket')
+  } finally {
+    isBooking = false
   }
-  
-  // Initialize
-  onMount(() => {
-    fetchBuses();
-  });
+}
+
+// Initialize
+onMount(() => {
+  fetchBuses()
+})
 </script>
 
 <main class="container mx-auto px-4 py-8 max-w-4xl">

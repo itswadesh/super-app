@@ -1,12 +1,12 @@
 <script lang="ts">
-  export let activeTab: 'monthly' | 'yearly' = 'monthly';
-  export let onTabChange: (tab: 'monthly' | 'yearly') => void;
-  export let plans: { monthly: any[]; yearly: any[] };
-  
-  const tabs = [
-    { id: 'monthly', name: 'Monthly', count: plans.monthly.length },
-    { id: 'yearly', name: 'Yearly', count: plans.yearly.length },
-  ];
+export let activeTab: 'monthly' | 'yearly' = 'monthly'
+export let onTabChange: (tab: 'monthly' | 'yearly') => void
+export let plans: { monthly: any[]; yearly: any[] }
+
+const tabs = [
+  { id: 'monthly', name: 'Monthly', count: plans.monthly.length },
+  { id: 'yearly', name: 'Yearly', count: plans.yearly.length },
+]
 </script>
 
 <div class="border-b border-gray-200">

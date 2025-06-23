@@ -1,7 +1,13 @@
 import axios from 'axios'
 import env from '../../env'
 
-export const msg91Message = async ({ usedFor = 'otp', otp = null, phone, dlt_template_id, variables = {} }: any) => {
+export const msg91Message = async ({
+  usedFor = 'otp',
+  otp = null,
+  phone,
+  dlt_template_id,
+  variables = {},
+}: any) => {
   if (!phone.startsWith('+')) {
     if (phone.startsWith('0')) phone = '+91' + phone.substring(1)
     else phone = '+91' + phone

@@ -10,7 +10,9 @@ const { data } = $props<{ data: PageData }>()
 const categories = $state(data.categories || [])
 const allCategories = $state(data.allCategories || [])
 const categoryTree = $state(data.categoryTree || [])
-const pagination = $state(data.pagination || { currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: 50 })
+const pagination = $state(
+  data.pagination || { currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: 50 }
+)
 const filters = $state(data.filters || { search: '' })
 const error = $state(data.error || false)
 
@@ -114,7 +116,7 @@ function displayCategoryTree(categories: Category[], depth = 0) {
         </div>
         ${category.children && category.children.length ? displayCategoryTree(category.children, depth + 1) : ''}
       </div>
-    `,
+    `
     )
     .join('')
 }

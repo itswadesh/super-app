@@ -1,5 +1,5 @@
 interface MetadataObject {
-  [key: string]: unknown;
+  [key: string]: unknown
 }
 
 /**
@@ -10,12 +10,15 @@ interface MetadataObject {
  */
 export function getMetadataValue(metadata: unknown, key: string): string | null {
   try {
-    if (!metadata) return null;
-    const metaObj = typeof metadata === 'string' ? (JSON.parse(metadata) as MetadataObject) : (metadata as MetadataObject);
-    const value = metaObj?.[key];
-    return typeof value === 'string' ? value : null;
+    if (!metadata) return null
+    const metaObj =
+      typeof metadata === 'string'
+        ? (JSON.parse(metadata) as MetadataObject)
+        : (metadata as MetadataObject)
+    const value = metaObj?.[key]
+    return typeof value === 'string' ? value : null
   } catch (e) {
-    return null;
+    return null
   }
 }
 
@@ -27,8 +30,8 @@ export function getMetadataValue(metadata: unknown, key: string): string | null 
  * @returns boolean indicating if the metadata matches the filter
  */
 export function parseMetadataFilter(metadata: unknown, key: string, value: string): boolean {
-  const metadataValue = getMetadataValue(metadata, key);
-  return metadataValue === value;
+  const metadataValue = getMetadataValue(metadata, key)
+  return metadataValue === value
 }
 
 /**
@@ -41,13 +44,13 @@ export function getUniqueMetadataValues<T extends string>(
   items: Array<{ metadata: unknown }>,
   key: string
 ): T[] {
-  const values = new Set<T>();
+  const values = new Set<T>()
 
   for (const item of items) {
-    if (!item.metadata) continue;
-    const value = getMetadataValue(item.metadata, key);
-    if (value) values.add(value as T);
+    if (!item.metadata) continue
+    const value = getMetadataValue(item.metadata, key)
+    if (value) values.add(value as T)
   }
 
-  return Array.from(values).sort();
+  return Array.from(values).sort()
 }

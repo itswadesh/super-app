@@ -1,86 +1,84 @@
 <script lang="ts">
-  import { browser } from "$app/environment";
-  import { fade } from "svelte/transition";
+import { browser } from '$app/environment'
+import { fade } from 'svelte/transition'
 
-  // Props using Svelte 5 runes
-  const {
-    open = false,
-    title = "",
-    closeOnEscape = true,
-    closeOnClickOutside = true,
-    showCloseButton = true,
-    size = "md", // 'sm', 'md', 'lg', 'xl', 'full'
-    onClose = () => {},
-  } = $props();
+// Props using Svelte 5 runes
+const {
+  open = false,
+  title = '',
+  closeOnEscape = true,
+  closeOnClickOutside = true,
+  showCloseButton = true,
+  size = 'md', // 'sm', 'md', 'lg', 'xl', 'full'
+  onClose = () => {},
+} = $props()
 
-  // State variables
-  let modal = $state<HTMLElement | null>(null);
-  let previouslyFocused = $state<HTMLElement | null>(null);
-  let isVisible = $state(open);
+// State variables
+let modal = $state<HTMLElement | null>(null)
+let previouslyFocused = $state<HTMLElement | null>(null)
+let isVisible = $state(open)
 
-  // Watch for changes to open prop
-  $effect(() => {
-    isVisible = open;
+// Watch for changes to open prop
+$effect(() => {
+  isVisible = open
 
-    // Handle body scroll locking
-    if (browser) {
-      if (isVisible) {
-        document.body.style.overflow = "hidden";
-      } else {
-        document.body.style.overflow = "";
-      }
+  // Handle body scroll locking
+  if (browser) {
+    if (isVisible) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
     }
-  });
+  }
+})
 
-  // Size classes
-  const sizeClasses = {
-    sm: "max-w-md",
-    md: "max-w-lg",
-    lg: "max-w-2xl",
-    xl: "max-w-4xl",
-    full: "max-w-full mx-4",
-  };
+// Size classes
+const sizeClasses = {
+  sm: 'max-w-md',
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  xl: 'max-w-4xl',
+  full: 'max-w-full mx-4',
+}
 
-  // Compute current size class
-  const sizeClass = $derived(
-    sizeClasses[size as keyof typeof sizeClasses] || "max-w-lg",
-  );
+// Compute current size class
+const sizeClass = $derived(sizeClasses[size as keyof typeof sizeClasses] || 'max-w-lg')
 
-  // Focus management
-  $effect(() => {
-    if (isVisible && browser) {
-      // Store previous focus state
-      previouslyFocused = document.activeElement as HTMLElement;
+// Focus management
+$effect(() => {
+  if (isVisible && browser) {
+    // Store previous focus state
+    previouslyFocused = document.activeElement as HTMLElement
 
-      // Focus the first focusable element in the modal
-      setTimeout(() => {
-        if (modal) {
-          const focusable = modal.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-          );
-          if (focusable.length > 0) {
-            (focusable[0] as HTMLElement).focus();
-          }
+    // Focus the first focusable element in the modal
+    setTimeout(() => {
+      if (modal) {
+        const focusable = modal.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusable.length > 0) {
+          ;(focusable[0] as HTMLElement).focus()
         }
-      }, 50);
-    } else if (!isVisible && previouslyFocused) {
-      // Restore focus when modal closes
-      previouslyFocused.focus();
-    }
-  });
-
-  // Close modal function
-  function close() {
-    isVisible = false;
-    onClose();
+      }
+    }, 50)
+  } else if (!isVisible && previouslyFocused) {
+    // Restore focus when modal closes
+    previouslyFocused.focus()
   }
+})
 
-  // Handle keyboard events
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape" && closeOnEscape) {
-      close();
-    }
+// Close modal function
+function close() {
+  isVisible = false
+  onClose()
+}
+
+// Handle keyboard events
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && closeOnEscape) {
+    close()
   }
+}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />

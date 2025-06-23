@@ -1,56 +1,56 @@
 <script lang="ts">
-  import { orderStore } from '$lib/stores/orderStore';
-  import { formatCurrency } from '$lib/utils/format';
-  
-  interface OrderItem {
-    id: string;
-    name: string;
-    description?: string;
-    price: number;
-    quantity: number;
-    image?: string;
+import { orderStore } from '$lib/stores/orderStore'
+import { formatCurrency } from '$lib/utils/format'
+
+interface OrderItem {
+  id: string
+  name: string
+  description?: string
+  price: number
+  quantity: number
+  image?: string
+}
+
+interface Order {
+  id: string
+  status: string
+  items: OrderItem[]
+  subtotal: number
+  discount: number
+  tax: number
+  total: number
+  createdAt: string
+  couponCode?: string
+}
+
+const {
+  orderId = null,
+  order = null,
+  showHeader = true,
+  showActions = false,
+} = $props<{
+  orderId?: string | null
+  order?: Order | null
+  showHeader?: boolean
+  showActions?: boolean
+}>()
+
+const orderData = $derived(order || $orderStore.currentOrder)
+const items = $derived(orderData?.items || [])
+const orderDate = $derived(orderData ? new Date(orderData.createdAt).toLocaleDateString() : '')
+
+$effect(() => {
+  if (!orderData && orderId) {
+    orderStore.getOrder(orderId)
   }
-  
-  interface Order {
-    id: string;
-    status: string;
-    items: OrderItem[];
-    subtotal: number;
-    discount: number;
-    tax: number;
-    total: number;
-    createdAt: string;
-    couponCode?: string;
+})
+
+async function handleCancel() {
+  if (confirm('Are you sure you want to cancel this order?')) {
+    // In a real app, you would call orderStore.cancelOrder(orderId)
+    alert('Order cancellation would be processed here')
   }
-  
-  const { 
-    orderId = null, 
-    order = null, 
-    showHeader = true, 
-    showActions = false 
-  } = $props<{
-    orderId?: string | null;
-    order?: Order | null;
-    showHeader?: boolean;
-    showActions?: boolean;
-  }>();
-  
-  const orderData = $derived(order || $orderStore.currentOrder);
-  const items = $derived(orderData?.items || []);
-  const orderDate = $derived(orderData ? new Date(orderData.createdAt).toLocaleDateString() : '');
-  
-  $effect(() => {
-    if (!orderData && orderId) {
-      orderStore.getOrder(orderId);
-    }
-  });
-  
-  async function handleCancel() {
-    if (confirm('Are you sure you want to cancel this order?')) {
-      // In a real app, you would call orderStore.cancelOrder(orderId)
-      alert('Order cancellation would be processed here');
-    }
-  }
+}
 </script>
 
 <div class="bg-white rounded-lg shadow overflow-hidden">

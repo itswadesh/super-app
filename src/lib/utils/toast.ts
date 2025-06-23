@@ -13,9 +13,17 @@ type ToastType = 'success' | 'error' | 'warning' | 'info' | 'loading'
 declare global {
   interface Window {
     toastHelpers?: {
-      addToast: (options: { type: ToastType; message: string; title?: string; duration?: number }) => string
+      addToast: (options: {
+        type: ToastType
+        message: string
+        title?: string
+        duration?: number
+      }) => string
       removeToast: (id: string) => void
-      updateToast: (id: string, options: { type?: ToastType; message?: string; title?: string }) => void
+      updateToast: (
+        id: string,
+        options: { type?: ToastType; message?: string; title?: string }
+      ) => void
     }
   }
 }

@@ -1,6 +1,7 @@
 import type { Author } from '../../../db/schema'
 
-export interface AuthorResponse extends Omit<Author, 'qualifications' | 'achievements' | 'createdAt' | 'updatedAt'> {
+export interface AuthorResponse
+  extends Omit<Author, 'qualifications' | 'achievements' | 'createdAt' | 'updatedAt'> {
   qualifications: string[]
   achievements: string[]
   createdAt: string

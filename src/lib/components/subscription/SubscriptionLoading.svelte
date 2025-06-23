@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let message: string = 'Loading subscription plans...';
+export let message: string = 'Loading subscription plans...'
 </script>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">

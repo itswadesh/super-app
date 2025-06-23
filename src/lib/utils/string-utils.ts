@@ -8,7 +8,10 @@
  * @param options Optional configuration options
  * @returns A URL-friendly slug string
  */
-export function slugify(str: string, options?: { lower?: boolean; strict?: boolean; trim?: boolean }) {
+export function slugify(
+  str: string,
+  options?: { lower?: boolean; strict?: boolean; trim?: boolean }
+) {
   // Default options
   const opts = {
     lower: true,

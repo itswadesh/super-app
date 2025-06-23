@@ -33,5 +33,4 @@ export type ListCategoriesResponse = {
   totalPages: number
 }
 
-export type UniqueValuesResponse = {
-}
+export type UniqueValuesResponse = {}

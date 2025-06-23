@@ -1,27 +1,27 @@
 <script lang="ts">
-  import type { SubscriptionPlan } from '$lib/stores/subscriptionStore';
-  
-  // Props
-  export let plan: SubscriptionPlan;
-  export let isSelected: boolean = false;
-  export let onSelect: () => void;
-  export let isPopular: boolean = false;
+import type { SubscriptionPlan } from '$lib/stores/subscriptionStore'
 
-  // Format price with currency
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(price);
-  };
+// Props
+export let plan: SubscriptionPlan
+export let isSelected: boolean = false
+export let onSelect: () => void
+export let isPopular: boolean = false
 
-  // Get duration text
-  const getDurationText = (duration: string) => {
-    if (duration.includes('month')) return 'Per Month';
-    if (duration.includes('year') || duration.includes('annual')) return 'Per Year';
-    return '';
-  };
+// Format price with currency
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(price)
+}
+
+// Get duration text
+const getDurationText = (duration: string) => {
+  if (duration.includes('month')) return 'Per Month'
+  if (duration.includes('year') || duration.includes('annual')) return 'Per Year'
+  return ''
+}
 </script>
 
 <div 
