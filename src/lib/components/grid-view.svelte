@@ -1,0 +1,635 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { Fuse } from 'fuse.js';
+  import { toast } from 'svelte-sonner';
+  import { Button } from '$lib/components/ui/button';
+  import { Input } from '$lib/components/ui/input';
+  import { Label } from '$lib/components/ui/label';
+  import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose } from '$lib/components/ui/sheet';
+  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
+  import { Checkbox } from '$lib/components/ui/checkbox';
+  import { ArrowUpDown, Search, Plus, Pencil, Trash2, Save, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from '@lucide/svelte';
+  import { post } from '$lib/utils/request';
+  
+  // Type augmentation for Lucide icons
+  declare module '@lucide/svelte' {
+    import type { SvelteComponentTyped } from 'svelte';
+    
+    type IconProps = {
+      size?: string | number;
+      width?: string | number;
+      height?: string | number;
+      class?: string;
+      color?: string;
+      [key: `aria-${string}`]: string | undefined;
+    };
+    
+    export class Icon extends SvelteComponentTyped<IconProps> {}
+    
+    export const ArrowUpDown: Icon;
+    export const Search: Icon;
+    export const Plus: Icon;
+    export const Pencil: Icon;
+    export const Trash2: Icon;
+    export const Save: Icon;
+    export const X: Icon;
+    export const ChevronLeft: Icon;
+    export const ChevronRight: Icon;
+    export const ChevronsLeft: Icon;
+    export const ChevronsRight: Icon;
+  }
+
+  // Type definitions
+  interface Option<T = string | number | boolean> {
+    label: string;
+    value: T;
+  }
+
+  interface SelectOption {
+    KEY: string;
+    VAL: string;
+  }
+
+  interface PostResponse<T> {
+    data: T;
+    error?: string;
+  }
+
+  interface Field {
+    text: string;
+    value: string;
+    type?: 'text' | 'number' | 'date' | 'select' | 'checkbox';
+    options_query?: string;
+    options?: Option[];
+    no?: {
+      table?: boolean;
+      edit?: boolean;
+      [key: string]: boolean | undefined;
+    };
+  }
+
+  type TableData = {
+    [key: string]: string | number | boolean | null | undefined;
+    ROWID?: string;
+  }
+
+  // Props with explicit types and defaults
+  export let FIELDS: Field[] = [];
+  export let TABLE_NAME = '';
+  export let DB_NAME = '';
+  export let QUERY = '';
+  export let heading = '';
+  export let backLink = '';
+  export let sort = false;
+  export let add = false;
+  export let edit = false;
+  export let del = false;
+  export let del1 = false;
+  export let search = false;
+  export let pagination = true;
+  export let allowRegistration = false;
+  export let page: Record<string, unknown> = {};
+  export let dispatch: (event: string, detail?: unknown) => void = () => {};
+
+  // State with proper typing
+  let data = $state<TableData[]>([]);
+  let filteredData = $state<TableData[]>([]);
+  let selectedRow = $state<TableData | null>(null);
+  let isSheetOpen = $state(false);
+  let sortConfig = $state<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  let searchQuery = $state('');
+  let editableColumns = $state<Field[]>([]);
+  let optionValues = $state<SelectOption[]>([]);
+  let paginationSettings = $state({
+    page: 0,
+    limit: 10,
+    size: 0,
+    amounts: [10, 20, 50, 100] as const,
+  });
+  
+  // Derived state with explicit types
+  let paginatedSource = $derived<TableData[]>(
+    filteredData.slice(
+      paginationSettings.page * paginationSettings.limit,
+      (paginationSettings.page + 1) * paginationSettings.limit
+    )
+  );
+
+  let actionButtons = $derived<Array<'edit' | 'delete' | 'delete1'>>(
+    [
+      edit && 'edit',
+      del && 'delete',
+      del1 && 'delete1'
+    ].filter((x): x is 'edit' | 'delete' | 'delete1' => Boolean(x))
+  );
+
+  let editableFields = $derived<Field[]>(
+    FIELDS.filter(field => !field.no?.select && field.value !== 'ROWID')
+  );
+
+  // Initialize data and columns
+  onMount(async () => {
+    try {
+      await Promise.all([
+        fetchData(),
+        loadColumnOptions()
+      ]);
+    } catch (error) {
+      console.error('Error initializing grid view:', error);
+      toast.error('Failed to initialize grid view');
+    }
+  });
+  
+  // Load column options for select fields
+  async function loadColumnOptions() {
+    await Promise.all(
+      FIELDS.map(async (item) => {
+        if (!item.no?.edit) {
+          editableColumns = [...editableColumns, item];
+        }
+        if (item.type === 'select' && item.options_query) {
+          const options = await getOptions(item.options_query);
+          optionValues = [...optionValues, ...(options || [])];
+        }
+      })
+    );
+  }
+
+  // Fetch data from API
+  async function fetchData() {
+    try {
+      const response = await post<PostResponse<TableData[]>>('query', { q: QUERY, db: DB_NAME });
+      data = response?.data || [];
+      filteredData = [...data];
+      updatePagination();
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Failed to load data');
+    }
+  }
+
+  // Get options for select fields
+  async function getOptions(query: string): Promise<SelectOption[]> {
+    try {
+      const response = await post<PostResponse<SelectOption[]>>('query', { q: query, db: DB_NAME });
+      return response?.data || [];
+    } catch (error) {
+      console.error('Error fetching options:', error);
+      toast.error('Failed to load options');
+      return [];
+    }
+  }
+
+  // Update pagination
+  function updatePagination() {
+    const start = paginationSettings.page * paginationSettings.limit;
+    const end = start + paginationSettings.limit;
+    paginatedSource = filteredData.slice(start, end);
+    paginationSettings = { ...paginationSettings, size: filteredData.length };
+  }
+
+  // Handle search
+  function searchNow() {
+    if (!searchQuery) {
+      filteredData = [...data];
+    } else {
+      const fuse = new Fuse(data, {
+        keys: FIELDS.filter(f => !f.no?.table).map(f => f.value),
+        threshold: 0.3
+      });
+      filteredData = fuse.search(searchQuery).map(r => r.item);
+    }
+    paginationSettings = { ...paginationSettings, page: 0 };
+    updatePagination();
+  }
+
+  // Handle sort
+  function sortColumn(key: string) {
+    if (sortConfig?.key === key) {
+      if (sortConfig.direction === 'asc') {
+        sortConfig = { key, direction: 'desc' as const };
+      } else {
+        sortConfig = null;
+      }
+    } else {
+      sortConfig = { key, direction: 'asc' as const };
+    }
+
+    if (sortConfig) {
+      const currentSortConfig = sortConfig; // Capture in const to avoid non-null assertion
+      filteredData = [...filteredData].sort((a, b) => {
+        const aVal = a[currentSortConfig.key];
+        const bVal = b[currentSortConfig.key];
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+        if (aVal < bVal) return currentSortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return currentSortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    } else {
+      filteredData = [...data];
+    }
+    updatePagination();
+  }
+
+  // Handle edit with proper typing
+  function handleEdit(row: TableData) {
+    selectedRow = { ...row };
+    isSheetOpen = true;
+  }
+
+  // Handle delete with proper typing and error handling
+  async function handleDelete(row: TableData) {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+    
+    try {
+      const response = await post<PostResponse<{ success: boolean }>>('query', { 
+        q: `DELETE FROM ${TABLE_NAME} WHERE ROWID = '${row.ROWID}'`,
+        db: DB_NAME 
+      });
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      await fetchData();
+      toast.success('Item deleted successfully');
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete item');
+    }
+  }
+
+  // Handle save with proper typing and error handling
+  async function handleSave() {
+    if (!selectedRow) return;
+    
+    try {
+      const fields = editableFields.map(f => f.value);
+      const values = fields.map(f => selectedRow?.[f] || '');
+      
+      let query: string;
+      if (selectedRow.ROWID) {
+        // Update existing
+        const updates = fields.map((f, i) => `${f} = :${i}`).join(', ');
+        query = `UPDATE ${TABLE_NAME} SET ${updates} WHERE ROWID = '${selectedRow.ROWID}'`;
+      } else {
+        // Insert new
+        const columns = fields.join(', ');
+        const placeholders = fields.map((_, i) => `:${i}`).join(', ');
+        query = `INSERT INTO ${TABLE_NAME} (${columns}) VALUES (${placeholders})`;
+      }
+      
+      const response = await post<PostResponse<{ success: boolean }>>('query', { 
+        q: query,
+        params: values,
+        db: DB_NAME 
+      });
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      isSheetOpen = false;
+      await fetchData();
+      toast.success(selectedRow.ROWID ? 'Item updated successfully' : 'Item added successfully');
+    } catch (error) {
+      console.error('Error saving item:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save item');
+    }
+  }
+  
+  // Handle input change with proper typing
+  function handleInputChange(field: string, value: string | boolean | number) {
+    if (!selectedRow) return;
+    selectedRow = { ...selectedRow, [field]: value };
+  }
+  
+  // Handle select value change
+  function handleSelectChange(field: string, value: string) {
+    if (!selectedRow) return;
+    selectedRow = { ...selectedRow, [field]: value };
+  }
+</script>
+
+<div class="container mx-auto my-6">
+  <div class="flex flex-col">
+    <div class="table-container">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-semibold">{heading}</h2>
+        {#if add}
+          <Button
+            variant="outline"
+            onclick={() => {
+              selectedRow = {};
+              isSheetOpen = true;
+            }}
+          >
+            <Plus class="w-4 h-4 mr-2" />
+            Add New
+          </Button>
+        {/if}
+      </div>
+      
+      {#if search}
+        <div class="mb-4">
+          <div class="relative max-w-md">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="search"
+              placeholder="Search..."
+              class="pl-10 w-full"
+              value={searchQuery}
+              on:input={(e) => {
+                searchQuery = e.target.value;
+                searchNow();
+              }}
+            />
+          </div>
+        </div>
+      {/if}
+      
+      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                {#each FIELDS as field}
+                  <th 
+                    scope="col"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors {sortConfig?.key === field.value ? 'bg-gray-100' : ''}"
+                    onclick={() => sort && sortColumn(field.value)}
+                  >
+                    <div class="flex items-center">
+                      {field.text}
+                      {sort && (
+                        <ArrowUpDown class="ml-2 h-4 w-4" />
+                      )}
+                    </div>
+                  </th>
+                {/each}
+                {#if actionButtons.length > 0}
+                  <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                {/if}
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              {#each paginatedSource as row, i (row.ROWID || i)}
+                <tr class="hover:bg-gray-50">
+                  {#each FIELDS as field}
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {field.type === 'checkbox' ? (
+                        <Checkbox checked={!!row[field.value]} disabled />
+                      ) : field.type === 'image' ? (
+                        <img src={row[field.value]} alt={field.text} class="h-10 w-10 rounded-full" />
+                      ) : (
+                        row[field.value] || <span class="text-gray-400">—</span>
+                      )}
+                    </td>
+                  {/each}
+                  {#if actionButtons.length > 0}
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div class="flex justify-end space-x-2">
+                        {#if edit}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onclick={() => {
+                              selectedRow = { ...row };
+                              isSheetOpen = true;
+                            }}
+                            title="Edit"
+                          >
+                            <Pencil class="h-4 w-4" />
+                          </Button>
+                        {/if}
+                        {#if del}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onclick={() => handleDelete(row)}
+                            title="Delete"
+                            class="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 class="h-4 w-4" />
+                          </Button>
+                        {/if}
+                      </div>
+                    </td>
+                  {/if}
+                </tr>
+              {:else}
+                <tr>
+                  <td colspan={FIELDS.length + (actionButtons.length > 0 ? 1 : 0)} class="px-6 py-4 text-center text-sm text-gray-500">
+                    No records found
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+        
+        {#if pagination && paginatedSource.length > 0}
+          <div class="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+            <div class="flex-1 flex justify-between sm:hidden">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={paginationSettings.page === 0}
+                onclick={() => {
+                  paginationSettings = { ...paginationSettings, page: Math.max(0, paginationSettings.page - 1) };
+                  updatePagination();
+                }}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={paginationSettings.page >= Math.ceil(filteredData.length / paginationSettings.limit) - 1}
+                onclick={() => {
+                  paginationSettings = {
+                    ...paginationSettings,
+                    page: Math.min(
+                      Math.ceil(filteredData.length / paginationSettings.limit) - 1,
+                      paginationSettings.page + 1
+                    )
+                  };
+                  updatePagination();
+                }}
+              >
+                Next
+              </Button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm text-gray-700">
+                  Showing <span class="font-medium">{paginationSettings.page * paginationSettings.limit + 1}</span> to{' '}
+                  <span class="font-medium">
+                    {Math.min((paginationSettings.page + 1) * paginationSettings.limit, filteredData.length)}
+                  </span>{' '}
+                  of <span class="font-medium">{filteredData.length}</span> results
+                </p>
+              </div>
+              <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="rounded-r-none"
+                    disabled={paginationSettings.page === 0}
+                    onclick={() => {
+                      paginationSettings = { ...paginationSettings, page: 0 };
+                      updatePagination();
+                    }}
+                    title="First page"
+                  >
+                    <ChevronsLeft class="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="rounded-none"
+                    disabled={paginationSettings.page === 0}
+                    onclick={() => {
+                      if (paginationSettings.page > 0) {
+                        paginationSettings = { ...paginationSettings, page: paginationSettings.page - 1 };
+                        updatePagination();
+                      }
+                    }}
+                    title="Previous page"
+                  >
+                    <ChevronLeft class="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="rounded-none"
+                    disabled={paginationSettings.page >= Math.ceil(filteredData.length / paginationSettings.limit) - 1}
+                    onclick={() => {
+                      if (paginationSettings.page < Math.ceil(filteredData.length / paginationSettings.limit) - 1) {
+                        paginationSettings = { ...paginationSettings, page: paginationSettings.page + 1 };
+                        updatePagination();
+                      }
+                    }}
+                    title="Next page"
+                  >
+                    <ChevronRight class="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="rounded-l-none"
+                    disabled={paginationSettings.page >= Math.ceil(filteredData.length / paginationSettings.limit) - 1}
+                    onclick={() => {
+                      paginationSettings = { 
+                        ...paginationSettings, 
+                        page: Math.ceil(filteredData.length / paginationSettings.limit) - 1 
+                      };
+                      updatePagination();
+                    }}
+                    title="Last page"
+                  >
+                    <ChevronsRight class="h-4 w-4" />
+                  </Button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        {/if}
+      </div>
+    </div>
+  </div>
+
+  {#if isSheetOpen}
+    <Sheet.Content side="right" class="w-full max-w-md">
+      <Sheet.Header class="border-b px-6 py-4">
+        <Sheet.Title class="text-lg font-semibold">
+          {selectedRow?.ROWID ? 'Edit' : 'Add New'} {heading || 'Item'}
+        </Sheet.Title>
+        <Sheet.Description class="text-sm text-gray-500 mt-1">
+          {selectedRow?.ROWID ? 'Update the item details below' : 'Fill in the details to add a new item'}
+        </Sheet.Description>
+      </Sheet.Header>
+      
+      <div class="p-6 space-y-6">
+        {#each editableFields as field}
+          <div class="space-y-2">
+            <Label for={field.value} class="text-sm font-medium text-gray-700">
+              {field.text}
+              {field.required && <span class="text-red-500 ml-1">*</span>}
+            </Label>
+            
+            {#if field.type === 'select'}
+              <div class="w-full">
+                <Select 
+                  value={selectedRow?.[field.value] || ''}
+                  onvaluechange={(e) => handleSelectChange(field.value, e.detail)}
+                >
+                  <SelectTrigger class="w-full">
+                    <SelectValue placeholder={`Select ${field.text}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {#each optionValues.filter(opt => opt.KEY === field.value) as option (option.KEY || '')}
+                      <SelectItem value={option.VAL}>
+                        {option.VAL}
+                      </SelectItem>
+                    {/each}
+                  </SelectContent>
+                </Select>
+              </div>
+            {:else if field.type === 'checkbox'}
+              <div class="flex items-center space-x-2">
+                <Checkbox
+                  id={field.value}
+                  checked={!!selectedRow?.[field.value]}
+                  onchange={(e) => handleInputChange(field.value, e.target.checked)}
+                />
+                <Label for={field.value} class="text-sm font-normal">{field.helpText || field.text}</Label>
+              </div>
+            {:else if field.type === 'textarea'}
+              <textarea
+                id={field.value}
+                class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                bind:value={selectedRow?.[field.value]}
+                on:input={(e) => handleInputChange(field.value, e.target.value)}
+                placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
+                rows="3"
+              />
+            {:else}
+              <Input 
+                id={field.value} 
+                type={field.type || 'text'}
+                bind:value={selectedRow?.[field.value]}
+                on:input={(e) => handleInputChange(field.value, e.target.value)}
+                placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
+                required={field.required}
+              />
+            {/if}
+            {#if field.helpText}
+              <p class="text-xs text-gray-500">{field.helpText}</p>
+            {/if}
+          </div>
+        {/each}
+      </div>
+      
+      <Sheet.Footer class="px-6 py-4 border-t flex justify-end space-x-3">
+        <Sheet.Close asChild>
+          <Button variant="outline" type="button">
+            Cancel
+          </Button>
+        </Sheet.Close>
+        <Button 
+          type="button" 
+          onclick={handleSave}
+          disabled={!selectedRow}
+        >
+          <Save class="w-4 h-4 mr-2" />
+          {selectedRow?.ROWID ? 'Update' : 'Create'}
+        </Button>
+      </Sheet.Footer>
+    </Sheet.Content>
+  {/if}
+</div>

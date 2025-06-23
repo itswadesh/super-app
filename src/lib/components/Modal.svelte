@@ -11,6 +11,7 @@ const {
   showCloseButton = true,
   size = 'md', // 'sm', 'md', 'lg', 'xl', 'full'
   onClose = () => {},
+  children,
 } = $props()
 
 // State variables
@@ -141,7 +142,7 @@ function handleKeydown(event: KeyboardEvent) {
 
         <!-- Modal content -->
         <div class="overflow-y-auto p-6 bg-white bg-opacity-95">
-          <slot />
+          {@render children?.()}
         </div>
 
         <!-- Add a subtle gradient at the bottom -->

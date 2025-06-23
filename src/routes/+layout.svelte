@@ -2,7 +2,7 @@
 import '../app.css'
 import { goto } from '$app/navigation'
 import { page } from '$app/state'
-import { onMount, tick } from 'svelte'
+// import { onMount, tick } from 'svelte'
 import LoginButton from '$lib/components/LoginButton.svelte'
 // Remove LoginModal and Modal if they are only used for the old mobile menu, otherwise keep them.
 import LoginModal from '$lib/components/LoginModal.svelte'
@@ -10,7 +10,7 @@ import LoginModal from '$lib/components/LoginModal.svelte'
 import UserMenu from '$lib/components/UserMenu.svelte'
 import { authService } from '$lib/services/auth-service'
 import { useAnalytics } from '$lib/stores/analytics_store'
-
+// import { apiService } from '$lib/services/api.service'
 // Import Shadcn Sheet components
 import {
   Sheet,
@@ -54,14 +54,16 @@ const { children } = $props()
 let categories = $state<Array<{ id: string; name: string; slug: string }>>([])
 let categoriesLoading = $state(true)
 
-onMount(async () => {
-  try {
-  } catch (error) {
-    console.error('Error fetching categories:', error)
-  } finally {
-    categoriesLoading = false
-  }
-})
+// onMount(async () => {
+//   try {
+// const response = await apiService.getCategories()
+// categories.set(response.data)
+//   } catch (error) {
+//     console.error('Error fetching categories:', error)
+//   } finally {
+//     categoriesLoading = false
+//   }
+// })
 
 $effect(() => {
   let isMounted = true
@@ -108,7 +110,9 @@ async function navigateWithSheetClose(path: string) {
           <a href="/" class="flex items-center">
             <span class="text-2xl font-bold text-indigo-700">^</span>
             <span class="ml-1 text-xl font-light text-gray-500 hidden sm:inline"
-              >| Knowledge Amplified</span
+              >
+              | HAL
+              </span
             >
           </a>
         </div>
@@ -135,7 +139,6 @@ async function navigateWithSheetClose(path: string) {
               </a>
             {/each}
           {/if}
-          <a href="/about" class="text-gray-600 hover:text-indigo-600" onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/about'); }}>About</a>
         </nav>
 
         <!-- Action Buttons -->
@@ -143,7 +146,7 @@ async function navigateWithSheetClose(path: string) {
           {#if page.data?.user?.id}
             <UserMenu/>
           {:else}
-            <LoginButton buttonText="Log In" variant="text" />
+            <LoginButton buttonText="Log In" variant="text" onclick={(e: any) => { e.preventDefault(); navigateWithSheetClose('/login'); }} />
           {/if}
         </div>
 
@@ -187,13 +190,13 @@ async function navigateWithSheetClose(path: string) {
   </div>
 </header> 
   <!-- Shadcn Sheet for Mobile Navigation -->
-  <Sheet bind:open={sheetOpen} side="left">
+  <Sheet bind:open={sheetOpen} >
     <SheetContent class="w-[300px] sm:w-[400px] p-6 flex flex-col">
       <SheetHeader class="mb-6">
         <SheetTitle>
           <a href="/" class="flex items-center" onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/'); }}>
             <span class="text-2xl font-bold text-indigo-700">^</span>
-            <span class="ml-1 text-xl font-light text-gray-500">| Knowledge Amplified</span>
+            <span class="ml-1 text-xl font-light text-gray-500">| HAL</span>
           </a>
         </SheetTitle>
       </SheetHeader>
@@ -217,13 +220,6 @@ async function navigateWithSheetClose(path: string) {
             </a>
           {/each}
         {/if}
-        <a 
-          href="/about" 
-          class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors"
-          onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/about'); }}
-        >
-          About
-        </a>
       </nav>
 
       <SheetFooter class="mt-auto pt-6 border-t border-gray-200">
