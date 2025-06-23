@@ -1,315 +1,304 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { Fuse } from 'fuse.js';
-  import { toast } from 'svelte-sonner';
-  import { Button } from '$lib/components/ui/button';
-  import { Input } from '$lib/components/ui/input';
-  import { Label } from '$lib/components/ui/label';
-  import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter, SheetClose } from '$lib/components/ui/sheet';
-  import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '$lib/components/ui/select';
-  import { Checkbox } from '$lib/components/ui/checkbox';
-  import { ArrowUpDown, Search, Plus, Pencil, Trash2, Save, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from '@lucide/svelte';
-  import { post } from '$lib/utils/request';
-  
-  // Type augmentation for Lucide icons
-  declare module '@lucide/svelte' {
-    import type { SvelteComponentTyped } from 'svelte';
-    
-    type IconProps = {
-      size?: string | number;
-      width?: string | number;
-      height?: string | number;
-      class?: string;
-      color?: string;
-      [key: `aria-${string}`]: string | undefined;
-    };
-    
-    export class Icon extends SvelteComponentTyped<IconProps> {}
-    
-    export const ArrowUpDown: Icon;
-    export const Search: Icon;
-    export const Plus: Icon;
-    export const Pencil: Icon;
-    export const Trash2: Icon;
-    export const Save: Icon;
-    export const X: Icon;
-    export const ChevronLeft: Icon;
-    export const ChevronRight: Icon;
-    export const ChevronsLeft: Icon;
-    export const ChevronsRight: Icon;
+import { onMount } from 'svelte'
+import Fuse from 'fuse.js'
+import { toast } from 'svelte-sonner'
+import { Button } from '$lib/components/ui/button'
+import { Input } from '$lib/components/ui/input'
+import { Label } from '$lib/components/ui/label'
+import * as Sheet from '$lib/components/ui/sheet'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select'
+import { Checkbox } from '$lib/components/ui/checkbox'
+import {
+  ArrowUpDown,
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  Save,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from '@lucide/svelte'
+import { post } from '$lib/utils/api'
+
+type IconProps = {
+  size?: string | number
+  width?: string | number
+  height?: string | number
+  class?: string
+  color?: string
+  [key: `aria-${string}`]: string | undefined
+}
+
+// Type definitions
+interface Option<T = string | number | boolean> {
+  label: string
+  value: T
+}
+
+interface SelectOption {
+  KEY: string
+  VAL: string
+}
+
+interface PostResponse<T> {
+  data: T
+  error?: string
+}
+
+interface Field {
+  text: string
+  value: string
+  type?: 'text' | 'number' | 'date' | 'select' | 'checkbox'
+  options_query?: string
+  options?: Option[]
+  no?: {
+    table?: boolean
+    edit?: boolean
+    [key: string]: boolean | undefined
   }
+}
 
-  // Type definitions
-  interface Option<T = string | number | boolean> {
-    label: string;
-    value: T;
+type TableData = {
+  [key: string]: string | number | boolean | null | undefined
+  ROWID?: string
+}
+
+let {
+  FIELDS,
+  TABLE_NAME,
+  DB_NAME,
+  QUERY,
+  heading,
+  backLink,
+  sort,
+  add,
+  edit,
+  del,
+  del1,
+  search,
+  pagination,
+  allowRegistration,
+  page,
+  dispatch,
+} = $props()
+
+// State with proper typing
+let data = $state<TableData[]>([])
+let filteredData = $state<TableData[]>([])
+let selectedRow = $state<TableData | null>(null)
+let isSheetOpen = $state(false)
+let sortConfig = $state<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+let searchQuery = $state('')
+let editableColumns = $state<Field[]>([])
+let optionValues = $state<SelectOption[]>([])
+let paginationSettings = $state({
+  page: 0,
+  limit: 10,
+  size: 0,
+  amounts: [10, 20, 50, 100] as const,
+})
+
+// Derived state with explicit types
+let paginatedSource = $derived<TableData[]>(
+  filteredData.slice(
+    paginationSettings.page * paginationSettings.limit,
+    (paginationSettings.page + 1) * paginationSettings.limit
+  )
+)
+
+let actionButtons = $derived<Array<'edit' | 'delete' | 'delete1'>>(
+  [edit && 'edit', del && 'delete', del1 && 'delete1'].filter(
+    (x): x is 'edit' | 'delete' | 'delete1' => Boolean(x)
+  )
+)
+
+let editableFields = $derived<Field[]>(
+  FIELDS.filter((field) => !field.no?.select && field.value !== 'ROWID')
+)
+
+// Initialize data and columns
+onMount(async () => {
+  try {
+    await Promise.all([fetchData(), loadColumnOptions()])
+  } catch (error) {
+    console.error('Error initializing grid view:', error)
+    toast.error('Failed to initialize grid view')
   }
+})
 
-  interface SelectOption {
-    KEY: string;
-    VAL: string;
+// Load column options for select fields
+async function loadColumnOptions() {
+  await Promise.all(
+    FIELDS.map(async (item) => {
+      if (!item.no?.edit) {
+        editableColumns = [...editableColumns, item]
+      }
+      if (item.type === 'select' && item.options_query) {
+        const options = await getOptions(item.options_query)
+        optionValues = [...optionValues, ...(options || [])]
+      }
+    })
+  )
+}
+
+// Fetch data from API
+async function fetchData() {
+  try {
+    const response = await post('query', { q: QUERY, db: DB_NAME })
+    data = response || []
+    filteredData = [...data]
+    updatePagination()
+  } catch (error) {
+    console.error('Error fetching data:', error)
+    toast.error('Failed to load data')
   }
+}
 
-  interface PostResponse<T> {
-    data: T;
-    error?: string;
+// Get options for select fields
+async function getOptions(query: string): Promise<SelectOption[]> {
+  try {
+    const response = await post('query', { q: query, db: DB_NAME })
+    return response || []
+  } catch (error) {
+    console.error('Error fetching options:', error)
+    toast.error('Failed to load options')
+    return []
   }
+}
 
-  interface Field {
-    text: string;
-    value: string;
-    type?: 'text' | 'number' | 'date' | 'select' | 'checkbox';
-    options_query?: string;
-    options?: Option[];
-    no?: {
-      table?: boolean;
-      edit?: boolean;
-      [key: string]: boolean | undefined;
-    };
+// Update pagination
+function updatePagination() {
+  const start = paginationSettings.page * paginationSettings.limit
+  const end = start + paginationSettings.limit
+  paginatedSource = filteredData.slice(start, end)
+  paginationSettings = { ...paginationSettings, size: filteredData.length }
+}
+
+// Handle search
+function searchNow() {
+  if (!searchQuery) {
+    filteredData = [...data]
+  } else {
+    const fuse = new Fuse(data, {
+      keys: FIELDS.filter((f) => !f.no?.table).map((f) => f.value),
+      threshold: 0.3,
+    })
+    filteredData = fuse.search(searchQuery).map((r) => r.item)
   }
+  paginationSettings = { ...paginationSettings, page: 0 }
+  updatePagination()
+}
 
-  type TableData = {
-    [key: string]: string | number | boolean | null | undefined;
-    ROWID?: string;
-  }
-
-  // Props with explicit types and defaults
-  export let FIELDS: Field[] = [];
-  export let TABLE_NAME = '';
-  export let DB_NAME = '';
-  export let QUERY = '';
-  export let heading = '';
-  export let backLink = '';
-  export let sort = false;
-  export let add = false;
-  export let edit = false;
-  export let del = false;
-  export let del1 = false;
-  export let search = false;
-  export let pagination = true;
-  export let allowRegistration = false;
-  export let page: Record<string, unknown> = {};
-  export let dispatch: (event: string, detail?: unknown) => void = () => {};
-
-  // State with proper typing
-  let data = $state<TableData[]>([]);
-  let filteredData = $state<TableData[]>([]);
-  let selectedRow = $state<TableData | null>(null);
-  let isSheetOpen = $state(false);
-  let sortConfig = $state<{ key: string; direction: 'asc' | 'desc' } | null>(null);
-  let searchQuery = $state('');
-  let editableColumns = $state<Field[]>([]);
-  let optionValues = $state<SelectOption[]>([]);
-  let paginationSettings = $state({
-    page: 0,
-    limit: 10,
-    size: 0,
-    amounts: [10, 20, 50, 100] as const,
-  });
-  
-  // Derived state with explicit types
-  let paginatedSource = $derived<TableData[]>(
-    filteredData.slice(
-      paginationSettings.page * paginationSettings.limit,
-      (paginationSettings.page + 1) * paginationSettings.limit
-    )
-  );
-
-  let actionButtons = $derived<Array<'edit' | 'delete' | 'delete1'>>(
-    [
-      edit && 'edit',
-      del && 'delete',
-      del1 && 'delete1'
-    ].filter((x): x is 'edit' | 'delete' | 'delete1' => Boolean(x))
-  );
-
-  let editableFields = $derived<Field[]>(
-    FIELDS.filter(field => !field.no?.select && field.value !== 'ROWID')
-  );
-
-  // Initialize data and columns
-  onMount(async () => {
-    try {
-      await Promise.all([
-        fetchData(),
-        loadColumnOptions()
-      ]);
-    } catch (error) {
-      console.error('Error initializing grid view:', error);
-      toast.error('Failed to initialize grid view');
-    }
-  });
-  
-  // Load column options for select fields
-  async function loadColumnOptions() {
-    await Promise.all(
-      FIELDS.map(async (item) => {
-        if (!item.no?.edit) {
-          editableColumns = [...editableColumns, item];
-        }
-        if (item.type === 'select' && item.options_query) {
-          const options = await getOptions(item.options_query);
-          optionValues = [...optionValues, ...(options || [])];
-        }
-      })
-    );
-  }
-
-  // Fetch data from API
-  async function fetchData() {
-    try {
-      const response = await post<PostResponse<TableData[]>>('query', { q: QUERY, db: DB_NAME });
-      data = response?.data || [];
-      filteredData = [...data];
-      updatePagination();
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
-    }
-  }
-
-  // Get options for select fields
-  async function getOptions(query: string): Promise<SelectOption[]> {
-    try {
-      const response = await post<PostResponse<SelectOption[]>>('query', { q: query, db: DB_NAME });
-      return response?.data || [];
-    } catch (error) {
-      console.error('Error fetching options:', error);
-      toast.error('Failed to load options');
-      return [];
-    }
-  }
-
-  // Update pagination
-  function updatePagination() {
-    const start = paginationSettings.page * paginationSettings.limit;
-    const end = start + paginationSettings.limit;
-    paginatedSource = filteredData.slice(start, end);
-    paginationSettings = { ...paginationSettings, size: filteredData.length };
-  }
-
-  // Handle search
-  function searchNow() {
-    if (!searchQuery) {
-      filteredData = [...data];
+// Handle sort
+function sortColumn(key: string) {
+  if (sortConfig?.key === key) {
+    if (sortConfig.direction === 'asc') {
+      sortConfig = { key, direction: 'desc' as const }
     } else {
-      const fuse = new Fuse(data, {
-        keys: FIELDS.filter(f => !f.no?.table).map(f => f.value),
-        threshold: 0.3
-      });
-      filteredData = fuse.search(searchQuery).map(r => r.item);
+      sortConfig = null
     }
-    paginationSettings = { ...paginationSettings, page: 0 };
-    updatePagination();
+  } else {
+    sortConfig = { key, direction: 'asc' as const }
   }
 
-  // Handle sort
-  function sortColumn(key: string) {
-    if (sortConfig?.key === key) {
-      if (sortConfig.direction === 'asc') {
-        sortConfig = { key, direction: 'desc' as const };
-      } else {
-        sortConfig = null;
-      }
+  if (sortConfig) {
+    const currentSortConfig = sortConfig // Capture in const to avoid non-null assertion
+    filteredData = [...filteredData].sort((a, b) => {
+      const aVal = a[currentSortConfig.key]
+      const bVal = b[currentSortConfig.key]
+      if (aVal === null || aVal === undefined) return 1
+      if (bVal === null || bVal === undefined) return -1
+      if (aVal < bVal) return currentSortConfig.direction === 'asc' ? -1 : 1
+      if (aVal > bVal) return currentSortConfig.direction === 'asc' ? 1 : -1
+      return 0
+    })
+  } else {
+    filteredData = [...data]
+  }
+  updatePagination()
+}
+
+// Handle edit with proper typing
+function handleEdit(row: TableData) {
+  selectedRow = { ...row }
+  isSheetOpen = true
+}
+
+// Handle delete with proper typing and error handling
+async function handleDelete(row: TableData) {
+  if (!confirm('Are you sure you want to delete this item?')) return
+
+  try {
+    const response = await post('query', {
+      q: `DELETE FROM ${TABLE_NAME} WHERE ROWID = '${row.ROWID}'`,
+      db: DB_NAME,
+    })
+
+    if (response.error) {
+      throw new Error(response.error)
+    }
+
+    await fetchData()
+    toast.success('Item deleted successfully')
+  } catch (error) {
+    console.error('Error deleting item:', error)
+    toast.error(error instanceof Error ? error.message : 'Failed to delete item')
+  }
+}
+
+// Handle save with proper typing and error handling
+async function handleSave() {
+  if (!selectedRow) return
+
+  try {
+    const fields = editableFields.map((f) => f.value)
+    const values = fields.map((f) => selectedRow?.[f] || '')
+
+    let query: string
+    if (selectedRow.ROWID) {
+      // Update existing
+      const updates = fields.map((f, i) => `${f} = :${i}`).join(', ')
+      query = `UPDATE ${TABLE_NAME} SET ${updates} WHERE ROWID = '${selectedRow.ROWID}'`
     } else {
-      sortConfig = { key, direction: 'asc' as const };
+      // Insert new
+      const columns = fields.join(', ')
+      const placeholders = fields.map((_, i) => `:${i}`).join(', ')
+      query = `INSERT INTO ${TABLE_NAME} (${columns}) VALUES (${placeholders})`
     }
 
-    if (sortConfig) {
-      const currentSortConfig = sortConfig; // Capture in const to avoid non-null assertion
-      filteredData = [...filteredData].sort((a, b) => {
-        const aVal = a[currentSortConfig.key];
-        const bVal = b[currentSortConfig.key];
-        if (aVal === null || aVal === undefined) return 1;
-        if (bVal === null || bVal === undefined) return -1;
-        if (aVal < bVal) return currentSortConfig.direction === 'asc' ? -1 : 1;
-        if (aVal > bVal) return currentSortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    } else {
-      filteredData = [...data];
-    }
-    updatePagination();
-  }
+    const response = await post('query', {
+      q: query,
+      params: values,
+      db: DB_NAME,
+    })
 
-  // Handle edit with proper typing
-  function handleEdit(row: TableData) {
-    selectedRow = { ...row };
-    isSheetOpen = true;
-  }
-
-  // Handle delete with proper typing and error handling
-  async function handleDelete(row: TableData) {
-    if (!confirm('Are you sure you want to delete this item?')) return;
-    
-    try {
-      const response = await post<PostResponse<{ success: boolean }>>('query', { 
-        q: `DELETE FROM ${TABLE_NAME} WHERE ROWID = '${row.ROWID}'`,
-        db: DB_NAME 
-      });
-      
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      
-      await fetchData();
-      toast.success('Item deleted successfully');
-    } catch (error) {
-      console.error('Error deleting item:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete item');
+    if (response.error) {
+      throw new Error(response.error)
     }
-  }
 
-  // Handle save with proper typing and error handling
-  async function handleSave() {
-    if (!selectedRow) return;
-    
-    try {
-      const fields = editableFields.map(f => f.value);
-      const values = fields.map(f => selectedRow?.[f] || '');
-      
-      let query: string;
-      if (selectedRow.ROWID) {
-        // Update existing
-        const updates = fields.map((f, i) => `${f} = :${i}`).join(', ');
-        query = `UPDATE ${TABLE_NAME} SET ${updates} WHERE ROWID = '${selectedRow.ROWID}'`;
-      } else {
-        // Insert new
-        const columns = fields.join(', ');
-        const placeholders = fields.map((_, i) => `:${i}`).join(', ');
-        query = `INSERT INTO ${TABLE_NAME} (${columns}) VALUES (${placeholders})`;
-      }
-      
-      const response = await post<PostResponse<{ success: boolean }>>('query', { 
-        q: query,
-        params: values,
-        db: DB_NAME 
-      });
-      
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      
-      isSheetOpen = false;
-      await fetchData();
-      toast.success(selectedRow.ROWID ? 'Item updated successfully' : 'Item added successfully');
-    } catch (error) {
-      console.error('Error saving item:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to save item');
-    }
+    isSheetOpen = false
+    await fetchData()
+    toast.success(selectedRow.ROWID ? 'Item updated successfully' : 'Item added successfully')
+  } catch (error) {
+    console.error('Error saving item:', error)
+    toast.error(error instanceof Error ? error.message : 'Failed to save item')
   }
-  
-  // Handle input change with proper typing
-  function handleInputChange(field: string, value: string | boolean | number) {
-    if (!selectedRow) return;
-    selectedRow = { ...selectedRow, [field]: value };
-  }
-  
-  // Handle select value change
-  function handleSelectChange(field: string, value: string) {
-    if (!selectedRow) return;
-    selectedRow = { ...selectedRow, [field]: value };
-  }
+}
+
+// Handle input change with proper typing
+function handleInputChange(field: string, value: string | boolean | number) {
+  if (!selectedRow) return
+  selectedRow = { ...selectedRow, [field]: value }
+}
+
+// Handle select value change
+function handleSelectChange(field: string, value: string) {
+  if (!selectedRow) return
+  selectedRow = { ...selectedRow, [field]: value }
+}
 </script>
 
 <div class="container mx-auto my-6">
@@ -340,7 +329,7 @@
               placeholder="Search..."
               class="pl-10 w-full"
               value={searchQuery}
-              on:input={(e) => {
+              oninput={(e) => {
                 searchQuery = e.target.value;
                 searchNow();
               }}
@@ -362,9 +351,9 @@
                   >
                     <div class="flex items-center">
                       {field.text}
-                      {sort && (
+                      {#if sort}
                         <ArrowUpDown class="ml-2 h-4 w-4" />
-                      )}
+                      {/if}
                     </div>
                   </th>
                 {/each}
@@ -380,13 +369,13 @@
                 <tr class="hover:bg-gray-50">
                   {#each FIELDS as field}
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {field.type === 'checkbox' ? (
+                      {#if field.type === 'checkbox'}
                         <Checkbox checked={!!row[field.value]} disabled />
-                      ) : field.type === 'image' ? (
+                      {:else if field.type === 'image'}
                         <img src={row[field.value]} alt={field.text} class="h-10 w-10 rounded-full" />
-                      ) : (
-                        row[field.value] || <span class="text-gray-400">—</span>
-                      )}
+                      {:else}
+                        {row[field.value]} <span class="text-gray-400">—</span>
+                      {/if}
                     </td>
                   {/each}
                   {#if actionButtons.length > 0}
@@ -559,13 +548,13 @@
           <div class="space-y-2">
             <Label for={field.value} class="text-sm font-medium text-gray-700">
               {field.text}
-              {field.required && <span class="text-red-500 ml-1">*</span>}
+              {field.required} <span class="text-red-500 ml-1">*</span>
             </Label>
             
             {#if field.type === 'select'}
               <div class="w-full">
                 <Select 
-                  value={selectedRow?.[field.value] || ''}
+                  value={selectedRow[field.value] || ''}
                   onvaluechange={(e) => handleSelectChange(field.value, e.detail)}
                 >
                   <SelectTrigger class="w-full">
@@ -584,7 +573,7 @@
               <div class="flex items-center space-x-2">
                 <Checkbox
                   id={field.value}
-                  checked={!!selectedRow?.[field.value]}
+                  checked={!!selectedRow[field.value]}
                   onchange={(e) => handleInputChange(field.value, e.target.checked)}
                 />
                 <Label for={field.value} class="text-sm font-normal">{field.helpText || field.text}</Label>
@@ -593,8 +582,8 @@
               <textarea
                 id={field.value}
                 class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                bind:value={selectedRow?.[field.value]}
-                on:input={(e) => handleInputChange(field.value, e.target.value)}
+                bind:value={selectedRow[field.value]}
+                oninput={(e) => handleInputChange(field.value, e.target.value)}
                 placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
                 rows="3"
               />
@@ -602,7 +591,7 @@
               <Input 
                 id={field.value} 
                 type={field.type || 'text'}
-                bind:value={selectedRow?.[field.value]}
+                bind:value={selectedRow[field.value]}
                 on:input={(e) => handleInputChange(field.value, e.target.value)}
                 placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
                 required={field.required}

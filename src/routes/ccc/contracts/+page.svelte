@@ -3,7 +3,7 @@ import GridView from '$lib/components/grid-view.svelte'
 import { QUERY, FIELDS, TABLE_NAME, DB_NAME } from './config'
 </script>
 
-<GridView 
+<GridView
   heading="CCC Contracts"
   backLink="/ccc"
   sort={true}
