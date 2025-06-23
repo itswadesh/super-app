@@ -39,7 +39,7 @@ export const errorService = {
     source: string,
     message: string,
     details?: any,
-    category = 'general',
+    category = 'general'
   ): Promise<{ success: boolean; errorId?: string }> {
     try {
       const response = await fetch('/api/errors', {
@@ -65,7 +65,11 @@ export const errorService = {
   /**
    * Log an API error
    */
-  async logApiError(method: string, url: string, error: any): Promise<{ success: boolean; errorId?: string }> {
+  async logApiError(
+    method: string,
+    url: string,
+    error: any
+  ): Promise<{ success: boolean; errorId?: string }> {
     try {
       const response = await fetch('/api/errors/api', {
         method: 'POST',

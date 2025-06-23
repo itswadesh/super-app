@@ -287,6 +287,32 @@ export const InvoiceItem = sqliteTable('invoice_items', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 })
 
+export const subscriptions = sqliteTable('subscriptions', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => generateId('sub')),
+  userId: text('user_id')
+    .notNull()
+    .references(() => User.id),
+  orderId: text('order_id')
+    .notNull()
+    .references(() => Order.id),
+  planId: text('plan_id')
+    .notNull()
+    .references(() => Plan.id),
+  status: text('status').notNull().default('active'),
+  autoRenew: integer('auto_renew', { mode: 'boolean' }).default(false),
+  validFrom: integer('valid_from', { mode: 'timestamp' }).notNull(),
+  validTo: integer('valid_to', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date())
+    .$onUpdateFn(() => new Date()),
+})
+
 export const Plan = sqliteTable('plans', {
   id: text('id')
     .primaryKey()

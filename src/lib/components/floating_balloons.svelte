@@ -62,7 +62,7 @@ function createBalloon() {
     () => {
       balloons = balloons.filter((b) => b.id !== balloon.id)
     },
-    (duration + delay + 2) * 1000,
+    (duration + delay + 2) * 1000
   )
 }
 

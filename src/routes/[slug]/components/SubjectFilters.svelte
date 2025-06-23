@@ -1,50 +1,50 @@
 <script lang="ts">
-  import { Checkbox } from '$lib/components/ui/checkbox';
-  import { Label } from '$lib/components/ui/label';
-  import { Button } from '$lib/components/ui/button';
-  import { Separator } from '$lib/components/ui/separator';
-  import { X } from '@lucide/svelte';
+import { Checkbox } from '$lib/components/ui/checkbox'
+import { Label } from '$lib/components/ui/label'
+import { Button } from '$lib/components/ui/button'
+import { Separator } from '$lib/components/ui/separator'
+import { X } from '@lucide/svelte'
 
-  interface FilterOption {
-    id: string;
-    name: string;
-    options: string[];
-  }
+interface FilterOption {
+  id: string
+  name: string
+  options: string[]
+}
 
-  interface FilterProps {
-    filterOptions: FilterOption[];
-    selectedFilters: Record<string, string[]>;
-    onFilterChange: (filterId: string, value: string, checked: boolean) => void;
-    children?: unknown;
-  }
+interface FilterProps {
+  filterOptions: FilterOption[]
+  selectedFilters: Record<string, string[]>
+  onFilterChange: (filterId: string, value: string, checked: boolean) => void
+  children?: unknown
+}
 
-  const {
-    filterOptions = [],
-    selectedFilters = {},
-    onFilterChange = () => {},
-    children,
-  } = $props<FilterProps>()
+const {
+  filterOptions = [],
+  selectedFilters = {},
+  onFilterChange = () => {},
+  children,
+} = $props<FilterProps>()
 
-  let isOpen = $state(false);
+let isOpen = $state(false)
 
-  function handleClose() {
-    isOpen = false;
-  }
+function handleClose() {
+  isOpen = false
+}
 
-  function handleToggle() {
-    isOpen = !isOpen;
-  }
+function handleToggle() {
+  isOpen = !isOpen
+}
 
-  function handleFilterClick(filterId: string, value: string, checked: boolean) {
-    onFilterChange?.(filterId, value, checked);
-  }
+function handleFilterClick(filterId: string, value: string, checked: boolean) {
+  onFilterChange?.(filterId, value, checked)
+}
 
-  function clearAllFilters() {
-    Object.entries(selectedFilters).forEach(([filterId]) => {
-      selectedFilters[filterId] = [];
-      onFilterChange(filterId, '', false);
-    });
-  }
+function clearAllFilters() {
+  Object.entries(selectedFilters).forEach(([filterId]) => {
+    selectedFilters[filterId] = []
+    onFilterChange(filterId, '', false)
+  })
+}
 </script>
 
 {#if children}

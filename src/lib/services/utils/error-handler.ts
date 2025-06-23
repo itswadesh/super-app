@@ -22,7 +22,7 @@ export const handleApiError = (error: unknown, defaultMessage = 'An error occurr
   if (error instanceof ApiError) {
     // Show error to user
     toast.error(error.message || defaultMessage)
-    
+
     // Log detailed error in development
     if (import.meta.env.DEV) {
       console.error('API Error:', {
@@ -31,19 +31,19 @@ export const handleApiError = (error: unknown, defaultMessage = 'An error occurr
         errors: error.errors,
       })
     }
-    
+
     throw error
   }
 
   // Handle non-API errors
   const errorMessage = error instanceof Error ? error.message : String(error)
-  
+
   toast.error(defaultMessage)
-  
+
   if (import.meta.env.DEV) {
     console.error('Unexpected error:', error)
   }
-  
+
   throw new ApiError({
     message: errorMessage,
     status: 500,
@@ -53,20 +53,20 @@ export const handleApiError = (error: unknown, defaultMessage = 'An error occurr
 export const handleResponse = async <T>(response: Response): Promise<T> => {
   if (!response.ok) {
     let errorData: { message?: string; errors?: Record<string, string[]> } = {}
-    
+
     try {
       errorData = await response.json()
     } catch {
       // If we can't parse the error response, use the status text
       errorData = { message: response.statusText }
     }
-    
+
     throw new ApiError({
       message: errorData.message || 'Request failed',
       status: response.status,
       errors: errorData.errors || {},
     })
   }
-  
+
   return response.json()
 }

@@ -13,7 +13,9 @@ const stringBoolean = z.coerce
 const EnvSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().default(7000),
-  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('silent'),
+  LOG_LEVEL: z
+    .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+    .default('silent'),
   DATABASE_URL: z.string(),
   DATABASE_AUTH_TOKEN: z.string().optional(),
   // REDIS_URI: z.string(),

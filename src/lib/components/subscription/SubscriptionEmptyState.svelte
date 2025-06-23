@@ -1,7 +1,7 @@
 <script lang="ts">
-  export let title: string = 'No plans available';
-  export let description: string = 'There are no subscription plans available at the moment.';
-  export let action: { label: string; onClick: () => void } | null = null;
+export let title: string = 'No plans available'
+export let description: string = 'There are no subscription plans available at the moment.'
+export let action: { label: string; onClick: () => void } | null = null
 </script>
 
 <div class="text-center py-12">

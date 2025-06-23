@@ -1,24 +1,24 @@
 <script lang="ts">
-  import type { UserSubscription } from '$lib/stores/subscriptionStore';
-  import { format } from 'date-fns';
-  
-  // Props
-  export let subscription: UserSubscription;
-  export let onUpgrade: () => void;
-  export let onCancel: () => void;
+import type { UserSubscription } from '$lib/stores/subscriptionStore'
+import { format } from 'date-fns'
 
-  // Format date
-  const formatDate = (dateString: string | Date) => {
-    return format(new Date(dateString), 'MMM d, yyyy');
-  };
+// Props
+export let subscription: UserSubscription
+export let onUpgrade: () => void
+export let onCancel: () => void
 
-  // Calculate remaining days
-  const getRemainingDays = (endDate: string | Date) => {
-    const end = new Date(endDate);
-    const today = new Date();
-    const diffTime = end.getTime() - today.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
+// Format date
+const formatDate = (dateString: string | Date) => {
+  return format(new Date(dateString), 'MMM d, yyyy')
+}
+
+// Calculate remaining days
+const getRemainingDays = (endDate: string | Date) => {
+  const end = new Date(endDate)
+  const today = new Date()
+  const diffTime = end.getTime() - today.getTime()
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+}
 </script>
 
 <div class="max-w-3xl mx-auto">

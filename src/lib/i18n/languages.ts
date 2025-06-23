@@ -53,7 +53,7 @@ export const LANGUAGE_CODES = Object.keys(LANGUAGES) as LanguageCode[]
  */
 export function getAlternateLanguageUrls(
   baseUrl: string,
-  currentLang: LanguageCode,
+  currentLang: LanguageCode
 ): Array<{ url: string; lang: string }> {
   // Remove any trailing slashes for consistency
   baseUrl = baseUrl.replace(/\/$/, '')

@@ -25,14 +25,7 @@ categoryRoutes
     const sessionToken = getSessionTokenCookie(c)
     const session = await validateSessionToken(sessionToken || '')
     const queryParams = c.req.query()
-    const {
-      page = '1',
-      q = '',
-      sort,
-      page_size,
-      class: classFilter,
-      subject,
-    } = queryParams
+    const { page = '1', q = '', sort, page_size, class: classFilter, subject } = queryParams
 
     const conditions = []
     const new_PageSize = Number(page_size)

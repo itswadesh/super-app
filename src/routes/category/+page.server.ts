@@ -29,7 +29,8 @@ export const load = (async ({ url }) => {
       const searchLower = search.toLowerCase()
       filteredCategories = categoryResults.filter(
         (cat) =>
-          cat.name.toLowerCase().includes(searchLower) || (cat.description?.toLowerCase() || '').includes(searchLower),
+          cat.name.toLowerCase().includes(searchLower) ||
+          (cat.description?.toLowerCase() || '').includes(searchLower)
       )
     }
 

@@ -50,14 +50,16 @@ async function seedCategories() {
       id: createId(),
       name: 'Physics',
       slug: 'physics',
-      description: 'Topics in classical mechanics, thermodynamics, electromagnetism, and modern physics',
+      description:
+        'Topics in classical mechanics, thermodynamics, electromagnetism, and modern physics',
       count: 0,
     },
     {
       id: createId(),
       name: 'Language Learning',
       slug: 'language-learning',
-      description: 'Resources for learning various languages including vocabulary, grammar, and pronunciation',
+      description:
+        'Resources for learning various languages including vocabulary, grammar, and pronunciation',
       count: 0,
     },
   ]
@@ -128,7 +130,8 @@ async function seedVideos(seedCategories: any[]) {
       id: createId(),
       title: 'Spanish Pronunciation Guide',
       slug: 'spanish-pronunciation-guide',
-      description: 'Learn the proper pronunciation of Spanish vowels, consonants, and common phrases for beginners.',
+      description:
+        'Learn the proper pronunciation of Spanish vowels, consonants, and common phrases for beginners.',
       categoryId: seedCategories.find((c) => c.slug === 'language-learning')?.id,
       duration: '15:20',
       quality: '720p',
@@ -192,7 +195,8 @@ async function seedQuizzes(seedCategories: any[]) {
       id: createId(),
       title: 'JavaScript Fundamentals Quiz',
       slug: 'javascript-fundamentals-quiz',
-      description: 'Test your knowledge of JavaScript fundamentals including variables, functions, and control flow.',
+      description:
+        'Test your knowledge of JavaScript fundamentals including variables, functions, and control flow.',
       categoryId: seedCategories.find((c) => c.slug === 'computer-science')?.id,
       difficulty: 'Beginner',
       estimatedTime: 10, // minutes
@@ -230,7 +234,8 @@ async function seedQuizzes(seedCategories: any[]) {
       id: createId(),
       title: 'Spanish Vocabulary Test',
       slug: 'spanish-vocabulary-test',
-      description: 'Check your knowledge of common Spanish vocabulary words and phrases for everyday communication.',
+      description:
+        'Check your knowledge of common Spanish vocabulary words and phrases for everyday communication.',
       categoryId: seedCategories.find((c) => c.slug === 'language-learning')?.id,
       difficulty: 'Beginner',
       estimatedTime: 12, // minutes
@@ -270,7 +275,8 @@ async function seedQuizzes(seedCategories: any[]) {
           quizId: jsQuiz.id,
           question: 'What does the "===" operator do in JavaScript?',
           correctAnswerIndex: 2,
-          explanation: 'The "===" operator checks for both value equality and type equality, without type conversion.',
+          explanation:
+            'The "===" operator checks for both value equality and type equality, without type conversion.',
           order: 1,
         },
         {
@@ -278,7 +284,8 @@ async function seedQuizzes(seedCategories: any[]) {
           quizId: jsQuiz.id,
           question: 'Which method is used to add elements to the end of an array in JavaScript?',
           correctAnswerIndex: 1,
-          explanation: 'The push() method adds one or more elements to the end of an array and returns the new length.',
+          explanation:
+            'The push() method adds one or more elements to the end of an array and returns the new length.',
           order: 2,
         },
       ]
@@ -407,7 +414,8 @@ async function seedQuizzes(seedCategories: any[]) {
         {
           id: createId(),
           questionId: physicsQuestions[0].id,
-          answerText: 'An object will remain at rest or in uniform motion unless acted upon by an external force',
+          answerText:
+            'An object will remain at rest or in uniform motion unless acted upon by an external force',
           order: 0,
         },
         {
@@ -492,7 +500,8 @@ async function seedQuizzes(seedCategories: any[]) {
           quizId: spanishQuiz.id,
           question: 'What is the Spanish word for "hello"?',
           correctAnswerIndex: 0,
-          explanation: '"Hola" is the standard greeting in Spanish, equivalent to "hello" in English.',
+          explanation:
+            '"Hola" is the standard greeting in Spanish, equivalent to "hello" in English.',
           order: 0,
         },
         {
@@ -508,7 +517,8 @@ async function seedQuizzes(seedCategories: any[]) {
           quizId: spanishQuiz.id,
           question: 'What does "¿Cómo estás?" mean in English?',
           correctAnswerIndex: 1,
-          explanation: '"¿Cómo estás?" translates to "How are you?" in English and is a common greeting phrase.',
+          explanation:
+            '"¿Cómo estás?" translates to "How are you?" in English and is a common greeting phrase.',
           order: 2,
         },
       ]

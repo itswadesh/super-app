@@ -1,56 +1,56 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import type { SubscriptionPlan } from '$lib/stores/subscriptionStore';
-  
-  // Props
-  export let open: boolean = false;
-  export let plan: SubscriptionPlan;
-  export let couponCode: string = '';
-  export let couponDiscount: number = 0;
-  export let applyingCoupon: boolean = false;
-  export let couponError: string = '';
-  
-  // Events
-  const dispatch = createEventDispatcher<{
-    close: void;
-    confirm: { plan: SubscriptionPlan; couponCode: string };
-    applyCoupon: { code: string };
-    removeCoupon: void;
-  }>();
+import { createEventDispatcher } from 'svelte'
+import type { SubscriptionPlan } from '$lib/stores/subscriptionStore'
 
-  // Calculate total
-  const subtotal = $derived(plan.price);
-  const discount = $derived(couponDiscount);
-  const total = $derived(subtotal - discount);
+// Props
+export let open: boolean = false
+export let plan: SubscriptionPlan
+export let couponCode: string = ''
+export let couponDiscount: number = 0
+export let applyingCoupon: boolean = false
+export let couponError: string = ''
 
-  // Format price
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(price);
-  };
+// Events
+const dispatch = createEventDispatcher<{
+  close: void
+  confirm: { plan: SubscriptionPlan; couponCode: string }
+  applyCoupon: { code: string }
+  removeCoupon: void
+}>()
 
-  // Handle form submission
-  function handleSubmit() {
-    dispatch('confirm', { plan, couponCode });
-  }
+// Calculate total
+const subtotal = $derived(plan.price)
+const discount = $derived(couponDiscount)
+const total = $derived(subtotal - discount)
 
-  // Handle coupon application
-  function handleApplyCoupon(code: string) {
-    dispatch('applyCoupon', { code });
-  }
+// Format price
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(price)
+}
 
-  // Handle coupon removal
-  function handleRemoveCoupon() {
-    dispatch('removeCoupon');
-  }
+// Handle form submission
+function handleSubmit() {
+  dispatch('confirm', { plan, couponCode })
+}
 
-  // Close the dialog
-  function closeDialog() {
-    dispatch('close');
-  }
+// Handle coupon application
+function handleApplyCoupon(code: string) {
+  dispatch('applyCoupon', { code })
+}
+
+// Handle coupon removal
+function handleRemoveCoupon() {
+  dispatch('removeCoupon')
+}
+
+// Close the dialog
+function closeDialog() {
+  dispatch('close')
+}
 </script>
 
 {#if open}

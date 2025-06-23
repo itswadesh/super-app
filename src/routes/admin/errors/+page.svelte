@@ -1,254 +1,256 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import type { PageData } from './$types';
-    import { errorService } from '$lib/services/error-service';
-  
-  const props = $props<{data: PageData}>();
-  
-  // Define interfaces for error log objects
-  interface ErrorLog {
-    id: string;
-    fingerprint: string;
-    source: string;
-    message: string;
-    details: string | null;
-    occurrences: number;
-    firstSeen: string;
-    lastSeen: string;
-    isViewed: boolean;
-    isIgnored: boolean;
-    ignoredReason?: string | null;
-  }
-  
-  // Using Svelte 5 runes syntax
-  let errors = $state<ErrorLog[]>([]);
-  let isLoading = $state(true);
-  let error = $state<string | null>(null);
-  let sortField = $state('lastSeen');
-  let sortDirection = $state('desc');
-  const searchTerm = $state('');
-  let activeTab = $state('active'); // 'active' or 'ignored'
-  
-  // For ignoring errors
-  let isIgnoreDialogOpen = $state(false);
-  let selectedErrorId = $state<string | null>(null);
-  let ignoreReason = $state('');
-  
-  // Derived state using runes for filtered and sorted errors
-  const sortedErrors = $derived(() => {
-    // First filter by active/ignored tab
-    const tabFiltered = errors.filter(err => {
-      if (activeTab === 'active') {
-        return !err.isIgnored;
-      } else {
-        return err.isIgnored;
-      }
-    });
-    
-    // Then filter based on search term if present
-    const filtered = searchTerm
-      ? tabFiltered.filter(err => 
-          err.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          err.message.toLowerCase().includes(searchTerm.toLowerCase()))
-      : tabFiltered;
-    
-    // Then sort
-    return [...filtered].sort((a, b) => {
-      let comparison = 0;
-      
-      if (sortField === 'occurrences') {
-        comparison = a.occurrences - b.occurrences;
-      } else if (sortField === 'source') {
-        comparison = a.source.localeCompare(b.source);
-      } else if (sortField === 'message') {
-        comparison = a.message.localeCompare(b.message);
-      } else if (sortField === 'firstSeen') {
-        comparison = new Date(a.firstSeen).getTime() - new Date(b.firstSeen).getTime();
-      } else if (sortField === 'lastSeen') {
-        comparison = new Date(a.lastSeen).getTime() - new Date(b.lastSeen).getTime();
-      }
-      
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-  });
-  
-  // Derived from page data using runes
-  const isAuthorized = true // $derived(page.data?.user?.role === 'admin');
-  
-  // Change sorting
-  function sortBy(field: string) {
-    if (sortField === field) {
-      // Toggle direction if same field
-      sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+import { onMount } from 'svelte'
+import type { PageData } from './$types'
+import { errorService } from '$lib/services/error-service'
+
+const props = $props<{ data: PageData }>()
+
+// Define interfaces for error log objects
+interface ErrorLog {
+  id: string
+  fingerprint: string
+  source: string
+  message: string
+  details: string | null
+  occurrences: number
+  firstSeen: string
+  lastSeen: string
+  isViewed: boolean
+  isIgnored: boolean
+  ignoredReason?: string | null
+}
+
+// Using Svelte 5 runes syntax
+let errors = $state<ErrorLog[]>([])
+let isLoading = $state(true)
+let error = $state<string | null>(null)
+let sortField = $state('lastSeen')
+let sortDirection = $state('desc')
+const searchTerm = $state('')
+let activeTab = $state('active') // 'active' or 'ignored'
+
+// For ignoring errors
+let isIgnoreDialogOpen = $state(false)
+let selectedErrorId = $state<string | null>(null)
+let ignoreReason = $state('')
+
+// Derived state using runes for filtered and sorted errors
+const sortedErrors = $derived(() => {
+  // First filter by active/ignored tab
+  const tabFiltered = errors.filter((err) => {
+    if (activeTab === 'active') {
+      return !err.isIgnored
     } else {
-      // New field, default to descending
-      sortField = field;
-      sortDirection = 'desc';
+      return err.isIgnored
     }
+  })
+
+  // Then filter based on search term if present
+  const filtered = searchTerm
+    ? tabFiltered.filter(
+        (err) =>
+          err.source.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          err.message.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : tabFiltered
+
+  // Then sort
+  return [...filtered].sort((a, b) => {
+    let comparison = 0
+
+    if (sortField === 'occurrences') {
+      comparison = a.occurrences - b.occurrences
+    } else if (sortField === 'source') {
+      comparison = a.source.localeCompare(b.source)
+    } else if (sortField === 'message') {
+      comparison = a.message.localeCompare(b.message)
+    } else if (sortField === 'firstSeen') {
+      comparison = new Date(a.firstSeen).getTime() - new Date(b.firstSeen).getTime()
+    } else if (sortField === 'lastSeen') {
+      comparison = new Date(a.lastSeen).getTime() - new Date(b.lastSeen).getTime()
+    }
+
+    return sortDirection === 'asc' ? comparison : -comparison
+  })
+})
+
+// Derived from page data using runes
+const isAuthorized = true // $derived(page.data?.user?.role === 'admin');
+
+// Change sorting
+function sortBy(field: string) {
+  if (sortField === field) {
+    // Toggle direction if same field
+    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'
+  } else {
+    // New field, default to descending
+    sortField = field
+    sortDirection = 'desc'
   }
-  
-  // Format date for display
-  function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleString();
+}
+
+// Format date for display
+function formatDate(dateString: string): string {
+  const date = new Date(dateString)
+  return date.toLocaleString()
+}
+
+// Delete an error log
+async function deleteError(id: string) {
+  try {
+    const response = await errorService.deleteError(id)
+
+    if (response.ok) {
+      // Remove from local array
+      errors = errors.filter((err) => err.id !== id)
+    } else {
+      throw new Error('Failed to delete error')
+    }
+  } catch (err) {
+    error = 'Error deleting log'
   }
-  
-  // Delete an error log
-  async function deleteError(id: string) {
+}
+
+// Load error logs from API
+async function loadErrors() {
+  isLoading = true
+  error = null
+
+  try {
+    const response = await errorService.getErrors()
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch error logs')
+    }
+
+    const data = await response.json()
+    errors = data.errors
+  } catch (err) {
+    error = 'Error loading logs'
+    console.error(err)
+  } finally {
+    isLoading = false
+  }
+}
+
+// Clear all error logs
+async function clearAllErrors() {
+  if (!confirm('Are you sure you want to clear all error logs?')) {
+    return
+  }
+
+  try {
+    const response = await errorService.createOrUpdateError()
+
+    if (response.ok) {
+      errors = []
+    } else {
+      throw new Error('Failed to clear errors')
+    }
+  } catch (err) {
+    error = 'Error clearing logs'
+  }
+}
+
+// Functions for error status management
+async function markAsViewed(errorId: string, isViewed = true) {
+  try {
+    const response = await errorService.updateErrorById(errorId)
+    if (response.ok) {
+      // Update local state
+      errors = errors.map((err) => (err.id === errorId ? { ...err, isViewed } : err))
+    }
+
+    if (response.ok) {
+      // Update local state
+      errors = errors.map((err) => (err.id === errorId ? { ...err, isViewed } : err))
+    }
+  } catch (err) {
+    error = 'Failed to update error status'
+  }
+}
+
+async function ignoreError() {
+  if (!selectedErrorId) return
+
+  try {
+    const response = await errorService.getErrorById(selectedErrorId)
+    if (response.ok) {
+      // Update local state
+      errors = errors.map((err) =>
+        err.id === selectedErrorId
+          ? {
+              ...err,
+              isIgnored: true,
+              ignoredReason: ignoreReason.trim() || 'No reason provided',
+            }
+          : err
+      )
+
+      // Update local state
+      errors = errors.map((err) =>
+        err.id === selectedErrorId
+          ? {
+              ...err,
+              isIgnored: true,
+              ignoredReason: ignoreReason.trim() || 'No reason provided',
+            }
+          : err
+      )
+
+      closeIgnoreDialog()
+    }
+  } catch (err) {
+    error = 'Failed to ignore error'
+  }
+}
+
+function openIgnoreDialog(errorId: string) {
+  selectedErrorId = errorId
+  ignoreReason = ''
+  isIgnoreDialogOpen = true
+}
+
+function closeIgnoreDialog() {
+  isIgnoreDialogOpen = false
+  selectedErrorId = null
+  ignoreReason = ''
+}
+
+// Load errors for the active tab
+async function loadErrorsForTab() {
+  isLoading = true
+  error = null
+
+  try {
+    // Use errorService to load errors for the active tab
     try {
-      const response = await errorService.deleteError(id);
-      
-      if (response.ok) {
-        // Remove from local array
-        errors = errors.filter(err => err.id !== id);
-      } else {
-        throw new Error('Failed to delete error');
-      }
+      const result = await errorService.getErrorsByStatus(activeTab === 'ignored')
+      errors = result.errors || []
     } catch (err) {
-      error = 'Error deleting log';
+      throw new Error('Failed to fetch error logs')
     }
+  } catch (err) {
+    error = 'Error loading logs'
+    console.error(err)
+  } finally {
+    isLoading = false
   }
-  
-  // Load error logs from API
-  async function loadErrors() {
-    isLoading = true;
-    error = null;
-    
-    try {
-      const response = await errorService.getErrors();
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch error logs');
-      }
-      
-      const data = await response.json();
-      errors = data.errors;
-    } catch (err) {
-      error = 'Error loading logs';
-      console.error(err);
-    } finally {
-      isLoading = false;
-    }
+}
+
+// When tab changes, load appropriate errors
+function changeTab(tab: 'active' | 'ignored') {
+  if (activeTab !== tab) {
+    activeTab = tab
+    loadErrorsForTab()
   }
-  
-  // Clear all error logs
-  async function clearAllErrors() {
-    if (!confirm('Are you sure you want to clear all error logs?')) {
-      return;
-    }
-    
-    try {
-      const response = await errorService.createOrUpdateError();
-      
-      if (response.ok) {
-        errors = [];
-      } else {
-        throw new Error('Failed to clear errors');
-      }
-    } catch (err) {
-      error = 'Error clearing logs';
-    }
+}
+
+onMount(() => {
+  if (isAuthorized) {
+    loadErrorsForTab()
   }
-  
-  // Functions for error status management
-  async function markAsViewed(errorId: string, isViewed = true) {
-    try {
-      const response = await errorService.updateErrorById(errorId);
-      if (response.ok) {
-        // Update local state
-        errors = errors.map(err => 
-          err.id === errorId ? { ...err, isViewed } : err
-        );
-      }
-      
-      if (response.ok) {
-        // Update local state
-        errors = errors.map(err => 
-          err.id === errorId ? { ...err, isViewed } : err
-        );
-      }
-    } catch (err) {
-      error = 'Failed to update error status';
-    }
-  }
-  
-  async function ignoreError() {
-    if (!selectedErrorId) return;
-    
-    try {
-      const response = await errorService.getErrorById(selectedErrorId);
-      if (response.ok) {
-        // Update local state
-        errors = errors.map(err => 
-          err.id === selectedErrorId ? { 
-            ...err, 
-            isIgnored: true,
-          ignoredReason: ignoreReason.trim() || 'No reason provided'
-        })
-      
-      if (response.ok) {
-        // Update local state
-        errors = errors.map(err => 
-          err.id === selectedErrorId ? { 
-            ...err, 
-            isIgnored: true,
-            ignoredReason: ignoreReason.trim() || 'No reason provided'
-          } : err
-        );
-        
-        // Close dialog and reset
-        closeIgnoreDialog();
-      }
-    } catch (err) 
-      error = 'Failed to ignore error';
-  }
-  
-  function openIgnoreDialog(errorId: string) {
-    selectedErrorId = errorId;
-    ignoreReason = '';
-    isIgnoreDialogOpen = true;
-  }
-  
-  function closeIgnoreDialog() {
-    isIgnoreDialogOpen = false;
-    selectedErrorId = null;
-    ignoreReason = '';
-  }
-  
-  // Load errors for the active tab
-  async function loadErrorsForTab() {
-    isLoading = true;
-    error = null;
-    
-    try {
-      // Use errorService to load errors for the active tab
-      try {
-        const result = await errorService.getErrorsByStatus(activeTab === 'ignored');
-        errors = result.errors || [];
-      } catch (err) {
-        throw new Error('Failed to fetch error logs');
-      }
-    } catch (err) {
-      error = 'Error loading logs';
-      console.error(err);
-    } finally {
-      isLoading = false;
-    }
-  }
-  
-  // When tab changes, load appropriate errors
-  function changeTab(tab: 'active' | 'ignored') {
-    if (activeTab !== tab) {
-      activeTab = tab;
-      loadErrorsForTab();
-    }
-  }
-  
-  onMount(() => {
-    if (isAuthorized) {
-      loadErrorsForTab();
-    }
-  });
+})
 </script>
 
 <div class="container mx-auto px-4 py-8">

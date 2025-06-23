@@ -64,7 +64,7 @@ function createUserStore() {
           JSON.stringify({
             user: userData.user,
             token: userData.token,
-          }),
+          })
         )
       }
     },
@@ -104,7 +104,7 @@ function createUserStore() {
             JSON.stringify({
               user: updatedUser,
               token: state.token,
-            }),
+            })
           )
         }
 

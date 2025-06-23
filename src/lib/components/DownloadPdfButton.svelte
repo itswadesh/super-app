@@ -41,7 +41,9 @@ const buttonClasses = $derived(
     // Variant styles
     variant === 'primary' ? 'bg-blue-600 text-white hover:bg-blue-700' : '',
     variant === 'secondary' ? 'bg-blue-100 text-blue-900 hover:bg-blue-200' : '',
-    variant === 'outline' ? 'border border-blue-200 bg-transparent hover:bg-blue-50 text-blue-700' : '',
+    variant === 'outline'
+      ? 'border border-blue-200 bg-transparent hover:bg-blue-50 text-blue-700'
+      : '',
 
     // Size styles
     size === 'sm' ? 'h-8 px-3 text-xs' : '',
@@ -52,7 +54,7 @@ const buttonClasses = $derived(
     fullWidth ? 'w-full' : '',
   ]
     .filter(Boolean)
-    .join(' '),
+    .join(' ')
 )
 </script>
 

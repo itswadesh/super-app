@@ -22,7 +22,7 @@ const dimensions = $derived(
     small: { avatar: 'w-8 h-8', text: 'text-xs' },
     medium: { avatar: 'w-12 h-12', text: 'text-sm' },
     large: { avatar: 'w-16 h-16', text: 'text-base' },
-  }[size],
+  }[size]
 )
 
 // Navigate to author profile

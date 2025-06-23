@@ -10,7 +10,9 @@ const category = $state(data.category)
 const resources = $state(data.resources || [])
 const subcategories = $state(data.subcategories || [])
 const resourceCounts = $state(data.resourceCounts || { videos: 0, notes: 0, quizzes: 0, total: 0 })
-const pagination = $state(data.pagination || { currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: 12 })
+const pagination = $state(
+  data.pagination || { currentPage: 1, totalPages: 1, totalItems: 0, itemsPerPage: 12 }
+)
 const filters = $state(data.filters || { type: 'all', search: '', sort: 'newest' })
 
 // UI state

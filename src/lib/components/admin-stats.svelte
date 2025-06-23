@@ -3,7 +3,16 @@ import { onMount } from 'svelte'
 // import AdminChart from './admin-charts.svelte'
 import type { ChartOptions } from 'chart.js'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Activity, BookOpen, Users, TrendingUp, Clock, FileTextIcon, VideoIcon, BookCheckIcon } from '@lucide/svelte'
+import {
+  Activity,
+  BookOpen,
+  Users,
+  TrendingUp,
+  Clock,
+  FileTextIcon,
+  VideoIcon,
+  BookCheckIcon,
+} from '@lucide/svelte'
 
 // Stats data
 let stats = $state({
@@ -52,7 +61,11 @@ let contentDistributionData = {
   datasets: [
     {
       data: [45, 30, 25],
-      backgroundColor: ['rgba(99, 102, 241, 0.8)', 'rgba(59, 130, 246, 0.8)', 'rgba(139, 92, 246, 0.8)'],
+      backgroundColor: [
+        'rgba(99, 102, 241, 0.8)',
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(139, 92, 246, 0.8)',
+      ],
       borderColor: ['rgba(99, 102, 241, 1)', 'rgba(59, 130, 246, 1)', 'rgba(139, 92, 246, 1)'],
       borderWidth: 1,
     },

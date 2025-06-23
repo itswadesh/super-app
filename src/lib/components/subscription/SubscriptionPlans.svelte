@@ -1,22 +1,22 @@
 <script lang="ts">
-  import SubscriptionPlanCard from './SubscriptionPlanCard.svelte';
-  import type { SubscriptionPlan } from '$lib/stores/subscriptionStore';
-  
-  // Props
-  export let plans: SubscriptionPlan[] = [];
-  export let selectedPlan: SubscriptionPlan | null = null;
-  export let onSelectPlan: (plan: SubscriptionPlan) => void;
-  export let isLoading: boolean = false;
-  export let error: string | null = null;
+import SubscriptionPlanCard from './SubscriptionPlanCard.svelte'
+import type { SubscriptionPlan } from '$lib/stores/subscriptionStore'
 
-  // Find the most popular plan (for highlighting)
-  const popularPlan = $derived(
-    plans.length > 0 
-      ? plans.reduce((prev, current) => 
-          (prev.popular || (prev.isPopular && !current.popular && !current.isPopular) ? prev : current)
-        )
-      : null
-  );
+// Props
+export let plans: SubscriptionPlan[] = []
+export let selectedPlan: SubscriptionPlan | null = null
+export let onSelectPlan: (plan: SubscriptionPlan) => void
+export let isLoading: boolean = false
+export let error: string | null = null
+
+// Find the most popular plan (for highlighting)
+const popularPlan = $derived(
+  plans.length > 0
+    ? plans.reduce((prev, current) =>
+        prev.popular || (prev.isPopular && !current.popular && !current.isPopular) ? prev : current
+      )
+    : null
+)
 </script>
 
 <div class="container mx-auto">

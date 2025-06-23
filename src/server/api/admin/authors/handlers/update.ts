@@ -50,8 +50,13 @@ export async function updateAuthor(c: Context): Promise<Response> {
       avatar: data.avatar !== undefined ? data.avatar : existingAuthor.avatar,
       bio: data.bio !== undefined ? data.bio : existingAuthor.bio,
       qualifications:
-        data.qualifications !== undefined ? JSON.stringify(data.qualifications) : existingAuthor.qualifications,
-      achievements: data.achievements !== undefined ? JSON.stringify(data.achievements) : existingAuthor.achievements,
+        data.qualifications !== undefined
+          ? JSON.stringify(data.qualifications)
+          : existingAuthor.qualifications,
+      achievements:
+        data.achievements !== undefined
+          ? JSON.stringify(data.achievements)
+          : existingAuthor.achievements,
       website: data.website !== undefined ? data.website : existingAuthor.website,
       twitter: data.twitter !== undefined ? data.twitter : existingAuthor.twitter,
       linkedin: data.linkedin !== undefined ? data.linkedin : existingAuthor.linkedin,

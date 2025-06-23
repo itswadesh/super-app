@@ -31,7 +31,10 @@ errorLoggerRouter.post('/', async (c) => {
     const errorFingerprint = `${source}:${message}`
 
     // Check if this error has been logged before
-    const existingErrors = await db.select().from(ErrorLog).where(eq(ErrorLog.fingerprint, errorFingerprint))
+    const existingErrors = await db
+      .select()
+      .from(ErrorLog)
+      .where(eq(ErrorLog.fingerprint, errorFingerprint))
 
     const now = new Date()
     let errorId: string
@@ -111,7 +114,12 @@ export class ErrorLogger {
   /**
    * Log an error to the database
    */
-  static async log(source: string, message: string, details?: any, category = 'general'): Promise<void> {
+  static async log(
+    source: string,
+    message: string,
+    details?: any,
+    category = 'general'
+  ): Promise<void> {
     try {
       // If running in browser, use fetch to call the API endpoint
       if (typeof window !== 'undefined') {
@@ -125,7 +133,10 @@ export class ErrorLogger {
 
       // Direct database access for server-side code
       const errorFingerprint = `${source}:${message}`
-      const existingErrors = await db.select().from(ErrorLog).where(eq(ErrorLog.fingerprint, errorFingerprint))
+      const existingErrors = await db
+        .select()
+        .from(ErrorLog)
+        .where(eq(ErrorLog.fingerprint, errorFingerprint))
 
       const now = new Date()
 

@@ -39,7 +39,8 @@ interface AuthorResponse {
 /**
  * Interface for author content filters
  */
-export interface AuthorContentFilters extends Record<string, string | number | boolean | undefined> {
+export interface AuthorContentFilters
+  extends Record<string, string | number | boolean | undefined> {
   contentType?: 'video' | 'note' | 'quiz' | 'all'
   page?: number
   limit?: number
@@ -77,11 +78,10 @@ export const authorService = {
    * Get author by ID
    */
   getAuthorById(id: string): Promise<AuthorResponse> {
-    return httpClient.get<AuthorResponse>(`/api/authors/${id}`)
-      .catch((error) => {
-        console.error('Error fetching author data:', error)
-        throw new Error('Failed to load author information. Please try again.')
-      })
+    return httpClient.get<AuthorResponse>(`/api/authors/${id}`).catch((error) => {
+      console.error('Error fetching author data:', error)
+      throw new Error('Failed to load author information. Please try again.')
+    })
   },
 
   /**
@@ -89,11 +89,12 @@ export const authorService = {
    */
   async getAllAuthors(includeStats = false): Promise<Author[]> {
     const queryParams = createQueryParams({
-      includeStats: includeStats ? 'true' : undefined
+      includeStats: includeStats ? 'true' : undefined,
     })
 
-    return httpClient.get<{ authors: Author[] }>(`/api/authors?${queryParams}`)
-      .then(data => data.authors)
+    return httpClient
+      .get<{ authors: Author[] }>(`/api/authors?${queryParams}`)
+      .then((data) => data.authors)
       .catch((error) => {
         console.error('Error fetching authors:', error)
         throw new Error('Failed to load authors. Please try again.')
@@ -111,21 +112,22 @@ export const authorService = {
   ): Promise<AuthorContentResponse<T>> {
     const queryParams = createQueryParams(filters)
 
-    return httpClient.get<AuthorContentResponse<T>>(
-      `/api/authors/${authorId}/content?${queryParams}`
-    ).catch((error) => {
-      errorService.logError('API Error', 'Failed to fetch author content', error)
-      console.error('Error fetching author content:', error)
-      throw new Error('Failed to load author content. Please try again.')
-    })
+    return httpClient
+      .get<AuthorContentResponse<T>>(`/api/authors/${authorId}/content?${queryParams}`)
+      .catch((error) => {
+        errorService.logError('API Error', 'Failed to fetch author content', error)
+        console.error('Error fetching author content:', error)
+        throw new Error('Failed to load author content. Please try again.')
+      })
   },
 
   /**
    * Get simplified author details by ID (for embedding in content objects)
    */
   getAuthorDetails(authorId: string): Promise<Pick<Author, 'id' | 'name' | 'avatar'>> {
-    return httpClient.get<{ author: Pick<Author, 'id' | 'name' | 'avatar'> }>(`/api/authors/${authorId}/details`)
-      .then(data => data.author)
+    return httpClient
+      .get<{ author: Pick<Author, 'id' | 'name' | 'avatar'> }>(`/api/authors/${authorId}/details`)
+      .then((data) => data.author)
       .catch((error) => {
         errorService.logError('API Error', 'Failed to fetch author details', error)
         console.error('Error fetching author details:', error)
@@ -137,8 +139,9 @@ export const authorService = {
    * Check if a user is an author
    */
   isUserAuthor(userId: string): Promise<boolean> {
-    return httpClient.get<{ isAuthor: boolean }>(`/api/authors/check/${userId}`)
-      .then(data => data.isAuthor)
+    return httpClient
+      .get<{ isAuthor: boolean }>(`/api/authors/check/${userId}`)
+      .then((data) => data.isAuthor)
       .catch((error) => {
         console.error('Error checking author status:', error)
         return false

@@ -1,57 +1,54 @@
-import crypto from 'node:crypto';
-import { zValidator } from '@hono/zod-validator';
-import { and, eq, gte, lte, sql } from 'drizzle-orm';
-import { Hono } from 'hono';
-import { z } from 'zod';
-import { db } from '.';
+import { zValidator } from '@hono/zod-validator'
+import { and, eq, gte, lte } from 'drizzle-orm'
+import { z } from 'zod'
+import { Hono } from 'hono'
+import type { Context } from 'hono'
+import { db } from '.'
+import { User, Plan, Order, subscriptions } from './schema'
 
-// Define the Subscription schema since it's not in the original schema
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import { User } from './schema';
-import { Order } from './schema';
-import { Plan } from './schema';
+type Variables = {
+  userId?: string
+  subscription?: Subscription
+}
 
-// Define the Subscription schema if it doesn't exist in the imported schema
-export const subscriptions = sqliteTable('subscriptions', {
-  id: text('id').primaryKey(),
-  user_id: text('user_id').notNull().references(() => User.id),
-  order_id: text('order_id').notNull().references(() => Order.id),
-  plan_id: text('plan_id').notNull().references(() => Plan.id),
-  status: text('status').default('active'),
-  created_at: integer('created_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
-  valid_from: integer('valid_from', { mode: 'timestamp' }).notNull(),
-  valid_to: integer('valid_to', { mode: 'timestamp' }).notNull(),
-  auto_renew: integer('auto_renew', { mode: 'boolean' }).default(false)
-});
+type Subscription = typeof subscriptions.$inferSelect
+type NewSubscription = typeof subscriptions.$inferInsert
+
+// Status values must match the database schema
+const ACTIVE_STATUS = 'active'
+const CANCELLED_STATUS = 'cancelled'
 
 // Get user subscription status
-export const GET = async (c) => {
+export const getSubscription = async (c: Context<{ Variables: Variables }>) => {
   try {
-    const userId = c.req.param('userId');
+    const userId = c.req.param('userId')
 
     if (!userId) {
-      return c.json({ error: 'User ID is required' }, 400);
+      return c.json({ success: false, error: 'User ID is required' }, 400)
     }
 
     // Check if user exists
     const userExists = await db.query.User.findFirst({
-      where: eq(User.id, userId)
-    });
+      where: eq(User.id, userId),
+    })
 
     if (!userExists) {
-      return c.json({ error: 'User not found' }, 404);
+      return c.json({ success: false, error: 'User not found' }, 404)
     }
 
-    // Get active subscriptions - using raw query since we just created the subscriptions table
+    // Get active subscriptions
+    const now = new Date()
     const activeSubscriptions = await db
       .select()
       .from(subscriptions)
-      .where(and(
-        eq(subscriptions.user_id, userId),
-        eq(subscriptions.status, 'active'),
-        lte(sql`COALESCE(${subscriptions.valid_from}, 0)`, Math.floor(Date.now() / 1000)),
-        gte(sql`COALESCE(${subscriptions.valid_to}, ${Number.MAX_SAFE_INTEGER})`, Math.floor(Date.now() / 1000))
-      ));
+      .where(
+        and(
+          eq(subscriptions.userId, userId),
+          eq(subscriptions.status, ACTIVE_STATUS),
+          lte(subscriptions.validFrom, now),
+          gte(subscriptions.validTo, now)
+        )
+      )
 
     // For each subscription, get the plan details
     const subscriptionsWithPlans = await Promise.all(
@@ -59,144 +56,225 @@ export const GET = async (c) => {
         const plan = await db
           .select()
           .from(Plan)
-          .where(eq(Plan.id, sub.plan_id))
-          .then(plans => plans[0] || null);
+          .where(eq(Plan.id, sub.planId))
+          .then((plans) => plans[0] || null)
 
         return {
           ...sub,
-          plan
-        };
+          plan,
+        }
       })
-    );
+    )
 
     return c.json({
       success: true,
       hasActiveSubscription: subscriptionsWithPlans.length > 0,
-      subscriptions: subscriptionsWithPlans
-    });
-
+      subscriptions: subscriptionsWithPlans,
+    })
   } catch (error) {
-    console.error('Error checking subscription:', error);
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'An unknown error occurred'
-    }, 500);
+    console.error('Error checking subscription:', error)
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'An unknown error occurred',
+      },
+      500
+    )
   }
-};
+}
 
 // Create a new subscription
 const createSubscriptionSchema = z.object({
-  user_id: z.string().min(1, 'User ID is required'),
-  order_id: z.string().min(1, 'Order ID is required'),
-  plan_id: z.string().min(1, 'Plan ID is required'),
-  valid_from: z.number().optional(),
-  valid_to: z.number().optional(),
-  auto_renew: z.boolean().optional()
-});
+  userId: z.string().min(1, 'User ID is required'),
+  orderId: z.string().min(1, 'Order ID is required'),
+  planId: z.string().min(1, 'Plan ID is required'),
+  validFrom: z.date().optional(),
+  validTo: z.date().optional(),
+  autoRenew: z.boolean().default(false),
+})
 
-export const POST = zValidator('json', createSubscriptionSchema)(async (c) => {
+const createSubscriptionHandler = async (c: Context<{ Variables: Variables }>) => {
+  const data = await c.req.json()
+  return handleCreateSubscription(c, data)
+}
+
+const handleCreateSubscription = async (
+  c: Context<{ Variables: Variables }>,
+  data: z.infer<typeof createSubscriptionSchema>
+) => {
   try {
-    const data = await c.req.json();
-    const {
-      user_id,
-      order_id,
-      plan_id,
-      valid_from = Math.floor(Date.now() / 1000),
-      valid_to,
-      auto_renew = false
-    } = data;
+    const { userId, orderId, planId, validFrom = new Date(), validTo, autoRenew = false } = data
 
-    // Verify that user and plan exist
-    const [users, plansFound] = await Promise.all([
-      db.select().from(User).where(eq(User.id, user_id)),
-      db.select().from(Plan).where(eq(Plan.id, plan_id))
-    ]);
+    // Verify that user, order and plan exist
+    const [user, order, plan] = await Promise.all([
+      db.query.User.findFirst({
+        where: eq(User.id, userId),
+      }),
+      db.query.Order.findFirst({
+        where: eq(Order.id, orderId),
+      }),
+      db.query.Plan.findFirst({
+        where: eq(Plan.id, planId),
+      }),
+    ])
 
-    const userExists = users.length > 0 ? users[0] : null;
-    const planExists = plansFound.length > 0 ? plansFound[0] : null;
-
-    if (!userExists) {
-      return c.json({ error: 'User not found' }, 404);
+    if (!user) {
+      return c.json({ success: false, error: 'User not found' }, 404)
     }
 
-    if (!planExists) {
-      return c.json({ error: 'Plan not found' }, 404);
+    if (!order) {
+      return c.json({ success: false, error: 'Order not found' }, 404)
     }
 
-    // Calculate valid_to if not provided
-    let calculatedValidTo = valid_to;
-    if (!calculatedValidTo && planExists.validity) {
-      // Default is 1 year if not specified
-      const validityInDays = planExists.validity.includes('month')
-        ? Number.parseInt(planExists.validity) * 30
-        : Number.parseInt(planExists.validity) * 365;
-
-      calculatedValidTo = valid_from + (validityInDays * 24 * 60 * 60); // days to seconds
+    if (!plan) {
+      return c.json({ success: false, error: 'Plan not found' }, 404)
     }
 
-    // Create new subscription with a generated ID
-    const subscriptionId = crypto.randomUUID();
-    const [subscription] = await db.insert(subscriptions).values({
-      id: subscriptionId,
-      user_id,
-      order_id,
-      plan_id,
-      valid_from: valid_from,
-      valid_to: calculatedValidTo,
-      auto_renew: auto_renew, // Schema defines this as a boolean field
-      status: 'active',
-      created_at: sql`(strftime('%s', 'now'))`
-    }).returning();
+    // Calculate validTo if not provided
+    const calculatedValidTo = (() => {
+      if (validTo) return validTo
+
+      const baseDate = validFrom || new Date()
+      const resultDate = new Date(baseDate)
+
+      if (plan.validity) {
+        resultDate.setDate(resultDate.getDate() + Number(plan.validity))
+      } else {
+        // Default to 1 year if no validity is set
+        resultDate.setFullYear(resultDate.getFullYear() + 1)
+      }
+
+      return resultDate
+    })()
+
+    // Create new subscription
+    const [subscription] = await db
+      .insert(subscriptions)
+      .values({
+        userId,
+        orderId,
+        planId,
+        validFrom,
+        validTo: calculatedValidTo,
+        autoRenew,
+        status: ACTIVE_STATUS,
+      })
+      .returning()
+
+    if (!subscription) {
+      throw new Error('Failed to create subscription')
+    }
 
     return c.json({
       success: true,
-      subscription
-    });
-
+      subscription: subscription as Subscription, // Add type casting here
+    })
   } catch (error) {
-    console.error('Error creating subscription:', error);
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to create subscription'
-    }, 500);
+    console.error('Error creating subscription:', error)
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create subscription',
+      },
+      500
+    )
   }
-};
+}
 
 // Cancel subscription
-export const PATCH = async (c) => {
+export const cancelSubscription = async (c: Context<{ Variables: Variables }>) => {
   try {
-    // PATCH handler expects subscriptionId as a param
-    const subscriptionId = c.req.param('subscriptionId');
+    const subscriptionId = c.req.param('subscriptionId')
+
+    if (!subscriptionId) {
+      return c.json({ success: false, error: 'Subscription ID is required' }, 400)
+    }
 
     // First check if subscription exists
-    const existingSubs = await db.select()
-      .from(subscriptions)
-      .where(eq(subscriptions.id, subscriptionId));
+    const existingSub = await db.query.subscriptions.findFirst({
+      where: eq(subscriptions.id, subscriptionId),
+    })
 
-    if (existingSubs.length === 0) {
-      return c.json({ error: 'Subscription not found' }, 404);
+    if (!existingSub) {
+      return c.json({ success: false, error: 'Subscription not found' }, 404)
+    }
+
+    // Don't allow cancelling already cancelled subscriptions
+    if (existingSub.status === CANCELLED_STATUS) {
+      return c.json({ success: false, error: 'Subscription is already cancelled' }, 400)
     }
 
     // Update subscription status
-    const updated = await db.update(subscriptions)
+    const now = new Date()
+    const updated = await db
+      .update(subscriptions)
       .set({
-        status: 'cancelled'
-        // Removed updated_at as it's not in the schema definition
+        status: CANCELLED_STATUS,
+        validTo: new Date(Math.min(existingSub.validTo.getTime(), now.getTime())), // Set validTo to now or keep the earlier date
+        updatedAt: now,
       })
       .where(eq(subscriptions.id, subscriptionId))
-      .returning();
+      .returning()
+
+    if (!updated[0]) {
+      throw new Error('Failed to update subscription')
+    }
 
     return c.json({
       success: true,
       message: 'Subscription cancelled successfully',
-      subscription: updated[0]
-    });
-
+      subscription: updated[0] as Subscription, // Add type casting here
+    })
   } catch (error) {
-    console.error('Error cancelling subscription:', error);
-    return c.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to cancel subscription'
-    }, 500);
+    console.error('Error cancelling subscription:', error)
+    return c.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to cancel subscription',
+      },
+      500
+    )
   }
-});
+}
+
+// Create and export Hono router for subscription endpoints
+// Define subscription routes
+export const subscriptionRoutes = new Hono<{ Variables: Variables }>()
+  .get('/:userId', (c) => getSubscription(c))
+  .post('/', zValidator('json', createSubscriptionSchema), (c) => createSubscriptionHandler(c))
+  .patch('/:subscriptionId', (c) => cancelSubscription(c))
+
+// Export the subscription service for direct usage
+export const subscriptionService = {
+  getSubscription: (userId: string) =>
+    db.query.subscriptions.findFirst({
+      where: (subscriptions, { eq, and, gte, lte }) =>
+        and(
+          eq(subscriptions.userId, userId),
+          eq(subscriptions.status, ACTIVE_STATUS),
+          lte(subscriptions.validFrom, new Date()),
+          gte(subscriptions.validTo, new Date())
+        ),
+      with: {
+        plan: true,
+      },
+    }),
+  cancelSubscription: async (subscriptionId: string) => {
+    const now = new Date()
+    return db
+      .update(subscriptions)
+      .set({
+        status: CANCELLED_STATUS,
+        validTo: now,
+        updatedAt: now,
+      })
+      .where(eq(subscriptions.id, subscriptionId))
+      .returning()
+  },
+  createSubscription: async (data: NewSubscription) => {
+    return db.insert(subscriptions).values(data).returning()
+  },
+}
+
+// Export types
+export type { Subscription, NewSubscription }

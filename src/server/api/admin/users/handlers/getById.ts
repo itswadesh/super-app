@@ -16,7 +16,9 @@ export async function getUserById(c: Context<{ Bindings: { id: string } }>) {
       return c.json({ error: 'User ID is required' }, 400)
     }
 
-    const user = (await db.select().from(User).where(eq(User.id, userId)).get()) as UserWithTimestamps | undefined
+    const user = (await db.select().from(User).where(eq(User.id, userId)).get()) as
+      | UserWithTimestamps
+      | undefined
 
     if (!user) {
       return c.json({ error: 'User not found' }, 404)

@@ -22,7 +22,9 @@ const showPaywall = $state(isPaid && !isUserSubscribed && !isPreview)
 const isVideo = $derived(contentType === 'video')
 const isNote = $derived(contentType === 'note')
 const hasYoutubeId = $derived(!!youtubeId)
-const formattedVideoUrl = $derived(hasYoutubeId ? `https://www.youtube.com/embed/${youtubeId}` : videoUrl)
+const formattedVideoUrl = $derived(
+  hasYoutubeId ? `https://www.youtube.com/embed/${youtubeId}` : videoUrl
+)
 
 // Extract file extension for document viewer
 const fileExtension = $derived(() => {

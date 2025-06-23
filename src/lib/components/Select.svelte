@@ -1,35 +1,35 @@
 <script lang="ts">
-  // Use let instead of const for bindable props
-  let {
-    id,
-    name,
-    value = $bindable(''),
-    options = [],
-    label = '',
-    required = false,
-    disabled = false,
-    error = false,
-    className = '',
-    onchange = () => {}
-  } = $props<{
-    id: string;
-    name: string;
-    value?: string;
-    options: { value: string; label: string }[];
-    label?: string;
-    required?: boolean;
-    disabled?: boolean;
-    error?: boolean | string;
-    className?: string;
-    onchange?: (e: Event) => void;
-  }>();
+// Use let instead of const for bindable props
+let {
+  id,
+  name,
+  value = $bindable(''),
+  options = [],
+  label = '',
+  required = false,
+  disabled = false,
+  error = false,
+  className = '',
+  onchange = () => {},
+} = $props<{
+  id: string
+  name: string
+  value?: string
+  options: { value: string; label: string }[]
+  label?: string
+  required?: boolean
+  disabled?: boolean
+  error?: boolean | string
+  className?: string
+  onchange?: (e: Event) => void
+}>()
 
-  const showError = $derived(!!error);
-  const inputId = $derived(id || name);
+const showError = $derived(!!error)
+const inputId = $derived(id || name)
 
-  function handleChange(e: Event) {
-    if (onchange) onchange(e);
-  }
+function handleChange(e: Event) {
+  if (onchange) onchange(e)
+}
 </script>
 
 <div class="mb-4 text-left">

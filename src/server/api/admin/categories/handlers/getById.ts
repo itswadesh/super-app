@@ -1,8 +1,8 @@
-import { eq } from 'drizzle-orm';
-import type { Context } from 'hono';
-import { Category } from '../../../../../server/db/schema';
-import { getSessionTokenCookie, validateSessionToken } from '../../../../../server/db/auth';
-import type { CategoryResponse } from '../types';
+import { eq } from 'drizzle-orm'
+import type { Context } from 'hono'
+import { Category } from '../../../../../server/db/schema'
+import { getSessionTokenCookie, validateSessionToken } from '../../../../../server/db/auth'
+import type { CategoryResponse } from '../types'
 import { db } from '../../../../db'
 
 export async function getCategoryById(c: Context): Promise<Response> {

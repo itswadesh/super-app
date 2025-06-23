@@ -41,7 +41,11 @@ export const PaymentProviderKeys = {
   PHONEPE: 'phonepe',
 }
 
-export type PaymentRequest = PaymentRequestUPI | PaymentRequestUPICollect | PaymentRequestUPIQr | PaymentRequestWebFlow
+export type PaymentRequest =
+  | PaymentRequestUPI
+  | PaymentRequestUPICollect
+  | PaymentRequestUPIQr
+  | PaymentRequestWebFlow
 
 export type PaymentResponse =
   | PaymentResponseUPI

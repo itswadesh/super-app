@@ -54,7 +54,7 @@ export const PUT = async (c) => {
           error: 'Invalid user data',
           validationErrors: validationResult.error.format(),
         },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -115,7 +115,7 @@ export const PUT = async (c) => {
           },
         },
       },
-      { status: 200 },
+      { status: 200 }
     )
   } catch (err: unknown) {
     console.error('Error updating user:', err)
@@ -129,7 +129,7 @@ export const PUT = async (c) => {
           success: false,
           error: svelteError.body.message,
         },
-        { status: svelteError.status },
+        { status: svelteError.status }
       )
     }
 
@@ -138,7 +138,7 @@ export const PUT = async (c) => {
         success: false,
         error: err instanceof Error ? err.message : 'Unknown error updating user',
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
