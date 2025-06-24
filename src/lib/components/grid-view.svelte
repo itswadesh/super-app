@@ -777,13 +777,13 @@ function handleSelectChange(field: string, value: string) {
               {selectedRow?.ROWID ? 'Edit' : 'Add New'} {heading || 'Item'}
             </Sheet.Title>
             <div class="flex items-center space-x-3">
-              <Button 
+              <!-- <Button 
                 variant="outline" 
                 type="button"
                 onclick={() => isSheetOpen = false}
               >
                 Cancel
-              </Button>
+              </Button> -->
               <Button 
                 type="button" 
                 onclick={handleSave}
