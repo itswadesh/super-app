@@ -98,6 +98,11 @@ async function navigateWithSheetClose(path: string) {
   // trackPageView(path);
 }
 </script>
+
+<svelte:head>
+  <title>CCC Contracts - HAL</title>
+</svelte:head>
+
 <div class="min-h-screen">
 <!-- Header -->
 <header class="bg-white shadow-sm sticky top-0 z-50">
@@ -226,7 +231,7 @@ async function navigateWithSheetClose(path: string) {
     {@render children()} <!-- Changed from <slot /> -->
 </main>
 
-  <footer class="bg-gray-100 text-gray-600 py-8 mt-auto">
+  <footer class="bg-gray-100 text-gray-600 py-6 mt-auto">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
       <p>&copy; {new Date().getFullYear()} HAL Koraput. All rights reserved.</p>
       <p class="text-sm">
