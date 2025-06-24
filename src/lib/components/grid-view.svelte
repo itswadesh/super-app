@@ -807,8 +807,8 @@ function handleSelectChange(field: string, value: string) {
 
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {#each editableFields as field}
-              <div class="space-y-2 col-span-1">
-                <Label for={field.value} class="text-sm font-medium text-gray-700">
+              <div class="space-y-1 col-span-1">
+                <Label for={field.value} class="text-gray-500" style="font-size: x-small;">
                   {field.text.replaceAll('_',' ')}
                   {#if field.required}<span class="text-red-500 ml-1">*</span>{/if}
                 </Label>
@@ -847,12 +847,12 @@ function handleSelectChange(field: string, value: string) {
                       checked={!!selectedRow[field.value]}
                       onchange={(e) => handleInputChange(field.value, e.target.checked)}
                     />
-                    <Label for={field.value} class="text-sm font-normal">{field.helpText || field.text}</Label>
+                    <Label for={field.value} class="text-xs font-normal">{field.helpText || field.text}</Label>
                   </div>
                 {:else if field.type === 'textarea'}
                   <textarea
                     id={field.value}
-                    class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     value={selectedRow[field.value] || ''}
                     oninput={(e) => handleInputChange(field.value, e.target.value)}
                     placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
