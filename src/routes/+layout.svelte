@@ -98,12 +98,12 @@ async function navigateWithSheetClose(path: string) {
   // trackPageView(path);
 }
 </script>
-
+<div class="min-h-screen">
 <!-- Header -->
 <header class="bg-white shadow-sm sticky top-0 z-50">
   <!-- Top Banner - Logo and Brand -->
   <div class="bg-white py-1">
-    <div class="mx-auto max-w-7xl px-2 sm:px-3 lg:px-4">
+    <div class="mx-auto px-2 sm:px-3 lg:px-4">
       <div class="flex justify-between items-center">
         <!-- Logo and Brand -->
         <div class="flex items-center">
@@ -222,7 +222,7 @@ async function navigateWithSheetClose(path: string) {
     </SheetContent>
   </Sheet>
 
-<main class="flex min-h-screen w-full flex-col">
+<main class="flex w-full flex-col">
     {@render children()} <!-- Changed from <slot /> -->
 </main>
 
@@ -235,7 +235,6 @@ async function navigateWithSheetClose(path: string) {
       </p>
     </div>
   </footer>
-
-    <LoginModal />
-
+</div>
+<LoginModal />
 <Toaster />
