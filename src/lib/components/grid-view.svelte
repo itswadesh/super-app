@@ -402,6 +402,11 @@ function handleSelectChange(field: string, value: string) {
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
+                {#if actionButtons.length > 0}
+                  <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                {/if}
                 {#each FIELDS as field}
                   <th 
                     scope="col"
@@ -416,11 +421,6 @@ function handleSelectChange(field: string, value: string) {
                     </div>
                   </th>
                 {/each}
-                {#if actionButtons.length > 0}
-                  <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                {/if}
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
@@ -615,16 +615,17 @@ function handleSelectChange(field: string, value: string) {
                 type="button" 
                 onclick={handleSave}
                 disabled={!selectedRow}
+                class="mr-8"
               >
                 <Save class="w-4 h-4 mr-2" />
                 {selectedRow?.ROWID ? 'Update' : 'Create'}
               </Button>
-              <Sheet.Close asChild>
+              <!-- <Sheet.Close asChild>
                 <Button variant="ghost" size="icon" onclick={() => isSheetOpen = false} type="button">
                   <X class="h-4 w-4" />
                   <span class="sr-only">Close</span>
                 </Button>
-              </Sheet.Close>
+              </Sheet.Close> -->
             </div>
           </div>
           <!-- <Sheet.Description class="text-sm text-gray-500 mb-6">
@@ -635,28 +636,37 @@ function handleSelectChange(field: string, value: string) {
             {#each editableFields as field}
               <div class="space-y-2 col-span-1">
                 <Label for={field.value} class="text-sm font-medium text-gray-700">
-                  {field.text}
+                  {field.text.replaceAll('_',' ')}
                   {#if field.required}<span class="text-red-500 ml-1">*</span>{/if}
                 </Label>
                 
                 {#if field.type === 'select'}
-                  <div class="w-full">
-                    <Select.Root 
-                      value={String(selectedRow?.[field.value] ?? '')} 
-                      onValueChange={(value) => handleSelectChange(field.value, value)}
+                  {#if field.options_query?.length > 0}
+                    <Select.Root type="single"
+                      value={selectedRow?.[field.value] || ''}
+                      onValueChange={(value: string) => handleSelectChange(field.value, value)}
                     >
                       <Select.Trigger class="w-full">
-                        <Select.Value placeholder={`Select ${field.text}`} />
+                        {#if selectedRow?.[field.value]}
+                          {field.options_query.find(opt => String(opt.VAL) === String(selectedRow?.[field.value]))?.KEY || String(selectedRow?.[field.value] || '')}
+                        {:else}
+                          <span class="text-muted-foreground">Select {field.text}</span>
+                        {/if}
                       </Select.Trigger>
                       <Select.Content>
-                        {#each optionValues.filter((opt: SelectOption) => opt.KEY === field.value) as opt}
-                          <Select.Item value={opt.VAL}>
-                            {opt.VAL}
-                          </Select.Item>
-                        {/each}
+                        <Select.Group>
+                          <Select.Label>{field.text}</Select.Label>
+                          {#each field.options_query as opt, i (i)}
+                            <Select.Item value={String(opt.VAL)}>
+                              {opt.KEY}
+                            </Select.Item>
+                          {/each}
+                        </Select.Group>
                       </Select.Content>
                     </Select.Root>
-                  </div>
+                  {:else}
+                    <div class="text-sm text-muted-foreground">No options available</div>
+                  {/if}
                 {:else if field.type === 'checkbox'}
                   <div class="flex items-start space-x-2">
                     <Checkbox
@@ -674,7 +684,7 @@ function handleSelectChange(field: string, value: string) {
                     oninput={(e) => handleInputChange(field.value, e.target.value)}
                     placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
                     rows="3"
-                  />
+                  ></textarea>
                 {:else}
                   {#if field.type === 'date' && selectedRow}
                     <Input 

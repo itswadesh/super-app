@@ -58,7 +58,6 @@ export const FIELDS = [
       { KEY: 'TO BE TENDERED', VAL: 'TO BE TENDERED' },
       { KEY: 'WORK ORDER ISSUED', VAL: 'WORK ORDER ISSUED' },
       { KEY: 'WO CLOSED', VAL: 'WO CLOSED' },
-      { KEY: 'WO CLOSED', VAL: 'WO CLOSED' },
     ],
     no: {},
   },
