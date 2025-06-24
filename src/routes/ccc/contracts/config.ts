@@ -6,7 +6,6 @@ export const QUERY =
 
 export const FIELDS = [
   { text: 'SL', value: 'SL', type: 'text', no: { delete: true } },
-  { text: 'DESCR', value: 'DESCR_OF_WRK', type: 'text', no: { delete: true } },
   { text: 'WO_NO', value: 'WO_NO', type: 'text', no: { delete: true } },
   { text: 'WO_DT', value: 'WO_DT', type: 'date', no: {} },
   { text: 'NAME_OF_CONTRACTOR', value: 'NAME_OF_CONTRACTOR', type: 'text', no: {} },
@@ -88,6 +87,7 @@ export const FIELDS = [
     type: 'date',
     no: {},
   },
+  { text: 'DESCR', value: 'DESCR_OF_WRK', type: 'text', no: { delete: true } },
 
   // civil/pm type
 

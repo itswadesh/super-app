@@ -10,6 +10,8 @@ import * as Select from '$lib/components/ui/select'
 import { Checkbox } from '$lib/components/ui/checkbox'
 import {
   ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   Search,
   Plus,
   Pencil,
@@ -113,9 +115,9 @@ let editableColumns = $state<Field[]>([])
 let optionValues = $state<SelectOption[]>([])
 let paginationSettings = $state({
   page: 0,
-  limit: 10,
+  limit: 100,
   size: 0,
-  amounts: [10, 20, 50, 100] as const,
+  amounts: [50, 100, 200, 500] as const,
 })
 
 // Derived state with explicit types
@@ -310,13 +312,13 @@ async function handleSave() {
     editableColumns.map((item) => {
       let perceivedValue = selectedRow[item.value]
       if (perceivedValue === undefined || perceivedValue === null) return
-      
+
       if (item.type === 'checkbox') {
         perceivedValue = perceivedValue === false ? 'N' : 'Y'
         mapped_columns.push(`${item.value} = '${perceivedValue}'`)
         return
       }
-      
+
       // Format date values as 'dd-mmm-yyyy' for date fields
       if (item.type === 'date' && perceivedValue) {
         try {
@@ -337,8 +339,18 @@ async function handleSave() {
 
           const day = String(dateValue.getDate()).padStart(2, '0')
           const months = [
-            'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-            'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+            'JAN',
+            'FEB',
+            'MAR',
+            'APR',
+            'MAY',
+            'JUN',
+            'JUL',
+            'AUG',
+            'SEP',
+            'OCT',
+            'NOV',
+            'DEC',
           ]
           const month = months[dateValue.getMonth()]
           const year = dateValue.getFullYear()
@@ -349,7 +361,7 @@ async function handleSave() {
           // Fall back to original value if date parsing fails
         }
       }
-      
+
       // For non-date fields or if date parsing failed
       mapped_columns.push(`${item.value} = '${perceivedValue}'`)
     })
@@ -410,17 +422,29 @@ async function handleSave() {
       insert_columns.push(item.value)
       insert_values.push(perceivedValue)
     })
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    const month = months[now.getMonth()];
-    const year = now.getFullYear();
-    const formattedDate = `'${day}-${month}-${year}'`;
+    const now = new Date()
+    const day = String(now.getDate()).padStart(2, '0')
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ]
+    const month = months[now.getMonth()]
+    const year = now.getFullYear()
+    const formattedDate = `'${day}-${month}-${year}'`
     let q = `UPDATE ${TABLE_NAME} SET ${mapped_columns.join(',')}, UPDATED_BY='${page.data?.pbno}', UPDATED_AT=${formattedDate} WHERE ROWID='${selectedRow?.ROWID}'`
     if (!selectedRow?.ROWID) {
       q = `INSERT INTO ${TABLE_NAME}(${insert_columns.join(',')}) VALUES (${insert_values.join(',')})`
     }
-    console.log(q, 'qqqqqqqqqqqqqq')
     const response = await post('query', { q, db: DB_NAME })
 
     if (response.error) {
@@ -534,37 +558,45 @@ function handleSelectChange(field: string, value: string) {
         </div>
       {/if}
       
-      <div class="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
+      <div class="bg-white rounded-lg border shadow-sm overflow-hidden text-xs flex flex-col h-[80vh]">
+        <div class="overflow-y-auto overflow-x-auto flex-1 relative scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <table class="min-w-full divide-y divide-gray-200 text-xs relative">
+            <thead class="bg-gray-50 sticky top-0 shadow-sm">
+              <tr class="text-[0.7rem] leading-none">
                 {#if actionButtons.length > 0}
-                  <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" class="px-2 py-2 text-right font-medium text-gray-500 uppercase tracking-wider bg-gray-50">
                     Actions
                   </th>
                 {/if}
                 {#each FIELDS as field}
                   <th 
                     scope="col"
-                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors {sortConfig?.key === field.value ? 'bg-gray-100' : ''}"
+                    class="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors bg-gray-50 {sortConfig?.key === field.value ? 'bg-gray-100' : ''}"
                     onclick={() => sort && sortColumn(field.value)}
                   >
                     <div class="flex items-center">
                       {field.text}
                       {#if sort}
-                        <ArrowUpDown class="ml-2 h-4 w-4" />
+                        {#if sortConfig?.key === field.value}
+                          {#if sortConfig.direction === 'asc'}
+                            <ArrowUp class="ml-1 h-3 w-3 text-blue-500" />
+                          {:else}
+                            <ArrowDown class="ml-1 h-3 w-3 text-blue-500" />
+                          {/if}
+                        {:else}
+                          <ArrowUpDown class="ml-1 h-3 w-3 text-gray-400" />
+                        {/if}
                       {/if}
                     </div>
                   </th>
                 {/each}
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-gray-200 text-xs">
               {#each paginatedSource as row, i (row.ROWID || i)}
-                <tr class="hover:bg-gray-50">
+                <tr class="hover:bg-gray-50 {i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} text-xs">
                   {#if actionButtons.length > 0}
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
                       <div class="flex justify-end space-x-2">
                         {#if edit}
                           <Button
@@ -594,15 +626,19 @@ function handleSelectChange(field: string, value: string) {
                     </td>
                   {/if}
                   {#each FIELDS as field}
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td class={`px-2 py-1 whitespace-nowrap text-xs ${field.type === 'number' ? 'text-right' : ''} ${typeof row[field.value] === 'number' ? 'font-mono' : ''}`}>
                       {#if field.type === 'checkbox'}
                         <Checkbox checked={!!(row[field.value] as boolean)} disabled />
                       {:else if field.type === 'image'}
                         <img src={row[field.value] as string} alt={field.text} class="h-10 w-10 rounded-full" />
                       {:else if field.type === 'date' && row[field.value]}
                         {formatDate(row[field.value])}
+                      {:else if field.type === 'number' && row[field.value] !== null && row[field.value] !== undefined}
+                        {Number(row[field.value]).toFixed(2)}
+                      {:else if row[field.value]}
+                        {row[field.value] as string}
                       {:else}
-                        {row[field.value] as string} <span class="text-gray-400">—</span>
+                        <span class="text-gray-400">—</span>
                       {/if}
                     </td>
                   {/each}
@@ -610,7 +646,7 @@ function handleSelectChange(field: string, value: string) {
                 </tr>
               {:else}
                 <tr>
-                  <td colspan={FIELDS.length + (actionButtons.length > 0 ? 1 : 0)} class="px-6 py-4 text-center text-sm text-gray-500">
+                  <td colspan={FIELDS.length + (actionButtons.length > 0 ? 1 : 0)} class="px-2 py-1 text-center text-xs text-gray-500">
                     No records found
                   </td>
                 </tr>
@@ -620,7 +656,7 @@ function handleSelectChange(field: string, value: string) {
         </div>
         
         {#if pagination && paginatedSource.length > 0}
-          <div class="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
+          <div class="bg-gray-50 px-3 py-1.5 flex items-center justify-between border-t border-gray-200">
             <div class="flex-1 flex justify-between sm:hidden">
               <Button
                 variant="outline"

@@ -10,7 +10,7 @@ import { QUERY, FIELDS, TABLE_NAME, DB_NAME } from './config'
   add={true}
   edit={true}
   search={true}
-  del={true}
+  del={false}
   del1={false}
   pagination={true}
   actionButtons={true}
