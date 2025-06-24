@@ -1,6 +1,6 @@
 <script>
 import GridView from '$lib/components/grid-view.svelte'
-import { QUERY, FIELDS, TABLE_NAME, DB_NAME } from './config'
+import { QUERY, FIELDS } from './config'
 </script>
 
 <GridView
@@ -10,14 +10,13 @@ import { QUERY, FIELDS, TABLE_NAME, DB_NAME } from './config'
   add={true}
   edit={true}
   search={true}
+  export={true}
   del={false}
   del1={false}
   pagination={true}
   actionButtons={true}
   {FIELDS}
   {QUERY}
-  {TABLE_NAME}
-  {DB_NAME}
   onSort={(column, direction) => console.log('Sorting by', column, direction)}
   onSearch={(query) => console.log('Searching for', query)}
   onEdit={(row) => console.log('Editing row', row)}

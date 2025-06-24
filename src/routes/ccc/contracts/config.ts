@@ -1,11 +1,11 @@
-export const TABLE_NAME = 'MRP.SED_CONTRACT_CELL_AMC'
-export const DB_NAME = 'MRP'
+// export const TABLE_NAME = 'MRP.SED_CONTRACT_CELL_AMC'
+// export const DB_NAME = 'MRP'
 
 export const QUERY =
-  'select t.ROWID, SL, DESCR_OF_WRK,WO_NO,WO_DT,NAME_OF_CONTRACTOR	,VALUE_OF_CONTRACT,	DT_OF_COMMENCE,	DT_OF_COMPLETION,	MODE_OF_PAYMENT,	AREA_INCHRG, INCHRG_PBNUM,	CONTRACTOR_PH_NO, FILE_TRACK_REF_NO, EXECUTION_DTL,IS_RECURRING,	STATUS,	REMARKS1,	TENDR_DUE_EDC,	PAID_AMT, CAT ,SUB_CAT, DIVISION,AAR_DATE	,DEPT,UPDATED_DATE,UPDATED_BY,ESTIMATED_VALUE,ADMIN_APPROVAL_RECT_DATE,TENDER_NO,TENDER_DATE,TENDER_TYPE,DATE_OF_TENDER_OPENING,BID_VLIDITY,TEC_APPROVED_DATE,COMMERCIAL_BID_OPENING_DATE,AWARD_OF_WORK_APPROVAL_DATE from MRP.SED_CONTRACT_CELL_AMC t'
+  'select t.ROWID, SL, DIVISION, DEPT, CAT, SUB_CAT, DESCR_OF_WRK, WO_NO, WO_DT, NAME_OF_CONTRACTOR, VALUE_OF_CONTRACT, DT_OF_COMMENCE, DT_OF_COMPLETION, MODE_OF_PAYMENT, AREA_INCHRG, INCHRG_PBNUM, CONTRACTOR_PH_NO, STATUS, TENDR_DUE_EDC, AAR_DATE, UPDATED_DATE, PAID_AMT, FILE_TRACK_REF_NO, EXECUTION_DTL, IS_RECURRING, REMARKS1, ESTIMATED_VALUE, ADMIN_APPROVAL_RECT_DATE, TENDER_NO, TENDER_DATE, TENDER_TYPE, DATE_OF_TENDER_OPENING, BID_VLIDITY, TEC_APPROVED_DATE, COMMERCIAL_BID_OPENING_DATE, AWARD_OF_WORK_APPROVAL_DATE from MRP.SED_CONTRACT_CELL_AMC t'
 
 export const FIELDS = [
-  { text: 'SL', value: 'SL', type: 'text', no: { delete: true } },
+  { text: 'SL', value: 'SL', type: 'text', no: {} },
   {
     text: 'DIVISION',
     value: 'DIVISION',
@@ -14,7 +14,6 @@ export const FIELDS = [
       { KEY: 'ED', VAL: 'ED' },
       { KEY: 'SED', VAL: 'SED' },
     ],
-    no: { delete: true },
   },
   {
     text: 'CIVIL/PM',
@@ -24,7 +23,6 @@ export const FIELDS = [
       { KEY: 'CIVIL', VAL: 'CIVIL' },
       { KEY: 'PM', VAL: 'PM' },
     ],
-    no: {},
   },
   {
     text: 'CATEGORY',
@@ -35,7 +33,6 @@ export const FIELDS = [
       { KEY: 'SERVICES', VAL: 'SERVICES' },
       { KEY: 'Miscellaneous', VAL: 'Miscelaneous' },
     ],
-    no: { delete: true },
   },
   {
     text: 'TYPE',
@@ -49,19 +46,18 @@ export const FIELDS = [
       { KEY: 'Expenditure', VAL: 'Expenditure' },
       { KEY: 'Miscellaneous', VAL: 'Miscelaneous' },
     ],
-    no: {},
   },
-  { text: 'DESCRIPTION', value: 'DESCR_OF_WRK', type: 'text', no: { delete: true } },
-  { text: 'WO NO', value: 'WO_NO', type: 'text', no: { delete: true } },
-  { text: 'WO DATE', value: 'WO_DT', type: 'date', no: {} },
-  { text: 'NAME OF CONTRACTOR', value: 'NAME_OF_CONTRACTOR', type: 'text', no: {} },
-  { text: 'VALUE OF CONTRACT', value: 'VALUE_OF_CONTRACT', type: 'number', no: {} },
-  { text: 'DATE OF COMMENCE', value: 'DT_OF_COMMENCE', type: 'date', no: {} },
-  { text: 'DATE OF COMPLETION', value: 'DT_OF_COMPLETION', type: 'date', no: {} },
-  { text: 'MODE OF PAYMENT', value: 'MODE_OF_PAYMENT', type: 'text', no: {} },
-  { text: 'AREA INCHRG', value: 'AREA_INCHRG', type: 'text', no: {} },
-  { text: 'INCHARGE PB NUMBER', value: 'INCHRG_PBNUM', type: 'text', no: {} },
-  { text: 'CONTRACTOR PH NO', value: 'CONTRACTOR_PH_NO', type: 'text', no: {} },
+  // { text: 'DESCRIPTION', value: 'DESCR_OF_WRK', type: 'text' },
+  // { text: 'WO NO', value: 'WO_NO', type: 'text' },
+  // { text: 'WO DATE', value: 'WO_DT', type: 'date' },
+  // { text: 'NAME OF CONTRACTOR', value: 'NAME_OF_CONTRACTOR', type: 'text' },
+  // { text: 'VALUE OF CONTRACT', value: 'VALUE_OF_CONTRACT', type: 'number' },
+  // { text: 'DATE OF COMMENCE', value: 'DT_OF_COMMENCE', type: 'date' },
+  // { text: 'DATE OF COMPLETION', value: 'DT_OF_COMPLETION', type: 'date' },
+  // { text: 'MODE OF PAYMENT', value: 'MODE_OF_PAYMENT', type: 'text' },
+  // { text: 'AREA INCHARGE', value: 'AREA_INCHRG', type: 'text' },
+  // { text: 'INCHARGE PB NUMBER', value: 'INCHRG_PBNUM', type: 'text' },
+  // { text: 'CONTRACTOR PH NO', value: 'CONTRACTOR_PH_NO', type: 'text' },
   {
     text: 'STATUS',
     value: 'STATUS',
@@ -79,16 +75,16 @@ export const FIELDS = [
       { KEY: 'UNDER FUND APPROVAL AT MC', VAL: 'UNDER FUND APPROVAL AT MC' },
       { KEY: 'KEPT ON HOLD', VAL: 'KEPT ON HOLD' },
     ],
-    no: {},
   },
 
-  { text: 'TENDER EDC', value: 'TENDR_DUE_EDC', type: 'date', no: {} },
+  // { text: 'TENDER EDC', value: 'TENDR_DUE_EDC', type: 'date' },
 
-  { text: 'ADMIN APPROVAL RECEIVE DATE', value: 'AAR_DATE', type: 'date', no: {} },
-  // { text: 'UPDATE DATE', value: 'UPDATED_DATE', type: 'date', no: {} },
+  // { text: 'ADMIN APPROVAL RECEIVE DATE', value: 'AAR_DATE', type: 'date' },
+  { text: 'UPDATE DATE', value: 'UPDATED_DATE', type: 'date', no: { edit: true } },
+  { text: 'UPDATED AT', value: 'UPDATED_AT', type: 'date', no: { edit: true } },
 
-  { text: 'AMOUNT PAID', value: 'PAID_AMT', type: 'number', no: {} },
-  { text: 'FILE TRACK REF NO', value: 'FILE_TRACK_REF_NO', type: 'text', no: {} },
+  // { text: 'AMOUNT PAID', value: 'PAID_AMT', type: 'number' },
+  // { text: 'FILE TRACK REF NO', value: 'FILE_TRACK_REF_NO', type: 'text' },
   {
     text: 'EXECUTION STATUS',
     value: 'EXECUTION_DTL',
@@ -97,7 +93,6 @@ export const FIELDS = [
       { KEY: 'WORK IN PROGRESS', VAL: 'WORK IN PROGRESS' },
       { KEY: 'WORK COMPLETED', VAL: 'WORK COMPLETED' },
     ],
-    no: {},
   },
   {
     text: 'IS RECURRING?',
@@ -107,34 +102,30 @@ export const FIELDS = [
       { KEY: 'Y', VAL: 'Y' },
       { KEY: 'N', VAL: 'N' },
     ],
-    no: {},
   },
-  { text: 'REMARKS', value: 'REMARKS1', type: 'text', no: {} },
-  { text: 'ESTIMATED VALUE', value: 'ESTIMATED_VALUE', type: 'number', no: {} },
-  {
-    text: 'ADMIN APPROVAL RECTIFICATION DATE',
-    value: 'ADMIN_APPROVAL_RECT_DATE',
-    type: 'date',
-    no: {},
-  },
-  { text: 'TENDER NO', value: 'TENDER_NO', type: 'text', no: {} },
-  { text: 'TENDER DATE', value: 'TENDER_DATE', type: 'date', no: {} },
-  { text: 'TENDER TYPE', value: 'TENDER_TYPE', type: 'text', no: {} },
-  { text: 'DATE OF TENDER OPENING', value: 'DATE_OF_TENDER_OPENING', type: 'date', no: {} },
-  { text: 'BID VALIDITY', value: 'BID_VLIDITY', type: 'text', no: {} },
-  { text: 'TEC APPROVED DATE', value: 'TEC_APPROVED_DATE', type: 'date', no: {} },
-  {
-    text: 'COMMERCIAL BID OPENING DATE',
-    value: 'COMMERCIAL_BID_OPENING_DATE',
-    type: 'date',
-    no: {},
-  },
-  {
-    text: 'AWARD OF WORK APPROVAL DATE',
-    value: 'AWARD_OF_WORK_APPROVAL_DATE',
-    type: 'date',
-    no: {},
-  },
+  // { text: 'REMARKS', value: 'REMARKS1', type: 'text' },
+  // { text: 'ESTIMATED VALUE', value: 'ESTIMATED_VALUE', type: 'number' },
+  // {
+  //   text: 'ADMIN APPROVAL RECTIFICATION DATE',
+  //   value: 'ADMIN_APPROVAL_RECT_DATE',
+  //   type: 'date',
+  // },
+  // { text: 'TENDER NO', value: 'TENDER_NO', type: 'text' },
+  // { text: 'TENDER DATE', value: 'TENDER_DATE', type: 'date' },
+  // { text: 'TENDER TYPE', value: 'TENDER_TYPE', type: 'text' },
+  // { text: 'DATE OF TENDER OPENING', value: 'DATE_OF_TENDER_OPENING', type: 'date' },
+  // { text: 'BID VALIDITY', value: 'BID_VLIDITY', type: 'text' },
+  // { text: 'TEC APPROVED DATE', value: 'TEC_APPROVED_DATE', type: 'date' },
+  // {
+  //   text: 'COMMERCIAL BID OPENING DATE',
+  //   value: 'COMMERCIAL_BID_OPENING_DATE',
+  //   type: 'date',
+  // },
+  // {
+  //   text: 'AWARD OF WORK APPROVAL DATE',
+  //   value: 'AWARD_OF_WORK_APPROVAL_DATE',
+  //   type: 'date',
+  // },
 
   // civil/pm type
 

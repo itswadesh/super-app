@@ -25,17 +25,11 @@ import {
 } from '@lucide/svelte'
 import { page } from '$app/state'
 import { post } from '$lib/utils/api'
-
-type IconProps = {
-  size?: string | number
-  width?: string | number
-  height?: string | number
-  class?: string
-  color?: string
-  [key: `aria-${string}`]: string | undefined
-}
+import * as XLSX from 'xlsx'
 
 // Type definitions
+type FieldType = 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'textarea'
+
 interface Option<T = string | number | boolean> {
   label: string
   value: T
@@ -60,9 +54,8 @@ interface PostResponse {
 interface Field {
   text: string
   value: string
-  type?: 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'textarea'
-  options?: string
-  options?: Option[]
+  type?: FieldType
+  options?: string | Option[]
   helpText?: string
   placeholder?: string
   required?: boolean
@@ -74,33 +67,411 @@ interface Field {
   }
 }
 
+interface ColumnInfo {
+  cid: number
+  name: string
+  type: string
+  notnull: number
+  dflt_value: string | number | null
+  pk: number
+  comments?: string
+}
+
 type TableData = {
   [key: string]: string | number | boolean | null | undefined
   ROWID?: string
 }
 
+type IconProps = {
+  size?: string | number
+  width?: string | number
+  height?: string | number
+  class?: string
+  color?: string
+  [key: `aria-${string}`]: string | undefined
+}
+
+// Component props
 let {
   FIELDS,
-  TABLE_NAME,
-  DB_NAME,
-  QUERY,
-  heading,
-  backLink,
-  sort,
-  add,
-  edit,
-  del,
-  del1,
-  search,
-  pagination,
-  allowRegistration,
-  dispatch,
-} = $props()
+  QUERY = '',
+  heading = '',
+  backLink = '',
+  sort = true,
+  add = true,
+  edit = true,
+  del = true,
+  del1 = false,
+  search = true,
+  pagination = true,
+  allowRegistration = false,
+  dispatch = () => {},
+} = $props<{
+  FIELDS: Field[]
+  QUERY?: string
+  heading?: string
+  backLink?: string
+  sort?: boolean
+  add?: boolean
+  edit?: boolean
+  del?: boolean
+  del1?: boolean
+  search?: boolean
+  pagination?: boolean
+  allowRegistration?: boolean
+  dispatch?: (action: string, data?: unknown) => void
+}>()
+
+// State for database schema information
+let tableSchema = $state<ColumnInfo[]>([])
+
+// Extract column order from SQL query
+function extractColumnOrderFromQuery(query: string): string[] {
+  if (!query) return []
+
+  try {
+    // Simple regex to extract the SELECT part of the query
+    const selectMatch = query.match(/^\s*SELECT\s+([\s\S]+?)\s+FROM/i)
+    if (!selectMatch) return []
+
+    const selectPart = selectMatch[1].trim()
+
+    // Split by comma but handle quoted strings and subqueries
+    const columns = []
+    let current = ''
+    let inQuotes = false
+    let inParens = 0
+
+    for (let i = 0; i < selectPart.length; i++) {
+      const char = selectPart[i]
+
+      if (char === "'" && (i === 0 || selectPart[i - 1] !== '\\')) {
+        inQuotes = !inQuotes
+      } else if (char === '(' && !inQuotes) {
+        inParens++
+      } else if (char === ')' && !inQuotes) {
+        inParens = Math.max(0, inParens - 1)
+      }
+
+      if (char === ',' && !inQuotes && inParens === 0) {
+        const col = current.trim()
+        if (col) {
+          // Extract column name (handle 'AS' aliases)
+          const aliasMatch = col.match(/\bAS\s+([^\s,)]+)$/i) ||
+            col.match(/\.([^\s,)]+)$/) || [null, col]
+          columns.push(aliasMatch[1].replace(/[`"\[\]]/g, ''))
+        }
+        current = ''
+      } else {
+        current += char
+      }
+    }
+
+    // Add the last column
+    if (current.trim()) {
+      const aliasMatch = current.trim().match(/\bAS\s+([^\s,)]+)$/i) ||
+        current.trim().match(/\.([^\s,)]+)$/) || [null, current.trim()]
+      columns.push(aliasMatch[1].replace(/[`"\[\]]/g, ''))
+    }
+
+    return columns
+  } catch (error) {
+    console.error('Error parsing SQL query:', error)
+    return []
+  }
+}
+
+// Initialize with empty array to prevent undefined errors
+let mergedFields = $state<Field[]>([])
+let columnOrder = $state<string[]>([])
+
+// Extract column order when QUERY changes
+$effect(() => {
+  if (QUERY) {
+    columnOrder = extractColumnOrderFromQuery(QUERY)
+  } else {
+    columnOrder = []
+  }
+})
+
+// Update merged fields when schema, FIELDS, or columnOrder changes
+$effect(() => {
+  // Create a map of custom fields for quick lookup
+  const customFields = new Map(FIELDS?.map((field) => [field.value, field]) || [])
+  
+  // Create a map of all available fields from database schema
+  const allFields = new Map<string, Field>()
+  const customFieldLookup = new Map(FIELDS?.map((f) => [f.value, f]) || [])
+
+  // First, add all fields from the database schema
+  if (Array.isArray(tableSchema) && tableSchema.length > 0) {
+    console.log('Table Schema:', JSON.stringify(tableSchema, null, 2)) // Log full schema
+    
+    for (const column of tableSchema) {
+      if (!column) continue; // Skip null/undefined columns
+      
+      // Try different possible property names for the column name
+      const fieldName = column.name || column.NAME || column.column_name || column.COLUMN_NAME;
+      if (!fieldName) {
+        console.warn('Skipping column with no name:', column);
+        continue;
+      }
+      
+      const customField = customFieldLookup.get(fieldName);
+      const columnType = column.type || column.TYPE || column.data_type || column.DATA_TYPE;
+
+      // Create base field from schema with comments as default text
+      const field: Field = {
+        text: column.comments || column.COMMENTS || (fieldName ? fieldName.replace(/_/g, ' ') : 'Unknown'),
+        value: fieldName,
+        type: getFieldTypeFromDbType(columnType),
+        required: column.notnull === 1 || column.NULLABLE === 'N',
+      }
+      // If we have a custom field definition, use its text and type
+      if (customField) {
+        field.text = customField.text || field.text // FIELDS prop text takes highest priority
+        field.type = customField.type || field.type
+        Object.assign(field, customField) // Apply all other custom field properties
+      }
+
+      allFields.set(fieldName, field)
+    }
+  }
+
+  // Add any additional fields from FIELDS that weren't in the schema
+  // This is useful for virtual fields or fields that might be added dynamically
+  if (FIELDS?.length) {
+    for (const field of FIELDS) {
+      if (!allFields.has(field.value)) {
+        allFields.set(field.value, {
+          // For fields not in schema but in FIELDS, use FIELDS text or format the value
+          text: field.text || field.value.replace(/_/g, ' '), // FIELDS text takes priority
+          value: field.value,
+          type: field.type || 'text',
+          ...field,
+        })
+      }
+    }
+  }
+
+  // Now apply the column order if we have one
+  if (columnOrder.length > 0) {
+    const orderedFields: Field[] = []
+    const processedFields = new Set<string>()
+
+    // First add 'type' field if it exists
+    const typeField = allFields.get('type')
+    if (typeField) {
+      orderedFields.push(typeField)
+      processedFields.add('type')
+    }
+
+    // Then add columns in the order they appear in the SELECT statement
+    for (const colName of columnOrder) {
+      if (colName !== 'type' && !processedFields.has(colName)) {
+        let field = allFields.get(colName)
+
+        // If field doesn't exist in our schema yet, create a default one
+        if (!field) {
+          field = {
+            text: colName.replace(/_/g, ' '),
+            value: colName,
+            type: 'text', // Default type
+          }
+        }
+
+        if (field) {
+          orderedFields.push(field)
+          processedFields.add(colName)
+        }
+      }
+    }
+
+    // Then add any remaining fields that weren't in the SELECT statement
+    for (const [colName, field] of allFields.entries()) {
+      if (!processedFields.has(colName)) {
+        orderedFields.push(field)
+        processedFields.add(colName)
+      }
+    }
+
+    mergedFields = orderedFields
+  } else {
+    // If no column order, move 'type' field to the beginning if it exists
+    const fields = Array.from(allFields.values())
+    const typeIndex = fields.findIndex((f) => f.value === 'type')
+    if (typeIndex > 0) {
+      const [typeField] = fields.splice(typeIndex, 1)
+      fields.unshift(typeField)
+    }
+    mergedFields = fields
+  }
+})
+
+// Map database types to field types
+function getFieldTypeFromDbType(dbType: string): FieldType {
+  if (!dbType) return 'text'
+
+  // Convert to uppercase for consistent comparison (Oracle types are often uppercase)
+  const type = dbType.toUpperCase()
+
+  // Debug log can be removed after verification
+  // console.log('DB Type:', type)
+
+  // Handle number types - check for Oracle NUMBER type first
+  if (
+    type === 'NUMBER' || // Oracle NUMBER type
+    type.startsWith('NUMBER(') || // Oracle NUMBER with precision/scale
+    type.includes('INT') ||
+    type.includes('FLOAT') ||
+    type.includes('DOUBLE') ||
+    type.includes('DECIMAL') ||
+    type.includes('REAL') ||
+    type.includes('NUM') ||
+    type.includes('VALUE') ||
+    type.includes('AMOUNT') ||
+    type.includes('PRICE') ||
+    type.includes('TOTAL') ||
+    type.includes('SUM') ||
+    type.includes('QTY') ||
+    type.includes('QUANTITY') ||
+    type.includes('COUNT')
+  ) {
+    return 'number'
+  }
+
+  // Handle Oracle DATE, TIMESTAMP, and other date/time types
+  if (
+    // Oracle date types
+    type === 'DATE' ||
+    type.startsWith('TIMESTAMP') ||
+    // Common date patterns in column names
+    type.includes('DATE') ||
+    type.includes('DT_') ||
+    type.endsWith('_DT') ||
+    type.endsWith('_DATE') ||
+    type.includes('DT_OF_') ||
+    type === 'DT' ||
+    // Specific field names that should be treated as dates (case-insensitive)
+    ['DT_OF_COMPLETION', 'COMPLETION_DATE', 'DATE_COMPLETED', 'CREATED_AT', 'UPDATED_AT', 'MODIFIED_DATE']
+      .some(dateField => type.includes(dateField))
+  ) {
+    return 'date';
+  }
+
+  // Handle boolean types
+  if (type.includes('bool') || type.startsWith('is_') || type.startsWith('has_')) {
+    return 'checkbox'
+  }
+
+  // Handle large text fields
+  if (
+    type.includes('text') ||
+    type.includes('char') ||
+    type.includes('clob') ||
+    type.includes('desc') ||
+    type.includes('note') ||
+    type.includes('comment')
+  ) {
+    return 'textarea'
+  }
+
+  // Default to text for unknown types
+  return 'text'
+}
+
+// Fetch column types from database
+async function fetchColumnTypes() {
+  if (!TABLE_NAME) return
+
+  try {
+    const response = await post('query', {
+      q: `SELECT t.column_name as name,
+       t.data_type   as type,
+       t.nullable    as notnull,
+       c.comments
+  FROM all_tab_columns t, USER_COL_COMMENTS c
+          WHERE t.table_name = '${TABLE_NAME.toUpperCase()}' 
+          and t.table_name = c.table_name
+          and t.COLUMN_NAME = c.COLUMN_NAME
+          ${DB_NAME ? `AND t.owner = '${DB_NAME.toUpperCase()}'` : ''}
+          ORDER BY t.column_id`,
+      db: DB_NAME || undefined,
+    })
+
+    if (Array.isArray(response)) {
+      tableSchema = response as ColumnInfo[]
+    }
+  } catch (error) {
+    console.error('Error fetching table schema:', error)
+    toast.warning('Could not fetch table schema, using field definitions only')
+  }
+}
+
+// Parse query to extract table name, db name, and fields
+function parseQuery(query: string): { tableName: string; dbName: string; fields: Field[] } {
+  if (!query) return { tableName: '', dbName: '', fields: [] as Field[] }
+
+  // Extract DB_NAME if specified in format [DB_NAME].TABLE_NAME
+  let dbName = ''
+  let tableName = ''
+  const dbTableMatch = query.match(/from\s+\[?([^\]\s]+)\]?\.\[?([^\]\s]+)\]?/i)
+  if (dbTableMatch) {
+    dbName = dbTableMatch[1].trim()
+    tableName = dbTableMatch[2].trim()
+  } else {
+    // Try to extract just table name if no DB specified
+    const tableMatch = query.match(/from\s+\[?([^\]\s,;)]+)\]?/i)
+    if (tableMatch) {
+      tableName = tableMatch[1].trim()
+    }
+  }
+
+  // Extract fields from SELECT clause
+  const selectMatch = query.match(/select\s+(.+?)\s+from/i)
+  let fields: Field[] = []
+
+  if (selectMatch) {
+    const selectClause = selectMatch[1].trim()
+    // Split by comma but handle quoted strings and function calls
+    const fieldParts = selectClause.split(',').map((p) => p.trim())
+
+    fields = fieldParts.map((field) => {
+      // Handle field aliases (e.g., 'field as alias' or 'field alias')
+      const aliasMatch = field.match(/(?:as\s+)?([^\s,;]+)$/i)
+      let fieldName = aliasMatch ? aliasMatch[1].trim() : field.trim()
+
+      // Remove any table alias prefix (e.g., 't.', 'a.', etc.)
+      const cleanFieldName = fieldName.replace(/^[a-zA-Z0-9_]+\./, '')
+
+      return {
+        text: cleanFieldName.replace(/_/g, ' '),
+        value: cleanFieldName,
+        type: 'text' as const,
+      }
+    })
+  }
+
+  return { tableName, dbName, fields }
+}
+
+// Initialize
+onMount(() => {
+  const { tableName, dbName } = parseQuery(QUERY)
+  if (tableName && dbName) {
+    fetchColumnTypes()
+  }
+})
 
 // State with proper typing
-let data = $state<TableData[]>([])
+let data: TableData[] = $state([])
 let filteredData = $state<TableData[]>([])
 let selectedRow = $state<TableData | null>(null)
+
+// Derived state from QUERY
+let TABLE_NAME = $state('')
+let DB_NAME = $state('')
+let fieldsFromDB = $state<Field[]>([])
 
 // Helper function to safely access selectedRow
 function withSelectedRow<T>(fn: (row: TableData) => T): T | undefined {
@@ -134,14 +505,67 @@ let actionButtons = $derived<Array<'edit' | 'delete' | 'delete1'>>(
   )
 )
 
-let editableFields = $derived<Field[]>(
-  FIELDS.filter((field) => !field.no?.select && field.value !== 'ROWID')
+let visibleFields = $derived<Field[]>(
+  (mergedFields || []).filter((field) => field.value !== 'ROWID' && !field.no?.table)
 )
+
+let editableFields = $derived<Field[]>(
+  (mergedFields || []).filter((field) => field.value !== 'ROWID' && !field.no?.edit)
+)
+
+// Export data to Excel
+function exportToExcel() {
+  try {
+    // Prepare the data for export
+    const exportData = filteredData.map((row) => {
+      const rowData: Record<string, any> = {}
+
+      // Only include visible fields in the export
+      visibleFields.forEach((field) => {
+        // Handle nested properties if needed
+        const value = row[field.value]
+
+        // Format date fields if needed
+        if (field.type === 'date' && value) {
+          rowData[field.text] = new Date(value).toLocaleDateString()
+        } else {
+          rowData[field.text] = value
+        }
+      })
+
+      return rowData
+    })
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData)
+
+    // Create workbook
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+
+    // Generate file name with current date
+    const fileName = `${heading || 'export'}_${new Date().toISOString().split('T')[0]}.xlsx`
+
+    // Save the file
+    XLSX.writeFile(wb, fileName)
+
+    toast.success('Export completed successfully')
+  } catch (error) {
+    console.error('Error exporting to Excel:', error)
+    toast.error('Failed to export to Excel')
+  }
+}
 
 // Initialize data and columns with proper typing
 onMount(async (): Promise<void> => {
   try {
-    await Promise.all([fetchData(), loadColumnOptions()])
+    // Parse the query to get table name, db name, and fields
+    const parsed = parseQuery(QUERY)
+    TABLE_NAME = parsed.tableName
+    DB_NAME = parsed.dbName
+    fieldsFromDB = parsed.fields
+
+    await Promise.all([fetchData(), fetchColumnTypes(), loadColumnOptions()])
   } catch (error) {
     console.error('Error initializing grid view:', error)
     toast.error('Failed to initialize grid view')
@@ -151,7 +575,7 @@ onMount(async (): Promise<void> => {
 // Load column options for select fields with proper typing
 async function loadColumnOptions(): Promise<void> {
   await Promise.all(
-    FIELDS.map(async (item: Field) => {
+    fieldsFromDB.map(async (item: Field) => {
       if (!item.no?.edit) {
         editableColumns = [...editableColumns, item]
       }
@@ -166,7 +590,11 @@ async function loadColumnOptions(): Promise<void> {
 // Fetch data from API
 async function fetchData() {
   try {
-    const response: unknown = await post('query', { q: QUERY, db: DB_NAME })
+    const response: unknown = await post('query', {
+      q: QUERY,
+      db: DB_NAME || undefined,
+    })
+
     if (Array.isArray(response)) {
       data = response as TableData[]
       filteredData = [...data]
@@ -186,7 +614,10 @@ async function fetchData() {
 // Get options for select fields
 async function getOptions(query: string): Promise<SelectOption[]> {
   try {
-    const response: unknown = await post('query', { q: query, db: DB_NAME })
+    const response: unknown = await post('query', {
+      q: query,
+      db: DB_NAME || undefined,
+    })
     if (Array.isArray(response)) {
       return response as SelectOption[]
     }
@@ -234,7 +665,7 @@ function searchNow(): void {
     filteredData = [...data]
   } else {
     const fuse = new Fuse(data, {
-      keys: FIELDS.filter((f: Field) => !f.no?.table).map((f: Field) => f.value),
+      keys: fieldsFromDB.filter((f: Field) => !f.no?.table).map((f: Field) => f.value),
       threshold: 0.3,
     })
     filteredData = fuse.search(searchQuery).map((r) => r.item)
@@ -463,7 +894,12 @@ async function handleSave() {
 
 function handleInputChange(field: string, value: string | boolean | number | null) {
   withSelectedRow((row) => {
-    selectedRow = { ...row, [field]: value }
+    // Convert string to number if the field is a number type
+    const fieldType = mergedFields.find((f) => f.value === field)?.type
+    const processedValue =
+      fieldType === 'number' && typeof value === 'string' ? Number.parseFloat(value) || 0 : value
+
+    selectedRow = { ...row, [field]: processedValue }
     // Force update the UI
     selectedRow = { ...selectedRow }
   })
@@ -569,7 +1005,9 @@ function handleSelectChange(field: string, value: string) {
                     Actions
                   </th>
                 {/if}
-                {#each FIELDS as field}
+                
+                {#each mergedFields as field}
+                {#if field.value !== 'ROWID'}
                   <th 
                     scope="col"
                     class="px-2 py-2 text-left font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors bg-gray-50 {sortConfig?.key === field.value ? 'bg-gray-100' : ''}"
@@ -577,8 +1015,8 @@ function handleSelectChange(field: string, value: string) {
                   >
                     <div class="flex items-center">
                       {field.text}
-                      {#if sort}
-                        {#if sortConfig?.key === field.value}
+                      {#if sort && sortConfig}
+                        {#if sortConfig.key === field.value}
                           {#if sortConfig.direction === 'asc'}
                             <ArrowUp class="ml-1 h-3 w-3 text-blue-500" />
                           {:else}
@@ -590,11 +1028,13 @@ function handleSelectChange(field: string, value: string) {
                       {/if}
                     </div>
                   </th>
+                {/if}
                 {/each}
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200 text-xs">
               {#each paginatedSource as row, i (row.ROWID || i)}
+                {#if fieldsFromDB[row.value] !== 'ROWID'}
                 <tr class="hover:bg-gray-50 {i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} text-xs">
                   {#if actionButtons.length > 0}
                     <td class="px-2 py-1 whitespace-nowrap text-right text-xs font-medium">
@@ -626,7 +1066,8 @@ function handleSelectChange(field: string, value: string) {
                       </div>
                     </td>
                   {/if}
-                  {#each FIELDS as field}
+                  {#each mergedFields as field}
+                  {#if field.value !== 'ROWID'}
                     <td class={`px-2 py-1 whitespace-nowrap text-xs ${field.type === 'number' ? 'text-right' : ''} ${typeof row[field.value] === 'number' ? 'font-mono' : ''}`}>
                       {#if field.type === 'checkbox'}
                         <Checkbox checked={!!(row[field.value] as boolean)} disabled />
@@ -642,12 +1083,14 @@ function handleSelectChange(field: string, value: string) {
                         <span class="text-gray-400">—</span>
                       {/if}
                     </td>
+                  {/if}
                   {/each}
                   
                 </tr>
+                {/if}
               {:else}
                 <tr>
-                  <td colspan={FIELDS.length + (actionButtons.length > 0 ? 1 : 0)} class="px-2 py-1 text-center text-xs text-gray-500">
+                  <td colspan={fieldsFromDB.length + (actionButtons.length > 0 ? 1 : 0)} class="px-2 py-1 text-center text-xs text-gray-500">
                     No records found
                   </td>
                 </tr>
@@ -805,12 +1248,12 @@ function handleSelectChange(field: string, value: string) {
           <!-- <Sheet.Description class="text-sm text-gray-500 mb-6">
             {selectedRow?.ROWID ? 'Update the item details below' : 'Fill in the details to add a new item'}
           </Sheet.Description> -->
-
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {#each editableFields as field}
+              {#if field.value !== 'ROWID'}
               <div class="space-y-1 col-span-1">
                 <Label for={field.value} class="text-gray-500" style="font-size: x-small;">
-                  {field.text.replaceAll('_',' ')}
+                  {field.text}
                   {#if field.required}<span class="text-red-500 ml-1">*</span>{/if}
                 </Label>
                 
@@ -888,10 +1331,9 @@ function handleSelectChange(field: string, value: string) {
                   <p class="text-xs text-gray-500">{field.helpText}</p>
                 {/if}
               </div>
+              {/if}
             {/each}
           </div>
-
-
         </div>
       </Sheet.Content>
     </Sheet.Portal>
