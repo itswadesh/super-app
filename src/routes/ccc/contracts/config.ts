@@ -51,7 +51,7 @@ export const FIELDS = [
     ],
     no: {},
   },
-  { text: 'DESCR', value: 'DESCR_OF_WRK', type: 'text', no: { delete: true } },
+  { text: 'DESCRIPTION', value: 'DESCR_OF_WRK', type: 'text', no: { delete: true } },
   { text: 'WO NO', value: 'WO_NO', type: 'text', no: { delete: true } },
   { text: 'WO DATE', value: 'WO_DT', type: 'date', no: {} },
   { text: 'NAME OF CONTRACTOR', value: 'NAME_OF_CONTRACTOR', type: 'text', no: {} },

@@ -484,64 +484,8 @@ function handleSelectChange(field: string, value: string) {
     <div class="table-container">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-semibold">{heading}</h2>
-        {#if add}
-          <Sheet.Root open={isSheetOpen} onOpenChange={(open) => isSheetOpen = open}>
-            <Sheet.Trigger asChild>
-              <Button
-                variant="outline"
-                onclick={() => {
-                  selectedRow = {
-                    SL: 1,
-                    DIV: 'ED',
-                    CATEGORY: 'Works',
-                    DESCR_OF_WRK: 'Office Renovation',
-                    WO_NO: 'WO-2023-001',
-                    WO_DT: '2023-01-15',
-                    NAME_OF_CONTRACTOR: 'ABC Construction',
-                    VALUE_OF_CONTRACT: 500000,
-                    DT_OF_COMMENCE: '2023-02-01',
-                    DT_OF_COMPLETION: '2023-06-30',
-                    MODE_OF_PAYMENT: 'Bank Transfer',
-                    AREA_INCHRG: 'John Doe',
-                    INCHRG_PBNUM: '12345',
-                    CONTRACTOR_PH_NO: '9876543210',
-                    FILE_TRACK_REF_NO: 'REF-001',
-                    EXECUTION_DTL: 'WORK IN PROGRESS',
-                    IS_RECURRING: 0,
-                    STATUS: 'WORK ORDER ISSUED',
-                    REMARKS1: 'Sample remark 1',
-                    TENDR_DUE_EDC: '2023-07-31',
-                    PAID_AMT: 250000,
-                    CAT: 'Civil',
-                    SUB_CAT: 'Renovation',
-                    DIVISION: 'North',
-                    AAR_DATE: '2023-07-15',
-                    DEPT: 'Admin',
-                    UPDATED_DATE: '2023-01-10',
-                    ESTIMATED_VALUE: 520000,
-                    ADMIN_APPROVAL_RECT_DATE: '2023-01-05',
-                    TENDER_NO: 'T-2023-001',
-                    TENDER_DATE: '2022-12-01',
-                    TENDER_TYPE: 'Open',
-                    DATE_OF_TENDER_OPENING: '2022-12-15',
-                    BID_VLIDITY: '20',
-                    TEC_APPROVED_DATE: '2022-12-20',
-                    COMMERCIAL_BID_OPENING_DATE: '2022-12-25',
-                    AWARD_OF_WORK_APPROVAL_DATE: '2023-01-03'
-                  };
-                  isSheetOpen = true;
-                }}
-              >
-                <Plus class="w-4 h-4 mr-2" />
-                Add New
-              </Button>
-            </Sheet.Trigger>
-          </Sheet.Root>
-        {/if}
-      </div>
-      
-      {#if search}
-        <div class="mb-4">
+          {#if search}
+        <div class="w-1/2">
           <div class="relative max-w-md">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -557,6 +501,63 @@ function handleSelectChange(field: string, value: string) {
           </div>
         </div>
       {/if}
+        {#if add}
+          <Sheet.Root open={isSheetOpen} onOpenChange={(open) => isSheetOpen = open}>
+            <Sheet.Trigger asChild>
+              <Button
+                variant="outline"
+                onclick={() => {
+                  selectedRow = {
+                    // SL: 1,
+                    // DIV: 'ED',
+                    // CATEGORY: 'Works',
+                    // DESCR_OF_WRK: 'Office Renovation',
+                    // WO_NO: 'WO-2023-001',
+                    // WO_DT: '2023-01-15',
+                    // NAME_OF_CONTRACTOR: 'ABC Construction',
+                    // VALUE_OF_CONTRACT: 500000,
+                    // DT_OF_COMMENCE: '2023-02-01',
+                    // DT_OF_COMPLETION: '2023-06-30',
+                    // MODE_OF_PAYMENT: 'Bank Transfer',
+                    // AREA_INCHRG: 'John Doe',
+                    // INCHRG_PBNUM: '12345',
+                    // CONTRACTOR_PH_NO: '9876543210',
+                    // FILE_TRACK_REF_NO: 'REF-001',
+                    // EXECUTION_DTL: 'WORK IN PROGRESS',
+                    // IS_RECURRING: 0,
+                    // STATUS: 'WORK ORDER ISSUED',
+                    // REMARKS1: 'Sample remark 1',
+                    // TENDR_DUE_EDC: '2023-07-31',
+                    // PAID_AMT: 250000,
+                    // CAT: 'Civil',
+                    // SUB_CAT: 'Renovation',
+                    // DIVISION: 'North',
+                    // AAR_DATE: '2023-07-15',
+                    // DEPT: 'Admin',
+                    // UPDATED_DATE: '2023-01-10',
+                    // ESTIMATED_VALUE: 520000,
+                    // ADMIN_APPROVAL_RECT_DATE: '2023-01-05',
+                    // TENDER_NO: 'T-2023-001',
+                    // TENDER_DATE: '2022-12-01',
+                    // TENDER_TYPE: 'Open',
+                    // DATE_OF_TENDER_OPENING: '2022-12-15',
+                    // BID_VLIDITY: '20',
+                    // TEC_APPROVED_DATE: '2022-12-20',
+                    // COMMERCIAL_BID_OPENING_DATE: '2022-12-25',
+                    // AWARD_OF_WORK_APPROVAL_DATE: '2023-01-03'
+                  };
+                  isSheetOpen = true;
+                }}
+              >
+                <Plus class="w-4 h-4 mr-2" />
+                Add New
+              </Button>
+            </Sheet.Trigger>
+          </Sheet.Root>
+        {/if}
+      </div>
+      
+    
       
       <div class="bg-white rounded-lg border shadow-sm overflow-hidden text-xs flex flex-col h-[80vh]">
         <div class="overflow-y-auto overflow-x-auto flex-1 relative scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -584,7 +585,7 @@ function handleSelectChange(field: string, value: string) {
                             <ArrowDown class="ml-1 h-3 w-3 text-blue-500" />
                           {/if}
                         {:else}
-                          <ArrowUpDown class="ml-1 h-3 w-3 text-gray-400" />
+                          <!-- <ArrowUpDown class="ml-1 h-3 w-3 text-gray-400" /> -->
                         {/if}
                       {/if}
                     </div>
@@ -823,7 +824,7 @@ function handleSelectChange(field: string, value: string) {
                         {#if selectedRow?.[field.value]}
                           {field.options_query.find(opt => String(opt.VAL) === String(selectedRow?.[field.value]))?.KEY || String(selectedRow?.[field.value] || '')}
                         {:else}
-                          <span class="text-muted-foreground">Select {field.text}</span>
+                          <span class="text-muted-foreground">Select {field.text?.toLowerCase()}</span>
                         {/if}
                       </Select.Trigger>
                       <Select.Content>
@@ -852,10 +853,10 @@ function handleSelectChange(field: string, value: string) {
                 {:else if field.type === 'textarea'}
                   <textarea
                     id={field.value}
-                    class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 capitalize"
                     value={selectedRow[field.value] || ''}
                     oninput={(e) => handleInputChange(field.value, e.target.value)}
-                    placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
+                    placeholder={field.placeholder || `Enter ${field.text}`}
                     rows="3"
                   ></textarea>
                 {:else}
