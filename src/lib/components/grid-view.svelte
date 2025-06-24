@@ -6,7 +6,7 @@ import { Button } from '$lib/components/ui/button'
 import { Input } from '$lib/components/ui/input'
 import { Label } from '$lib/components/ui/label'
 import * as Sheet from '$lib/components/ui/sheet'
-import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select'
+import * as Select from '$lib/components/ui/select'
 import { Checkbox } from '$lib/components/ui/checkbox'
 import {
   ArrowUpDown,
@@ -43,20 +43,30 @@ interface SelectOption {
   VAL: string
 }
 
-interface PostResponse<T> {
-  data: T
+interface ApiResponse {
+  data?: unknown
   error?: string
+  [key: string]: unknown
+}
+
+interface PostResponse {
+  success: boolean
+  id?: string
 }
 
 interface Field {
   text: string
   value: string
-  type?: 'text' | 'number' | 'date' | 'select' | 'checkbox'
+  type?: 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'textarea'
   options_query?: string
   options?: Option[]
+  helpText?: string
+  placeholder?: string
+  required?: boolean
   no?: {
     table?: boolean
     edit?: boolean
+    select?: boolean
     [key: string]: boolean | undefined
   }
 }
@@ -89,6 +99,13 @@ let {
 let data = $state<TableData[]>([])
 let filteredData = $state<TableData[]>([])
 let selectedRow = $state<TableData | null>(null)
+
+// Helper function to safely access selectedRow
+function withSelectedRow<T>(fn: (row: TableData) => T): T | undefined {
+  if (!selectedRow) return undefined
+  return fn(selectedRow)
+}
+
 let isSheetOpen = $state(false)
 let sortConfig = $state<{ key: string; direction: 'asc' | 'desc' } | null>(null)
 let searchQuery = $state('')
@@ -119,8 +136,8 @@ let editableFields = $derived<Field[]>(
   FIELDS.filter((field) => !field.no?.select && field.value !== 'ROWID')
 )
 
-// Initialize data and columns
-onMount(async () => {
+// Initialize data and columns with proper typing
+onMount(async (): Promise<void> => {
   try {
     await Promise.all([fetchData(), loadColumnOptions()])
   } catch (error) {
@@ -129,10 +146,10 @@ onMount(async () => {
   }
 })
 
-// Load column options for select fields
-async function loadColumnOptions() {
+// Load column options for select fields with proper typing
+async function loadColumnOptions(): Promise<void> {
   await Promise.all(
-    FIELDS.map(async (item) => {
+    FIELDS.map(async (item: Field) => {
       if (!item.no?.edit) {
         editableColumns = [...editableColumns, item]
       }
@@ -147,21 +164,31 @@ async function loadColumnOptions() {
 // Fetch data from API
 async function fetchData() {
   try {
-    const response = await post('query', { q: QUERY, db: DB_NAME })
-    data = response || []
-    filteredData = [...data]
-    updatePagination()
+    const response: unknown = await post('query', { q: QUERY, db: DB_NAME })
+    if (Array.isArray(response)) {
+      data = response as TableData[]
+      filteredData = [...data]
+      updatePagination()
+    } else {
+      throw new Error('Invalid response format from server')
+    }
   } catch (error) {
     console.error('Error fetching data:', error)
     toast.error('Failed to load data')
+    data = []
+    filteredData = []
+    updatePagination()
   }
 }
 
 // Get options for select fields
 async function getOptions(query: string): Promise<SelectOption[]> {
   try {
-    const response = await post('query', { q: query, db: DB_NAME })
-    return response || []
+    const response: unknown = await post('query', { q: query, db: DB_NAME })
+    if (Array.isArray(response)) {
+      return response as SelectOption[]
+    }
+    throw new Error('Invalid options format from server')
   } catch (error) {
     console.error('Error fetching options:', error)
     toast.error('Failed to load options')
@@ -170,6 +197,28 @@ async function getOptions(query: string): Promise<SelectOption[]> {
 }
 
 // Update pagination
+function formatDate(dateString: string | Date): string {
+  const date = new Date(dateString)
+  const day = String(date.getDate()).padStart(2, '0')
+  const monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ]
+  const month = monthNames[date.getMonth()]
+  const year = date.getFullYear()
+  return `${day}-${month}-${year}`
+}
+
 function updatePagination() {
   const start = paginationSettings.page * paginationSettings.limit
   const end = start + paginationSettings.limit
@@ -177,13 +226,13 @@ function updatePagination() {
   paginationSettings = { ...paginationSettings, size: filteredData.length }
 }
 
-// Handle search
-function searchNow() {
+// Handle search with proper typing
+function searchNow(): void {
   if (!searchQuery) {
     filteredData = [...data]
   } else {
     const fuse = new Fuse(data, {
-      keys: FIELDS.filter((f) => !f.no?.table).map((f) => f.value),
+      keys: FIELDS.filter((f: Field) => !f.no?.table).map((f: Field) => f.value),
       threshold: 0.3,
     })
     filteredData = fuse.search(searchQuery).map((r) => r.item)
@@ -279,25 +328,31 @@ async function handleSave() {
       throw new Error(response.error)
     }
 
+    toast.success(selectedRow.ROWID ? 'Item updated successfully' : 'Item created successfully')
     isSheetOpen = false
-    await fetchData()
-    toast.success(selectedRow.ROWID ? 'Item updated successfully' : 'Item added successfully')
+    await fetchData() // Reload data after save
   } catch (error) {
     console.error('Error saving item:', error)
-    toast.error(error instanceof Error ? error.message : 'Failed to save item')
+    const errorMessage = error instanceof Error ? error.message : 'Failed to save item'
+    toast.error(errorMessage)
   }
 }
 
-// Handle input change with proper typing
-function handleInputChange(field: string, value: string | boolean | number) {
-  if (!selectedRow) return
-  selectedRow = { ...selectedRow, [field]: value }
+function handleInputChange(field: string, value: string | boolean | number | null) {
+  withSelectedRow((row) => {
+    selectedRow = { ...row, [field]: value }
+    // Force update the UI
+    selectedRow = { ...selectedRow }
+  })
 }
 
-// Handle select value change
+// Handle select value change with proper typing
 function handleSelectChange(field: string, value: string) {
-  if (!selectedRow) return
-  selectedRow = { ...selectedRow, [field]: value }
+  withSelectedRow((row) => {
+    selectedRow = { ...row, [field]: value }
+    // Force update the UI
+    selectedRow = { ...selectedRow }
+  })
 }
 </script>
 
@@ -307,16 +362,20 @@ function handleSelectChange(field: string, value: string) {
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-semibold">{heading}</h2>
         {#if add}
-          <Button
-            variant="outline"
-            onclick={() => {
-              selectedRow = {};
-              isSheetOpen = true;
-            }}
-          >
-            <Plus class="w-4 h-4 mr-2" />
-            Add New
-          </Button>
+          <Sheet.Root open={isSheetOpen} onOpenChange={(open) => isSheetOpen = open}>
+            <Sheet.Trigger asChild>
+              <Button
+                variant="outline"
+                onclick={() => {
+                  selectedRow = {};
+                  isSheetOpen = true;
+                }}
+              >
+                <Plus class="w-4 h-4 mr-2" />
+                Add New
+              </Button>
+            </Sheet.Trigger>
+          </Sheet.Root>
         {/if}
       </div>
       
@@ -367,17 +426,6 @@ function handleSelectChange(field: string, value: string) {
             <tbody class="bg-white divide-y divide-gray-200">
               {#each paginatedSource as row, i (row.ROWID || i)}
                 <tr class="hover:bg-gray-50">
-                  {#each FIELDS as field}
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {#if field.type === 'checkbox'}
-                        <Checkbox checked={!!row[field.value]} disabled />
-                      {:else if field.type === 'image'}
-                        <img src={row[field.value]} alt={field.text} class="h-10 w-10 rounded-full" />
-                      {:else}
-                        {row[field.value]} <span class="text-gray-400">—</span>
-                      {/if}
-                    </td>
-                  {/each}
                   {#if actionButtons.length > 0}
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div class="flex justify-end space-x-2">
@@ -408,6 +456,20 @@ function handleSelectChange(field: string, value: string) {
                       </div>
                     </td>
                   {/if}
+                  {#each FIELDS as field}
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {#if field.type === 'checkbox'}
+                        <Checkbox checked={!!(row[field.value] as boolean)} disabled />
+                      {:else if field.type === 'image'}
+                        <img src={row[field.value] as string} alt={field.text} class="h-10 w-10 rounded-full" />
+                      {:else if field.type === 'date' && row[field.value]}
+                        {formatDate(row[field.value])}
+                      {:else}
+                        {row[field.value] as string} <span class="text-gray-400">—</span>
+                      {/if}
+                    </td>
+                  {/each}
+                  
                 </tr>
               {:else}
                 <tr>
@@ -532,93 +594,122 @@ function handleSelectChange(field: string, value: string) {
     </div>
   </div>
 
-  {#if isSheetOpen}
-    <Sheet.Content side="right" class="w-full max-w-md">
-      <Sheet.Header class="border-b px-6 py-4">
-        <Sheet.Title class="text-lg font-semibold">
-          {selectedRow?.ROWID ? 'Edit' : 'Add New'} {heading || 'Item'}
-        </Sheet.Title>
-        <Sheet.Description class="text-sm text-gray-500 mt-1">
-          {selectedRow?.ROWID ? 'Update the item details below' : 'Fill in the details to add a new item'}
-        </Sheet.Description>
-      </Sheet.Header>
-      
-      <div class="p-6 space-y-6">
-        {#each editableFields as field}
-          <div class="space-y-2">
-            <Label for={field.value} class="text-sm font-medium text-gray-700">
-              {field.text}
-              {field.required} <span class="text-red-500 ml-1">*</span>
-            </Label>
-            
-            {#if field.type === 'select'}
-              <div class="w-full">
-                <Select 
-                  value={selectedRow[field.value] || ''}
-                  onvaluechange={(e) => handleSelectChange(field.value, e.detail)}
-                >
-                  <SelectTrigger class="w-full">
-                    <SelectValue placeholder={`Select ${field.text}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {#each optionValues.filter(opt => opt.KEY === field.value) as option (option.KEY || '')}
-                      <SelectItem value={option.VAL}>
-                        {option.VAL}
-                      </SelectItem>
-                    {/each}
-                  </SelectContent>
-                </Select>
-              </div>
-            {:else if field.type === 'checkbox'}
-              <div class="flex items-center space-x-2">
-                <Checkbox
-                  id={field.value}
-                  checked={!!selectedRow[field.value]}
-                  onchange={(e) => handleInputChange(field.value, e.target.checked)}
-                />
-                <Label for={field.value} class="text-sm font-normal">{field.helpText || field.text}</Label>
-              </div>
-            {:else if field.type === 'textarea'}
-              <textarea
-                id={field.value}
-                class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                bind:value={selectedRow[field.value]}
-                oninput={(e) => handleInputChange(field.value, e.target.value)}
-                placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
-                rows="3"
-              />
-            {:else}
-              <Input 
-                id={field.value} 
-                type={field.type || 'text'}
-                bind:value={selectedRow[field.value]}
-                on:input={(e) => handleInputChange(field.value, e.target.value)}
-                placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
-                required={field.required}
-              />
-            {/if}
-            {#if field.helpText}
-              <p class="text-xs text-gray-500">{field.helpText}</p>
-            {/if}
+  <Sheet.Root open={isSheetOpen} onOpenChange={(open) => isSheetOpen = open}>
+    <Sheet.Portal>
+      <Sheet.Overlay class="fixed inset-0 z-50 bg-black/80" />
+      <Sheet.Content class="fixed top-0 right-0 z-50 h-full w-full sm:max-w-7xl bg-white shadow-lg sm:rounded-l-xl overflow-hidden flex flex-col">
+        <div class="p-6 overflow-y-auto flex-1">
+          <div class="flex items-center justify-between mb-4">
+            <Sheet.Title class="text-lg font-semibold">
+              {selectedRow?.ROWID ? 'Edit' : 'Add New'} {heading || 'Item'}
+            </Sheet.Title>
+            <div class="flex items-center space-x-3">
+              <Button 
+                variant="outline" 
+                type="button"
+                onclick={() => isSheetOpen = false}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="button" 
+                onclick={handleSave}
+                disabled={!selectedRow}
+              >
+                <Save class="w-4 h-4 mr-2" />
+                {selectedRow?.ROWID ? 'Update' : 'Create'}
+              </Button>
+              <Sheet.Close asChild>
+                <Button variant="ghost" size="icon" onclick={() => isSheetOpen = false} type="button">
+                  <X class="h-4 w-4" />
+                  <span class="sr-only">Close</span>
+                </Button>
+              </Sheet.Close>
+            </div>
           </div>
-        {/each}
-      </div>
-      
-      <Sheet.Footer class="px-6 py-4 border-t flex justify-end space-x-3">
-        <Sheet.Close asChild>
-          <Button variant="outline" type="button">
-            Cancel
-          </Button>
-        </Sheet.Close>
-        <Button 
-          type="button" 
-          onclick={handleSave}
-          disabled={!selectedRow}
-        >
-          <Save class="w-4 h-4 mr-2" />
-          {selectedRow?.ROWID ? 'Update' : 'Create'}
-        </Button>
-      </Sheet.Footer>
-    </Sheet.Content>
-  {/if}
+          <!-- <Sheet.Description class="text-sm text-gray-500 mb-6">
+            {selectedRow?.ROWID ? 'Update the item details below' : 'Fill in the details to add a new item'}
+          </Sheet.Description> -->
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {#each editableFields as field}
+              <div class="space-y-2 col-span-1">
+                <Label for={field.value} class="text-sm font-medium text-gray-700">
+                  {field.text}
+                  {#if field.required}<span class="text-red-500 ml-1">*</span>{/if}
+                </Label>
+                
+                {#if field.type === 'select'}
+                  <div class="w-full">
+                    <Select.Root 
+                      value={String(selectedRow?.[field.value] ?? '')} 
+                      onValueChange={(value) => handleSelectChange(field.value, value)}
+                    >
+                      <Select.Trigger class="w-full">
+                        <Select.Value placeholder={`Select ${field.text}`} />
+                      </Select.Trigger>
+                      <Select.Content>
+                        {#each optionValues.filter((opt: SelectOption) => opt.KEY === field.value) as opt}
+                          <Select.Item value={opt.VAL}>
+                            {opt.VAL}
+                          </Select.Item>
+                        {/each}
+                      </Select.Content>
+                    </Select.Root>
+                  </div>
+                {:else if field.type === 'checkbox'}
+                  <div class="flex items-start space-x-2">
+                    <Checkbox
+                      id={field.value}
+                      checked={!!selectedRow[field.value]}
+                      onchange={(e) => handleInputChange(field.value, e.target.checked)}
+                    />
+                    <Label for={field.value} class="text-sm font-normal">{field.helpText || field.text}</Label>
+                  </div>
+                {:else if field.type === 'textarea'}
+                  <textarea
+                    id={field.value}
+                    class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={selectedRow[field.value] || ''}
+                    oninput={(e) => handleInputChange(field.value, e.target.value)}
+                    placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
+                    rows="3"
+                  />
+                {:else}
+                  {#if field.type === 'date' && selectedRow}
+                    <Input 
+                      id={field.value}
+                      type="date"
+                      value={selectedRow[field.value] ? new Date(selectedRow[field.value] as string).toISOString().split('T')[0] : ''}
+                      oninput={(e: Event) => {
+                        const target = e.target as HTMLInputElement;
+                        const date = target.value ? new Date(target.value).toISOString() : '';
+                        handleInputChange(field.value, date);
+                      }}
+                      placeholder={field.placeholder || `Select ${field.text.toLowerCase()}`}
+                      required={field.required}
+                    />
+                  {:else if selectedRow}
+                    <Input 
+                      id={field.value} 
+                      type={field.type || 'text'}
+                      value={String(selectedRow[field.value] || '')}
+                      oninput={(e: Event) => handleInputChange(field.value, (e.target as HTMLInputElement).value)}
+                      placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
+                      required={field.required}
+                    />
+                  {/if}
+                {/if}
+                {#if field.helpText}
+                  <p class="text-xs text-gray-500">{field.helpText}</p>
+                {/if}
+              </div>
+            {/each}
+          </div>
+
+
+        </div>
+      </Sheet.Content>
+    </Sheet.Portal>
+  </Sheet.Root>
 </div>

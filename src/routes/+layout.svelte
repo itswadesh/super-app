@@ -273,10 +273,10 @@ async function navigateWithSheetClose(path: string) {
 
   <footer class="bg-gray-100 text-gray-600 py-8 mt-auto">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-      <p>&copy; {new Date().getFullYear()} Your Brand. All rights reserved.</p>
+      <p>&copy; {new Date().getFullYear()} HAL Koraput. All rights reserved.</p>
       <p class="text-sm">
-        <a href="/privacy" class="hover:text-indigo-600">Privacy Policy</a> |
-        <a href="/terms" class="hover:text-indigo-600">Terms of Service</a>
+        <!-- <a href="/privacy" class="hover:text-indigo-600">Privacy Policy</a> |
+        <a href="/terms" class="hover:text-indigo-600">Terms of Service</a> -->
       </p>
     </div>
   </footer>
