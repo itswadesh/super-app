@@ -479,7 +479,7 @@ function handleSelectChange(field: string, value: string) {
 }
 </script>
 
-<div class="container mx-auto my-6">
+<div class="m-2">
   <div class="flex flex-col">
     <div class="table-container">
       <div class="flex justify-between items-center mb-4">
