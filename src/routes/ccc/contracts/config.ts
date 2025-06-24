@@ -10,7 +10,7 @@ export const FIELDS = [
     text: 'DIVISION',
     value: 'DIVISION',
     type: 'select',
-    options_query: [
+    options: [
       { KEY: 'ED', VAL: 'ED' },
       { KEY: 'SED', VAL: 'SED' },
     ],
@@ -20,7 +20,7 @@ export const FIELDS = [
     text: 'CIVIL/PM',
     value: 'DEPT',
     type: 'select',
-    options_query: [
+    options: [
       { KEY: 'CIVIL', VAL: 'CIVIL' },
       { KEY: 'PM', VAL: 'PM' },
     ],
@@ -30,7 +30,7 @@ export const FIELDS = [
     text: 'CATEGORY',
     value: 'CAT',
     type: 'select',
-    options_query: [
+    options: [
       { KEY: 'Works', VAL: 'Works' },
       { KEY: 'SERVICES', VAL: 'SERVICES' },
       { KEY: 'Miscellaneous', VAL: 'Miscelaneous' },
@@ -41,7 +41,7 @@ export const FIELDS = [
     text: 'TYPE',
     value: 'SUB_CAT',
     type: 'select',
-    options_query: [
+    options: [
       { KEY: 'AMC', VAL: 'AMC' },
       { KEY: 'Capital', VAL: 'Capital' },
       { KEY: 'Job Contract', VAL: 'Job Contract' },
@@ -66,7 +66,7 @@ export const FIELDS = [
     text: 'STATUS',
     value: 'STATUS',
     type: 'select',
-    options_query: [
+    options: [
       { KEY: 'TO BE TENDERED', VAL: 'TO BE TENDERED' },
       { KEY: 'UNDER RE-TENDERING APPROVAL', VAL: 'UNDER RE-TENDERING APPROVAL' },
       { KEY: 'TENDER DUE FOR OPENING', VAL: 'TENDER DUE FOR OPENING' },
@@ -93,7 +93,7 @@ export const FIELDS = [
     text: 'EXECUTION STATUS',
     value: 'EXECUTION_DTL',
     type: 'select',
-    options_query: [
+    options: [
       { KEY: 'WORK IN PROGRESS', VAL: 'WORK IN PROGRESS' },
       { KEY: 'WORK COMPLETED', VAL: 'WORK COMPLETED' },
     ],
@@ -103,7 +103,7 @@ export const FIELDS = [
     text: 'IS RECURRING?',
     value: 'IS_RECURRING',
     type: 'select',
-    options_query: [
+    options: [
       { KEY: 'Y', VAL: 'Y' },
       { KEY: 'N', VAL: 'N' },
     ],
@@ -142,7 +142,7 @@ export const FIELDS = [
   // 	text: 'EMP_ABBR/CONTRACT DETAILS',
   // 	value: 'EMP_ABBR',
   // 	type: 'select',
-  // 	options_query: `SELECT replace(replace(REPLACE(T.ORDER_NO||'/'||INITCAP(IFSAPP.SUPPLIER_INFO_API.Get_Name(t.vendor_no)), ' ', ''), '.', ''), '&', '') KEY, replace(replace(replace(T.ORDER_NO||'/'||INITCAP(IFSAPP.SUPPLIER_INFO_API.Get_Name(t.vendor_no)), ' ', ''), '.', ''), '&', '') VAL FROM IFSAPP.PURCHASE_ORDER_TAB@IFSSED T
+  // 	options: `SELECT replace(replace(REPLACE(T.ORDER_NO||'/'||INITCAP(IFSAPP.SUPPLIER_INFO_API.Get_Name(t.vendor_no)), ' ', ''), '.', ''), '&', '') KEY, replace(replace(replace(T.ORDER_NO||'/'||INITCAP(IFSAPP.SUPPLIER_INFO_API.Get_Name(t.vendor_no)), ' ', ''), '.', ''), '&', '') VAL FROM IFSAPP.PURCHASE_ORDER_TAB@IFSSED T
   // 		WHERE T.ORDER_DATE > '01-APR-2018' AND ifsapp.pre_accounting_api.get_codeno_h@IFSSED(ifsapp.purchase_order_api.Get_Pre_Accounting_Id@IFSSED(t.ORDER_NO)) = '97-21'`,
   // 	no: { delete: true }
   // }

@@ -61,7 +61,7 @@ interface Field {
   text: string
   value: string
   type?: 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'textarea'
-  options_query?: string
+  options?: string
   options?: Option[]
   helpText?: string
   placeholder?: string
@@ -155,8 +155,8 @@ async function loadColumnOptions(): Promise<void> {
       if (!item.no?.edit) {
         editableColumns = [...editableColumns, item]
       }
-      if (item.type === 'select' && item.options_query) {
-        const options = await getOptions(item.options_query)
+      if (item.type === 'select' && item.options) {
+        const options = await getOptions(item.options)
         optionValues = [...optionValues, ...(options || [])]
       }
     })
@@ -815,14 +815,14 @@ function handleSelectChange(field: string, value: string) {
                 </Label>
                 
                 {#if field.type === 'select'}
-                  {#if field.options_query?.length > 0}
+                  {#if field.options?.length > 0}
                     <Select.Root type="single"
                       value={selectedRow?.[field.value] || ''}
                       onValueChange={(value: string) => handleSelectChange(field.value, value)}
                     >
                       <Select.Trigger class="w-full">
                         {#if selectedRow?.[field.value]}
-                          {field.options_query.find(opt => String(opt.VAL) === String(selectedRow?.[field.value]))?.KEY || String(selectedRow?.[field.value] || '')}
+                          {field.options.find(opt => String(opt.VAL) === String(selectedRow?.[field.value]))?.KEY || String(selectedRow?.[field.value] || '')}
                         {:else}
                           <span class="text-muted-foreground">Select {field.text?.toLowerCase()}</span>
                         {/if}
@@ -830,7 +830,7 @@ function handleSelectChange(field: string, value: string) {
                       <Select.Content>
                         <Select.Group>
                           <Select.Label>{field.text}</Select.Label>
-                          {#each field.options_query as opt, i (i)}
+                          {#each field.options as opt, i (i)}
                             <Select.Item value={String(opt.VAL)}>
                               {opt.KEY}
                             </Select.Item>
