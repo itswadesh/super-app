@@ -198,7 +198,7 @@ $effect(() => {
 $effect(() => {
   // Create a map of custom fields for quick lookup
   const customFields = new Map(FIELDS?.map((field) => [field.value, field]) || [])
-  
+
   // Create a map of all available fields from database schema
   const allFields = new Map<string, Field>()
   const customFieldLookup = new Map(FIELDS?.map((f) => [f.value, f]) || [])
@@ -206,23 +206,26 @@ $effect(() => {
   // First, add all fields from the database schema
   if (Array.isArray(tableSchema) && tableSchema.length > 0) {
     console.log('Table Schema:', JSON.stringify(tableSchema, null, 2)) // Log full schema
-    
+
     for (const column of tableSchema) {
-      if (!column) continue; // Skip null/undefined columns
-      
+      if (!column) continue // Skip null/undefined columns
+
       // Try different possible property names for the column name
-      const fieldName = column.name || column.NAME || column.column_name || column.COLUMN_NAME;
+      const fieldName = column.name || column.NAME || column.column_name || column.COLUMN_NAME
       if (!fieldName) {
-        console.warn('Skipping column with no name:', column);
-        continue;
+        console.warn('Skipping column with no name:', column)
+        continue
       }
-      
-      const customField = customFieldLookup.get(fieldName);
-      const columnType = column.type || column.TYPE || column.data_type || column.DATA_TYPE;
+
+      const customField = customFieldLookup.get(fieldName)
+      const columnType = column.type || column.TYPE || column.data_type || column.DATA_TYPE
 
       // Create base field from schema with comments as default text
       const field: Field = {
-        text: column.comments || column.COMMENTS || (fieldName ? fieldName.replace(/_/g, ' ') : 'Unknown'),
+        text:
+          column.comments ||
+          column.COMMENTS ||
+          (fieldName ? fieldName.replace(/_/g, ' ') : 'Unknown'),
         value: fieldName,
         type: getFieldTypeFromDbType(columnType),
         required: column.notnull === 1 || column.NULLABLE === 'N',
@@ -353,10 +356,16 @@ function getFieldTypeFromDbType(dbType: string): FieldType {
     type.includes('DT_OF_') ||
     type === 'DT' ||
     // Specific field names that should be treated as dates (case-insensitive)
-    ['DT_OF_COMPLETION', 'COMPLETION_DATE', 'DATE_COMPLETED', 'CREATED_AT', 'UPDATED_AT', 'MODIFIED_DATE']
-      .some(dateField => type.includes(dateField))
+    [
+      'DT_OF_COMPLETION',
+      'COMPLETION_DATE',
+      'DATE_COMPLETED',
+      'CREATED_AT',
+      'UPDATED_AT',
+      'MODIFIED_DATE',
+    ].some((dateField) => type.includes(dateField))
   ) {
-    return 'date';
+    return 'date'
   }
 
   // Handle boolean types
@@ -919,8 +928,20 @@ function handleSelectChange(field: string, value: string) {
   <div class="flex flex-col">
     <div class="table-container">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-semibold">{heading}</h2>
-          {#if search}
+        <div class="flex items-center gap-4">
+          <h2 class="text-2xl font-semibold">{heading}</h2>
+          <Button size="sm" variant="outline" onclick={exportToExcel}>
+            <span class="flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" x2="12" y1="15" y2="3"/>
+              </svg>
+              Export to Excel
+            </span>
+          </Button>
+        </div>
+        {#if search}
         <div class="w-1/2">
           <div class="relative max-w-md">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -1321,7 +1342,10 @@ function handleSelectChange(field: string, value: string) {
                       id={field.value} 
                       type={field.type || 'text'}
                       value={String(selectedRow[field.value] || '')}
-                      oninput={(e: Event) => handleInputChange(field.value, (e.target as HTMLInputElement).value)}
+                      on:change={(e) => {
+                        const target = e.target as HTMLInputElement;
+                        handleInputChange(field.value, target.checked);
+                      }}
                       placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
                       required={field.required}
                     />
