@@ -1,7 +1,7 @@
 module.exports = {
 	apps: [
 		{
-			name: 'dev2026:8000',
+			name: 'dev2026:9002',
 			script: 'devops/index.cjs',
 			instances: 1,
 			autorestart: true,

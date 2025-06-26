@@ -1,5 +1,5 @@
 import shell from 'shelljs'
-const PM2_NAME = 'dev2026:8000'
+const PM2_NAME = 'dev2026:9002'
 const REMOTE_DIR = 'D:/prod/dev-2026'
 const FILE_NAMES =
 	'.svelte-kit static package.json src/lib/config ecosystem.config.cjs svelte.config.js vite.config.ts'
