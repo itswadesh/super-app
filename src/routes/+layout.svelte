@@ -2,7 +2,7 @@
 import '../app.css'
 import { goto } from '$app/navigation'
 import { page } from '$app/state'
-import { onMount, tick } from 'svelte'
+// import { onMount, tick } from 'svelte'
 import LoginButton from '$lib/components/LoginButton.svelte'
 // Remove LoginModal and Modal if they are only used for the old mobile menu, otherwise keep them.
 import LoginModal from '$lib/components/LoginModal.svelte'
@@ -10,7 +10,7 @@ import LoginModal from '$lib/components/LoginModal.svelte'
 import UserMenu from '$lib/components/UserMenu.svelte'
 import { authService } from '$lib/services/auth-service'
 import { useAnalytics } from '$lib/stores/analytics_store'
-
+// import { apiService } from '$lib/services/api.service'
 // Import Shadcn Sheet components
 import {
   Sheet,
@@ -54,14 +54,16 @@ const { children } = $props()
 let categories = $state<Array<{ id: string; name: string; slug: string }>>([])
 let categoriesLoading = $state(true)
 
-onMount(async () => {
-  try {
-  } catch (error) {
-    console.error('Error fetching categories:', error)
-  } finally {
-    categoriesLoading = false
-  }
-})
+// onMount(async () => {
+//   try {
+// const response = await apiService.getCategories()
+// categories.set(response.data)
+//   } catch (error) {
+//     console.error('Error fetching categories:', error)
+//   } finally {
+//     categoriesLoading = false
+//   }
+// })
 
 $effect(() => {
   let isMounted = true
@@ -97,54 +99,41 @@ async function navigateWithSheetClose(path: string) {
 }
 </script>
 
+<svelte:head>
+  <title>CCC Contracts - HAL</title>
+</svelte:head>
+
+<div class="min-h-screen">
 <!-- Header -->
 <header class="bg-white shadow-sm sticky top-0 z-50">
   <!-- Top Banner - Logo and Brand -->
   <div class="bg-white py-1">
-    <div class="mx-auto max-w-7xl px-2 sm:px-3 lg:px-4">
+    <div class="mx-auto px-2 sm:px-3 lg:px-4">
       <div class="flex justify-between items-center">
         <!-- Logo and Brand -->
         <div class="flex items-center">
           <a href="/" class="flex items-center">
-            <span class="text-2xl font-bold text-indigo-700">^</span>
+            <img src="/logo.png" class="h-8 w-8" alt="Sunabeda Logo" />
             <span class="ml-1 text-xl font-light text-gray-500 hidden sm:inline"
-              >| Knowledge Amplified</span
+              >
+              | HAL
+              </span
             >
           </a>
         </div>
 
         <!-- Desktop Navigation -->
         <nav class="hidden md:flex space-x-8 items-center">
-          {#if categoriesLoading}
-            <div class="flex space-x-8">
-              {#each Array(3) as _}
-                <div class="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
-              {/each}
-            </div>
-          {:else}
-            {#each categories as category}
-              <a 
-                href="/{category.slug}" 
-                class="text-gray-600 hover:text-indigo-600 transition-colors"
-                onclick={(e) => {
-                  e.preventDefault();
-                  navigateWithSheetClose(`/${category.slug}`);
-                }}
-              >
-                {category.name}-{category.slug}
-              </a>
-            {/each}
-          {/if}
-          <a href="/about" class="text-gray-600 hover:text-indigo-600" onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/about'); }}>About</a>
+        
         </nav>
 
         <!-- Action Buttons -->
         <div class="hidden md:flex items-center space-x-4">
-          {#if page.data?.user?.id}
+          <!-- {#if page.data?.user?.id}
             <UserMenu/>
           {:else}
-            <LoginButton buttonText="Log In" variant="text" />
-          {/if}
+            <LoginButton buttonText="Log In" variant="text" onclick={(e: any) => { e.preventDefault(); navigateWithSheetClose('/login'); }} />
+          {/if} -->
         </div>
 
         <!-- Mobile menu button - Toggles Sheet programmatically -->
@@ -187,43 +176,19 @@ async function navigateWithSheetClose(path: string) {
   </div>
 </header> 
   <!-- Shadcn Sheet for Mobile Navigation -->
-  <Sheet bind:open={sheetOpen} side="left">
+  <Sheet bind:open={sheetOpen} >
     <SheetContent class="w-[300px] sm:w-[400px] p-6 flex flex-col">
       <SheetHeader class="mb-6">
         <SheetTitle>
           <a href="/" class="flex items-center" onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/'); }}>
-            <span class="text-2xl font-bold text-indigo-700">^</span>
-            <span class="ml-1 text-xl font-light text-gray-500">| Knowledge Amplified</span>
+            <img src="/logo.png" class="h-8 w-8" alt="Sunabeda Logo" />
+            <span class="ml-1 text-xl font-light text-gray-500">| HAL</span>
           </a>
         </SheetTitle>
       </SheetHeader>
       
       <nav class="flex flex-col space-y-3 flex-grow overflow-y-auto">
-        {#if categoriesLoading}
-          {#each Array(3) as _}
-            <div class="h-8 w-full bg-gray-200 rounded animate-pulse mb-2"></div>
-          {/each}
-        {:else}
-          {#each categories as category}
-            <a 
-              href="/{category.slug}" 
-              class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors"
-              onclick={(e) => {
-                e.preventDefault();
-                navigateWithSheetClose(`/${category.slug}`);
-              }}
-            >
-              {category.name}
-            </a>
-          {/each}
-        {/if}
-        <a 
-          href="/about" 
-          class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors"
-          onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/about'); }}
-        >
-          About
-        </a>
+       
       </nav>
 
       <SheetFooter class="mt-auto pt-6 border-t border-gray-200">
@@ -235,15 +200,6 @@ async function navigateWithSheetClose(path: string) {
             onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/profile'); }}
           >
             My Profile
-          </a>
-          
-          <!-- My Quizzes Link -->
-          <a 
-            href="/my-quizzes" 
-            class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors"
-            onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/my-quizzes'); }}
-          >
-            My Quizzes
           </a>
           
           <!-- Logout Button -->
@@ -271,20 +227,19 @@ async function navigateWithSheetClose(path: string) {
     </SheetContent>
   </Sheet>
 
-<main class="flex min-h-screen w-full flex-col">
+<main class="flex w-full flex-col">
     {@render children()} <!-- Changed from <slot /> -->
 </main>
 
-  <footer class="bg-gray-100 text-gray-600 py-8 mt-auto">
+  <footer class="bg-gray-100 text-gray-600 py-6 mt-auto">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-      <p>&copy; {new Date().getFullYear()} Your Brand. All rights reserved.</p>
+      <p>&copy; {new Date().getFullYear()} HAL Koraput. All rights reserved.</p>
       <p class="text-sm">
-        <a href="/privacy" class="hover:text-indigo-600">Privacy Policy</a> |
-        <a href="/terms" class="hover:text-indigo-600">Terms of Service</a>
+        <!-- <a href="/privacy" class="hover:text-indigo-600">Privacy Policy</a> |
+        <a href="/terms" class="hover:text-indigo-600">Terms of Service</a> -->
       </p>
     </div>
   </footer>
-
-    <LoginModal />
-
+</div>
+<LoginModal />
 <Toaster />
