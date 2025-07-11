@@ -33,7 +33,7 @@ let user = {
 
 // Featured services
 const services = [
-  { icon: Wallet, name: 'CCC Contracts', href: '/ccc/contracts', color: 'bg-green-500' },
+  { icon: Wallet, name: 'Stores', href: '/stores', color: 'bg-green-500' },
   // { icon: Bus, name: 'Bus Tickets', color: 'bg-blue-500' },
   // { icon: Train, name: 'Train Tickets', color: 'bg-yellow-500' },
   // { icon: Ship, name: 'Ferry Booking', color: 'bg-red-500' },

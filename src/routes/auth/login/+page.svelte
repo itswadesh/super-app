@@ -167,7 +167,7 @@ async function resendOTP() {
 </script>
 
 <svelte:head>
-  <title>Login - Super App | HAL</title>
+  <title>Login - Super App</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -175,7 +175,7 @@ async function resendOTP() {
     <div class="flex justify-center">
       <a href="/" class="flex items-center">
         <span class="text-3xl font-bold text-indigo-700">Super App</span>
-        <span class="ml-1 text-xl font-light text-gray-500">| HAL</span>
+        <span class="ml-1 text-xl font-light text-gray-500">|</span>
       </a>
     </div>
     

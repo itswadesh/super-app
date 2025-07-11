@@ -81,6 +81,7 @@
     "jspdf": "^3.0.1",
     "melt": "^0.35.2",
     "mustache": "^4.2.0",
+    "postgres": "^3.4.7",
     "razorpay": "^2.9.6",
     "resend": "^4.5.2",
     "shelljs": "^0.10.0",
