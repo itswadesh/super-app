@@ -27,14 +27,17 @@ async function fetchStoreMetrics(pgUri: string) {
     GROUP BY 
         s.id, s.name, s.country, s.currency, DATE_TRUNC('month', o.created_at)
 ),
-currency_rates AS (
+currency_exchange AS (
     SELECT 
-        code,
-        rate_to_inr
+        from_currency code,
+        rate rate_to_inr
     FROM 
-        currency_rates
+        currency_exchange
     WHERE 
-        code IN (SELECT DISTINCT currency_code FROM store_metrics)
+        from_currency IN (SELECT DISTINCT currency_code FROM store_metrics)
+        and to_currency = 'INR'
+        and effective_from <= CURRENT_DATE
+        and effective_to >= CURRENT_DATE
 )
 SELECT 
     sm.store_name,
@@ -154,7 +157,7 @@ SELECT
 FROM 
     store_metrics sm
 LEFT JOIN 
-    currency_rates cr ON sm.currency_code = cr.code
+    currency_exchange cr ON sm.currency_code = cr.code
 GROUP BY 
     sm.store_name, sm.country, sm.currency_code
 ORDER BY 

@@ -96,22 +96,21 @@ function formatCurrency(amount: string) {
         <TableHeader>
           <TableRow>
             <TableHead>Store</TableHead>
-            <TableHead>Country</TableHead>
             <TableHead class="text-right">Total Orders</TableHead>
-            <TableHead class="text-right">Total Amount (INR)</TableHead>
+            <TableHead>Last Order</TableHead>
             {#each months as month}
               <TableHead class="text-right">{month.toUpperCase()}</TableHead>
             {/each}
-            <TableHead>Last Order</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {#each storeMetrics as store}
             <TableRow>
-              <TableCell class="font-medium">{store.store_name}</TableCell>
-              <TableCell>{store.country}</TableCell>
-              <TableCell class="text-right">{store.total_orders}</TableCell>
-              <TableCell class="text-right">{formatCurrency(store.total_amount_inr)}</TableCell>
+              <TableCell class="font-medium">{store.store_name} ({store.country})</TableCell>
+              <TableCell class="text-right">{formatCurrency(store.total_amount_inr)} ({store.total_orders})</TableCell>
+              <TableCell>
+                {store.last_order_date ? new Date(store.last_order_date).toLocaleDateString() : '-'}
+              </TableCell>
               {#each months as month}
                 <TableCell class="text-right">
                   {#if store[month]}
@@ -121,9 +120,6 @@ function formatCurrency(amount: string) {
                   {/if}
                 </TableCell>
               {/each}
-              <TableCell>
-                {store.last_order_date ? new Date(store.last_order_date).toLocaleDateString() : '-'}
-              </TableCell>
             </TableRow>
           {/each}
         </TableBody>
