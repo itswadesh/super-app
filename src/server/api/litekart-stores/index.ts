@@ -23,7 +23,7 @@ async function fetchStoreMetrics(pgUri: string) {
     FROM 
         store s
     LEFT JOIN 
-        "order" o ON s.id = o.store_id
+        "order" o ON s.id = o.store_id AND o.paid = true
     GROUP BY 
         s.id, s.name, s.country, s.currency, DATE_TRUNC('month', o.created_at)
 ),
