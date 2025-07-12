@@ -31,6 +31,8 @@ interface StoreMetric {
   total_orders: number
   total_amount_inr: string
   last_order_date?: string
+  currency?: string
+  rate?: string
 }
 
 let storeMetrics = $state<StoreMetric[]>([])
@@ -70,7 +72,7 @@ function formatCurrency(amount: string) {
 }
 </script>
 
-<div class="container mx-auto py-6">
+<div class="w-full dark:bg-gray-900 min-h-screen">
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold">Store Metrics</h1>
     <Button variant="outline">Export</Button>
@@ -91,25 +93,40 @@ function formatCurrency(amount: string) {
       <p class="text-muted-foreground">No store metrics available</p>
     </div>
   {:else}
-    <div class="rounded-md border overflow-auto">
-      <Table class="min-w-[1200px]">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Store</TableHead>
-            <TableHead class="text-right">Total Orders</TableHead>
-            <TableHead>Last Order</TableHead>
+    <div class="w-full overflow-auto">
+      <Table class="w-full">
+        <TableHeader class="bg-slate-900 dark:bg-slate-800">
+          <TableRow class="hover:bg-slate-800 dark:hover:bg-slate-700">
+            <TableHead class="text-white dark:text-slate-100">Store</TableHead>
+            <TableHead class="text-white dark:text-slate-100">Currency</TableHead>
+            <TableHead class="text-right text-white dark:text-slate-100">Total Orders</TableHead>
+            <TableHead class="text-white dark:text-slate-100">Last Order</TableHead>
             {#each months as month}
-              <TableHead class="text-right">{month.toUpperCase()}</TableHead>
+              <TableHead class="text-right text-white dark:text-slate-100">{month.toUpperCase()}</TableHead>
             {/each}
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody class="bg-white dark:bg-gray-900">
           {#each storeMetrics as store}
-            <TableRow>
-              <TableCell class="font-medium">{store.store_name} ({store.country})</TableCell>
-              <TableCell class="text-right">{formatCurrency(store.total_amount_inr)} ({store.total_orders})</TableCell>
+            <TableRow class="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+              <TableCell class="font-medium text-gray-900 dark:text-white">{store.store_name} <span class="text-gray-500 dark:text-gray-400">({store.country})</span></TableCell>
+              <TableCell class="font-medium text-gray-900 dark:text-white">{store.currency_code} <span class="text-gray-500 dark:text-gray-400">({store.rate})</span></TableCell>
+              <TableCell class="text-right text-gray-900 dark:text-white">{formatCurrency(store.total_amount_inr)} <span class="text-gray-500 dark:text-gray-400">({store.total_orders})</span></TableCell>
               <TableCell>
-                {store.last_order_date ? new Date(store.last_order_date).toLocaleDateString() : '-'}
+                {#if store.last_order_date}
+                  {new Date(store.last_order_date).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                  }).replace(/ /g, '-')}
+                  <div class="text-xs text-gray-500 dark:text-gray-400">
+                    {#if store.currency}
+                      {store.currency} {store.rate ? `(Rate: ${store.rate})` : ''}
+                    {/if}
+                  </div>
+                {:else}
+                  -
+                {/if}
               </TableCell>
               {#each months as month}
                 <TableCell class="text-right">

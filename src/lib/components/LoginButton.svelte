@@ -14,6 +14,7 @@ const {
   fullWidth = false,
   redirectUrl = undefined as string | undefined,
   purchaseInfo = undefined as PurchaseInfo,
+  class: className = '',
   onclick,
 } = $props()
 
@@ -34,7 +35,7 @@ const sizeStyles = {
 
 // Compute class string using $derived
 const buttonClass = $derived(
-  `${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`
+  `${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${className}`.trim()
 )
 
 function handleClick() {

@@ -46,6 +46,8 @@ SELECT
     ROUND(SUM(COALESCE(sm.total_payment_amount * cr.rate_to_inr, 0))) as total_amount_inr,
     -- Overall totals
     MAX(sm.last_order_date) as last_order_date,
+    sm.currency_code as currency_code,
+    cr.rate_to_inr as rate,
     -- January metrics
     CONCAT(
         ROUND(SUM(CASE WHEN EXTRACT(MONTH FROM sm.month) = 1 THEN COALESCE(sm.total_payment_amount * cr.rate_to_inr, 0) ELSE 0 END)),
@@ -159,7 +161,7 @@ FROM
 LEFT JOIN 
     currency_exchange cr ON sm.currency_code = cr.code
 GROUP BY 
-    sm.store_name, sm.country, sm.currency_code
+    sm.store_name, sm.country, sm.currency_code, cr.rate_to_inr
 ORDER BY 
     sm.store_name;`
   } catch (error) {

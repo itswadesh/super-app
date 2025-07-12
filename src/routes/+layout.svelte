@@ -2,6 +2,7 @@
 import '../app.css'
 import { goto } from '$app/navigation'
 import { page } from '$app/state'
+import { onMount } from 'svelte'
 // import { onMount, tick } from 'svelte'
 import LoginButton from '$lib/components/LoginButton.svelte'
 // Remove LoginModal and Modal if they are only used for the old mobile menu, otherwise keep them.
@@ -48,6 +49,32 @@ async function handleLogout() {
 
 const { events, trackPageView } = useAnalytics()
 const { children } = $props()
+
+// Dark mode state management
+let darkMode = $state(false)
+
+// Toggle dark mode
+function toggleDarkMode() {
+  darkMode = !darkMode
+  if (darkMode) {
+    document.documentElement.classList.add('dark')
+    localStorage.setItem('theme', 'dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+    localStorage.setItem('theme', 'light')
+  }
+}
+
+// Initialize theme from localStorage or system preference
+onMount(() => {
+  const savedTheme = localStorage.getItem('theme')
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+
+  if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+    document.documentElement.classList.add('dark')
+    darkMode = true
+  }
+})
 
 // No longer need mobileMenuOpen state, Sheet handles its own state
 // let mobileMenuOpen = $state(false);
@@ -105,42 +132,47 @@ async function navigateWithSheetClose(path: string) {
 
 <div class="min-h-screen">
 <!-- Header -->
-<header class="bg-white shadow-sm sticky top-0 z-50">
+<header class="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50 transition-colors duration-200">
   <!-- Top Banner - Logo and Brand -->
-  <div class="bg-white py-1">
+  <div class="bg-white dark:bg-gray-900 py-1 transition-colors duration-200">
     <div class="mx-auto px-2 sm:px-3 lg:px-4">
       <div class="flex justify-between items-center">
         <!-- Logo and Brand -->
         <div class="flex items-center">
           <a href="/" class="flex items-center">
             <img src="/logo.png" class="h-8 w-8" alt="Sunabeda Logo" />
-            <span class="ml-1 text-xl font-light text-gray-500 hidden sm:inline"
-              >
+            <span class="ml-1 text-xl font-light text-gray-500 dark:text-gray-300 hidden sm:inline transition-colors duration-200">
               | Super App
-              </span
-            >
+            </span>
           </a>
         </div>
 
         <!-- Desktop Navigation -->
         <nav class="hidden md:flex space-x-8 items-center">
-        
+          <!-- Add your navigation links here -->
+          <!-- Example:
+          <a href="/dashboard" class="text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+            Dashboard
+          </a>
+          -->
         </nav>
 
         <!-- Action Buttons -->
         <div class="hidden md:flex items-center space-x-4">
-          <!-- {#if page.data?.user?.id}
+         
+          
+          {#if page.data?.user?.id}
             <UserMenu/>
           {:else}
-            <LoginButton buttonText="Log In" variant="text" onclick={(e: any) => { e.preventDefault(); navigateWithSheetClose('/login'); }} />
-          {/if} -->
+            <LoginButton buttonText="Log In" variant="text" class="dark:text-gray-200 dark:hover:text-indigo-400" onclick={(e: any) => { e.preventDefault(); navigateWithSheetClose('/login'); }} />
+          {/if}
         </div>
 
         <!-- Mobile menu button - Toggles Sheet programmatically -->
         <div class="md:hidden">
           <button
             type="button"
-            class="p-3 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100 transition-colors relative z-50"
+            class="p-3 rounded-md text-gray-500 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 relative z-50"
             onclick={() => sheetOpen = !sheetOpen} 
             aria-label="Toggle menu"
             aria-expanded={sheetOpen ? "true" : "false"}
@@ -176,19 +208,28 @@ async function navigateWithSheetClose(path: string) {
   </div>
 </header> 
   <!-- Shadcn Sheet for Mobile Navigation -->
-  <Sheet bind:open={sheetOpen} >
-    <SheetContent class="w-[300px] sm:w-[400px] p-6 flex flex-col">
+  <Sheet bind:open={sheetOpen}>
+    <SheetContent class="w-[300px] sm:w-[400px] p-6 flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700">
       <SheetHeader class="mb-6">
         <SheetTitle>
           <a href="/" class="flex items-center" onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/'); }}>
             <img src="/logo.png" class="h-8 w-8" alt="Sunabeda Logo" />
-            <span class="ml-1 text-xl font-light text-gray-500">| Super App</span>
+            <span class="ml-1 text-xl font-light text-gray-500 dark:text-gray-300">| Super App</span>
           </a>
         </SheetTitle>
       </SheetHeader>
       
-      <nav class="flex flex-col space-y-3 flex-grow overflow-y-auto">
-       
+      <nav class="flex flex-col space-y-1 flex-grow overflow-y-auto">
+        <!-- Add your mobile navigation links here -->
+        <!-- Example:
+        <a 
+          href="/dashboard" 
+          class="px-3 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+          onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/dashboard'); }}
+        >
+          Dashboard
+        </a>
+        -->
       </nav>
 
       <SheetFooter class="mt-auto pt-6 border-t border-gray-200">
@@ -227,17 +268,33 @@ async function navigateWithSheetClose(path: string) {
     </SheetContent>
   </Sheet>
 
-<main class="flex w-full flex-col">
+<main class="flex w-full flex-col p-4">
     {@render children()} <!-- Changed from <slot /> -->
 </main>
 
-  <footer class="bg-gray-100 text-gray-600 py-6 mt-auto">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-      <p>&copy; {new Date().getFullYear()} Swadesh Behera. All rights reserved.</p>
-      <p class="text-sm">
-        <!-- <a href="/privacy" class="hover:text-indigo-600">Privacy Policy</a> |
-        <a href="/terms" class="hover:text-indigo-600">Terms of Service</a> -->
-      </p>
+  <footer class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 py-6 mt-auto">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <p>&copy; {new Date().getFullYear()} Swadesh Behera. All rights reserved.</p>
+        
+        <!-- Dark mode toggle -->
+         <!-- Theme Toggle for Desktop -->
+          <button 
+            onclick={toggleDarkMode}
+            class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {#if darkMode}
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+              </svg>
+            {:else}
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 dark:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+              </svg>
+            {/if}
+          </button>
+      </div>
     </div>
   </footer>
 </div>
