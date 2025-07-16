@@ -18,6 +18,9 @@ type Side = 'left' | 'right'
 interface AuthConfig {
   loginEndpoint: string
   tokenKey: string
+  emailField: string
+  passwordField: string
+  tokenField: string
 }
 
 interface ApiResult {
@@ -37,23 +40,37 @@ let leftBaseUrl = 'http://localhost:3000/api'
 let rightBaseUrl = 'http://localhost:3000/api'
 
 // Auth configuration for svelte-commerce
-const authConfig: AuthConfig = {
+const authConfig: AuthConfig = $state({
   loginEndpoint: '/auth/login',
   tokenKey: 'svelte-commerce-token',
-}
+  emailField: 'email',
+  passwordField: 'password',
+  tokenField: 'token',
+})
 
 // Auth state
-let leftToken = ''
-let rightToken = ''
-let isAuthenticated: Record<Side, boolean> = {
+let leftToken = $state('')
+let rightToken = $state('')
+let leftEmail = $state('admin@example.com')
+let leftPassword = $state('admin123')
+let rightEmail = $state('user@example.com')
+let rightPassword = $state('user123')
+let isAuthenticated: Record<Side, boolean> = $state({
   left: false,
   right: false,
-}
+})
 
 // UI state
 let activeCategory: string | null = null
 let expandedApis = $state<Record<string, boolean>>({})
 let results = $state<ApiResults>({})
+
+type GroupedApi = {
+  path: string
+  requiresAuth: boolean
+}
+
+type GroupedApis = Record<string, GroupedApi[]>
 
 // Group APIs by their first segment and type (public/protected)
 function groupApis(apis: string[], requiresAuth: boolean): GroupedApis {
@@ -91,25 +108,65 @@ function toggleExpand(api: string) {
 
 // Login to svelte-commerce API
 async function login(side: Side) {
-  const baseUrl = side === 'left' ? leftBaseUrl : rightBaseUrl
-  const email = side === 'left' ? 'admin@example.com' : 'user@example.com' // Default test credentials
-  const password = side === 'left' ? 'admin123' : 'user123' // Default test credentials
+  // Store the original baseUrl for reference but use proxy for the actual call
+  const originalBaseUrl = side === 'left' ? leftBaseUrl : rightBaseUrl
+  // Use the Vite proxy URL instead of direct API calls
+  const proxyBaseUrl = `/api`
+  const email = side === 'left' ? leftEmail : rightEmail
+  const password = side === 'left' ? leftPassword : rightPassword
+
+  if (!originalBaseUrl || !originalBaseUrl.startsWith('http')) {
+    alert(
+      `Invalid API URL for ${side} side. Please enter a valid URL starting with http:// or https://`
+    )
+    return
+  }
+  
+  // Extract the path from the original URL to preserve the correct endpoint structure
+  const originalUrl = new URL(originalBaseUrl)
+  const pathPrefix = originalUrl.pathname !== '/' ? originalUrl.pathname : ''
 
   try {
-    const response = await fetch(`${baseUrl}${authConfig.loginEndpoint}`, {
+    const loginEndpoint = `${pathPrefix}${authConfig.loginEndpoint}`.replace(/\/+/g, '/')
+    console.log(`Attempting login for ${side} side to ${originalBaseUrl} via proxy ${proxyBaseUrl}${loginEndpoint}`)
+
+    const response = await fetch(`${proxyBaseUrl}${loginEndpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
       body: JSON.stringify({ email, password }),
+      mode: 'cors',
+      credentials: 'include',
     })
 
+    // Log response status for debugging
+    console.log(`${side} login response status:`, response.status, response.statusText)
+
     if (!response.ok) {
-      throw new Error(`Login failed: ${response.statusText}`)
+      throw new Error(`Login failed with status: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json()
-    const token = data.token || data.accessToken
+    const responseText = await response.text()
+    console.log(`${side} login raw response:`, responseText)
+
+    // Safely parse JSON
+    let data
+    try {
+      data = responseText ? JSON.parse(responseText) : {}
+      console.log(`${side} login parsed data:`, data)
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'Unknown parsing error'
+      throw new Error(`Failed to parse login response as JSON: ${errorMessage}`)
+    }
+
+    // Try to find token in response using configured field name first, then common alternatives
+    const token =
+      data[authConfig.tokenField] || data.token || data.accessToken || data.access_token || data.jwt
 
     if (token) {
+      console.log(`${side} login successful, token received`)
       if (side === 'left') {
         leftToken = token
       } else {
@@ -119,11 +176,15 @@ async function login(side: Side) {
       // Store token in localStorage for persistence
       localStorage.setItem(`${authConfig.tokenKey}-${side}`, token)
     } else {
-      throw new Error('No token received in login response')
+      console.error(`${side} login response missing token:`, data)
+      throw new Error(
+        'No token received in login response. Expected "token" or "accessToken" field.'
+      )
     }
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error(`Login failed for ${side} side:`, error)
-    alert(`Login failed: ${error.message}`)
+    alert(`Login failed: ${errorMessage}\n\nCheck browser console for more details.`)
   }
 }
 
@@ -155,8 +216,8 @@ async function callApi(apiPath: string) {
   try {
     // Call both APIs in parallel
     const [leftRes, rightRes] = await Promise.all([
-      fetchApi('left', apiPath),
-      fetchApi('right', apiPath),
+      callApiEndpoint(apiPath, 'left'),
+      callApiEndpoint(apiPath, 'right'),
     ])
 
     // Compare responses
@@ -199,25 +260,41 @@ async function safeJsonParse(response: Response) {
 }
 
 // Make API call with auth for svelte-commerce
-async function fetchApi(side: Side, endpoint: string) {
-  const baseUrl = (side === 'left' ? leftBaseUrl : rightBaseUrl).replace(/\/+$/, '')
+async function callApiEndpoint(endpoint: string, side: Side): Promise<Response> {
+  // Store original baseUrl for debugging
+  const originalBaseUrl = side === 'left' ? leftBaseUrl : rightBaseUrl
+  // Use proxy URL for actual requests
+  const proxyBaseUrl = `/api`
   const token = side === 'left' ? leftToken : rightToken
-  const fullEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
 
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  // Extract the path from the original URL to preserve the correct endpoint structure
+  const originalUrl = new URL(originalBaseUrl)
+  const pathPrefix = originalUrl.pathname !== '/' ? originalUrl.pathname : ''
+  
+  // Ensure endpoint has consistent format
+  const endpointPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  
+  // Combine path prefix with endpoint and normalize slashes
+  const fullEndpoint = `${pathPrefix}${endpointPath}`.replace(/\/+/g, '/')
+  
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+  }
 
   if (requiresAuth(endpoint) && token) {
     headers['Authorization'] = `Bearer ${token}`
   }
 
   try {
-    const response = await fetch(`${baseUrl}${fullEndpoint}`, {
+    console.log(`Calling ${side} API: ${originalBaseUrl}${endpointPath} via proxy ${proxyBaseUrl}${fullEndpoint}`)
+
+    const response = await fetch(`${proxyBaseUrl}${fullEndpoint}`, {
       headers,
       method: endpoint.includes('cart') ? 'POST' : 'GET',
       ...(endpoint.includes('cart') && { body: '{}' }),
     })
     return response
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(`Error fetching ${endpoint} from ${side}:`, error)
     throw error
   }
@@ -226,9 +303,10 @@ async function fetchApi(side: Side, endpoint: string) {
 // Call all APIs in a category
 function callAllInCategory(category: string) {
   const categoryApis = allGroupedApis.public[category] || allGroupedApis.protected[category] || []
-  return Promise.all(categoryApis.map((api) => callApi(api.path)))
+  return Promise.all(categoryApis.map((api: GroupedApi) => callApi(api.path)))
 }
 </script>
+
 
 <div class="min-h-screen bg-gray-100">
   <!-- Header -->
@@ -246,7 +324,7 @@ function callAllInCategory(category: string) {
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
     <!-- Login Section -->
     <div class="bg-white shadow rounded-lg p-6 mb-6">
       <h2 class="text-lg font-medium mb-4">API Authentication</h2>
@@ -255,16 +333,34 @@ function callAllInCategory(category: string) {
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Production API URL</label>
-            <div class="flex gap-2">
+            <div class="space-y-2">
               <input
                 type="text"
                 bind:value={leftBaseUrl}
                 placeholder="https://api.example.com"
-                class="flex-1 min-w-0 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <input
+                    type="text"
+                    bind:value={leftEmail}
+                    placeholder="Email"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    bind:value={leftPassword}
+                    placeholder="Password"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+              </div>
               <button
                 onclick={() => login('left')}
-                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm whitespace-nowrap"
+                class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
               >
                 {isAuthenticated.left ? 'Re-authenticate' : 'Auto Login'}
               </button>
@@ -282,16 +378,34 @@ function callAllInCategory(category: string) {
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Local API URL</label>
-            <div class="flex gap-2">
+            <div class="space-y-2">
               <input
                 type="text"
                 bind:value={rightBaseUrl}
                 placeholder="http://localhost:3000"
-                class="flex-1 min-w-0 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <input
+                    type="text"
+                    bind:value={rightEmail}
+                    placeholder="Email"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    bind:value={rightPassword}
+                    placeholder="Password"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                </div>
+              </div>
               <button
                 onclick={() => login('right')}
-                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm whitespace-nowrap"
+                class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
               >
                 {isAuthenticated.right ? 'Re-authenticate' : 'Auto Login'}
               </button>
@@ -400,31 +514,38 @@ function callAllInCategory(category: string) {
                           </div>
                         </div>
                         
-                        {#if expandedApis[apiPath] && results[apiPath]}
+                        {#if expandedApis[apiPath]}
                           <div class="px-6 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Left API Response -->
-                            <div class="border rounded p-3 bg-white">
-                              <h4 class="font-medium text-sm mb-2">Production Response</h4>
-                              <pre class="text-xs bg-gray-50 p-2 rounded overflow-auto max-h-64">
-                                {JSON.stringify(results[apiPath].left || results[apiPath].error, null, 2)}
-                              </pre>
-                            </div>
-                            
-                            <!-- Right API Response -->
-                            <div class="border rounded p-3 bg-white">
-                              <h4 class="font-medium text-sm mb-2">Local Response</h4>
-                              <pre class="text-xs bg-gray-50 p-2 rounded overflow-auto max-h-64">
-                                {JSON.stringify(results[apiPath].right || results[apiPath].error, null, 2)}
-                              </pre>
-                            </div>
-                            
-                            <!-- Diff Summary -->
-                            {#if !results[apiPath].isEqual && !results[apiPath].error}
-                              <div class="col-span-full mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
-                                <div class="font-medium text-yellow-800 mb-1">Differences Found:</div>
-                                <div class="text-yellow-700">
-                                  The API responses do not match. Please check the response details above.
+                            {#if results[apiPath]}
+                              <!-- Left API Response -->
+                              <div class="border rounded p-3 bg-white">
+                                <h4 class="font-medium text-sm mb-2">Production Response</h4>
+                                <pre class="text-xs bg-gray-50 p-2 rounded overflow-auto max-h-64">
+                                  {JSON.stringify(results[apiPath].left || results[apiPath].error, null, 2)}
+                                </pre>
+                              </div>
+                              
+                              <!-- Right API Response -->
+                              <div class="border rounded p-3 bg-white">
+                                <h4 class="font-medium text-sm mb-2">Local Response</h4>
+                                <pre class="text-xs bg-gray-50 p-2 rounded overflow-auto max-h-64">
+                                  {JSON.stringify(results[apiPath].right || results[apiPath].error, null, 2)}
+                                </pre>
+                              </div>
+                              
+                              <!-- Diff Summary -->
+                              {#if !results[apiPath].isEqual && !results[apiPath].error}
+                                <div class="col-span-full mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                                  <div class="font-medium text-yellow-800 mb-1">Differences Found:</div>
+                                  <div class="text-yellow-700">
+                                    The API responses do not match. Please check the response details above.
+                                  </div>
                                 </div>
+                              {/if}
+                            {:else}
+                              <!-- No results yet -->
+                              <div class="col-span-full p-4 bg-gray-50 rounded text-center">
+                                <p class="text-gray-500">Click "Test" to fetch API results</p>
                               </div>
                             {/if}
                           </div>
@@ -533,7 +654,7 @@ function callAllInCategory(category: string) {
                             </div>
                           </div>
                           
-                          {#if expandedApis[apiPath] && results[apiPath]}
+                          {#if expandedApis[apiPath]}
                             <div class="px-6 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                               <!-- Left API Response -->
                               <div class="border rounded p-3 bg-white">
@@ -571,6 +692,6 @@ function callAllInCategory(category: string) {
             {/if}
           {/each}
         </div>
-      </div>
-  </main>
+    </div>
+  </div>
 </div>
