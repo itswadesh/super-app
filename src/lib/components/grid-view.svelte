@@ -718,6 +718,12 @@ function handleEdit(row: TableData) {
   isSheetOpen = true
 }
 
+// Handle edit with proper typing
+function handleCreate(row: TableData) {
+  selectedRow = { ...row }
+  isSheetOpen = true
+}
+
 // Handle delete with proper typing and error handling
 async function handleDelete(row: TableData) {
   if (!confirm('Are you sure you want to delete this item?')) return
@@ -743,13 +749,16 @@ async function handleDelete(row: TableData) {
 // Handle save with proper typing and error handling
 async function handleSave() {
   if (!selectedRow) return
-
   try {
     const fields = editableFields.map((f) => f.value)
     const values = fields.map((f) => selectedRow?.[f] || '')
 
     const mapped_columns: string[] = []
     editableColumns.map((item) => {
+      // Skip ROWID - we should never update ROWID
+      if (item.value === 'ROWID') return
+      
+      console.log(selectedRow)
       let perceivedValue = selectedRow[item.value]
       if (perceivedValue === undefined || perceivedValue === null) return
 
@@ -882,9 +891,14 @@ async function handleSave() {
     const year = now.getFullYear()
     const formattedDate = `'${day}-${month}-${year}'`
     let q = `UPDATE ${TABLE_NAME} SET ${mapped_columns.join(',')}, UPDATED_BY='${page.data?.pbno}', UPDATED_AT=${formattedDate} WHERE ROWID='${selectedRow?.ROWID}'`
+    console.log(selectedRow?.ROWID)
     if (!selectedRow?.ROWID) {
+      if (insert_columns.length === 0) {
+        throw new Error('Cannot create a new record with no data. Please fill in at least one field.')
+      }
       q = `INSERT INTO ${TABLE_NAME}(${insert_columns.join(',')}) VALUES (${insert_values.join(',')})`
     }
+    console.log('qqqqqqqqqqqqqqqq',q)
     const response = await post('query', { q, db: DB_NAME })
 
     if (response.error) {
@@ -963,48 +977,7 @@ function handleSelectChange(field: string, value: string) {
             <Sheet.Trigger asChild>
               <Button
                 variant="outline"
-                onclick={() => {
-                  selectedRow = {
-                    // SL: 1,
-                    // DIV: 'ED',
-                    // CATEGORY: 'Works',
-                    // DESCR_OF_WRK: 'Office Renovation',
-                    // WO_NO: 'WO-2023-001',
-                    // WO_DT: '2023-01-15',
-                    // NAME_OF_CONTRACTOR: 'ABC Construction',
-                    // VALUE_OF_CONTRACT: 500000,
-                    // DT_OF_COMMENCE: '2023-02-01',
-                    // DT_OF_COMPLETION: '2023-06-30',
-                    // MODE_OF_PAYMENT: 'Bank Transfer',
-                    // AREA_INCHRG: 'John Doe',
-                    // INCHRG_PBNUM: '12345',
-                    // CONTRACTOR_PH_NO: '9876543210',
-                    // FILE_TRACK_REF_NO: 'REF-001',
-                    // EXECUTION_DTL: 'WORK IN PROGRESS',
-                    // IS_RECURRING: 0,
-                    // STATUS: 'WORK ORDER ISSUED',
-                    // REMARKS1: 'Sample remark 1',
-                    // TENDR_DUE_EDC: '2023-07-31',
-                    // PAID_AMT: 250000,
-                    // CAT: 'Civil',
-                    // SUB_CAT: 'Renovation',
-                    // DIVISION: 'North',
-                    // AAR_DATE: '2023-07-15',
-                    // DEPT: 'Admin',
-                    // UPDATED_DATE: '2023-01-10',
-                    // ESTIMATED_VALUE: 520000,
-                    // ADMIN_APPROVAL_RECT_DATE: '2023-01-05',
-                    // TENDER_NO: 'T-2023-001',
-                    // TENDER_DATE: '2022-12-01',
-                    // TENDER_TYPE: 'Open',
-                    // DATE_OF_TENDER_OPENING: '2022-12-15',
-                    // BID_VLIDITY: '20',
-                    // TEC_APPROVED_DATE: '2022-12-20',
-                    // COMMERCIAL_BID_OPENING_DATE: '2022-12-25',
-                    // AWARD_OF_WORK_APPROVAL_DATE: '2023-01-03'
-                  };
-                  isSheetOpen = true;
-                }}
+                onclick={handleCreate}
               >
                 <Plus class="w-4 h-4 mr-2" />
                 Add New
@@ -1097,7 +1070,7 @@ function handleSelectChange(field: string, value: string) {
                       {:else if field.type === 'date' && row[field.value]}
                         {formatDate(row[field.value])}
                       {:else if field.type === 'number' && row[field.value] !== null && row[field.value] !== undefined}
-                        {Number(row[field.value]).toFixed(2)}
+                        {Number.isInteger(Number(row[field.value])) ? Number(row[field.value]) : Math.round(Number(row[field.value]))}
                       {:else if row[field.value]}
                         {row[field.value] as string}
                       {:else}
@@ -1342,9 +1315,17 @@ function handleSelectChange(field: string, value: string) {
                       id={field.value} 
                       type={field.type || 'text'}
                       value={String(selectedRow[field.value] || '')}
-                      on:change={(e) => {
+                      oninput={(e) => {
                         const target = e.target as HTMLInputElement;
-                        handleInputChange(field.value, target.checked);
+                        if (field.type === 'number') {
+                          const numValue = target.value ? Number(target.value) : 0;
+                          handleInputChange(field.value, numValue);
+                        } else if (field.type === 'checkbox') {
+                          handleInputChange(field.value, target.checked);
+                        } else {
+                          // For text, date, and other input types
+                          handleInputChange(field.value, target.value);
+                        }
                       }}
                       placeholder={field.placeholder || `Enter ${field.text.toLowerCase()}`}
                       required={field.required}
