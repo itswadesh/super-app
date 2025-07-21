@@ -50,7 +50,6 @@ function openModal(storeId: string, storeName: string, month: string, dbName: st
   selectedStoreName = storeName
   selectedDbName = dbName
   selectedMonth = month
-  console.log(selectedStoreId, selectedMonth)
   modalOpen = true
 }
 
