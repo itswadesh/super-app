@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as a parent image
-ARG BASE_IMAGE="node:24-alpine"
+ARG BASE_IMAGE="node:22-alpine"
 FROM ${BASE_IMAGE}
 LABEL author="Swadesh Behera"
 
@@ -21,7 +21,7 @@ COPY . .
 RUN bun run build
 
 # Expose the port that your application runs on
-EXPOSE 3000
+# EXPOSE 3000
 
 # Define environment variables
 ENV NODE_ENV=production
