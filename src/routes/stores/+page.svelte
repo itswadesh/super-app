@@ -40,18 +40,25 @@ let storeMetrics = $state<StoreMetric[]>([])
 
 // Modal state
 let modalOpen = $state(false)
-let selectedStore = $state('')
+let selectedStoreId = $state('')
+let selectedStoreName = $state('')
+let selectedDbName = $state('')
 let selectedMonth = $state('')
 
-function openModal(store: string, month: string) {
-  selectedStore = store
+function openModal(storeId: string, storeName: string, month: string, dbName: string) {
+  selectedStoreId = storeId
+  selectedStoreName = storeName
+  selectedDbName = dbName
   selectedMonth = month
+  console.log(selectedStoreId, selectedMonth)
   modalOpen = true
 }
 
 function closeModal() {
   modalOpen = false
 }
+
+const currentMonth = new Date().toLocaleString('default', { month: 'short' }).toLowerCase()
 
 const months = [
   'jan',
@@ -119,7 +126,12 @@ function formatCurrency(amount: string) {
             <TableHead class="text-right text-white dark:text-slate-100">Total Orders</TableHead>
             <TableHead class="text-white dark:text-slate-100">Last Order</TableHead>
             {#each months as month}
-              <TableHead class="text-right text-white dark:text-slate-100">{month.toUpperCase()}</TableHead>
+              <TableHead class="text-right text-white dark:text-slate-100 {month === currentMonth ? 'bg-blue-600 dark:bg-blue-800' : ''}">
+                {month.toUpperCase()}
+                {#if month === currentMonth}
+                  <span class="ml-1 text-xs">(current)</span>
+                {/if}
+              </TableHead>
             {/each}
           </TableRow>
         </TableHeader>
@@ -148,7 +160,7 @@ function formatCurrency(amount: string) {
               {#each months as month}
                 <TableCell 
                   class="text-right cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors"
-                  onclick={() => openModal(store.store_name, month)}
+                  onclick={() => openModal(store.store_id, store.store_name, month, store.db_name)}
                 >
                   {#if store[month]}
                     <span class="hover:underline">{store[month]}</span>
@@ -163,11 +175,12 @@ function formatCurrency(amount: string) {
       </Table>
     </div>
   {/if}
-  
   <DailySalesModal 
     isOpen={modalOpen}
-    storeName={selectedStore}
+    storeId={selectedStoreId}
+    storeName={selectedStoreName}
+    dbName={selectedDbName}
     month={selectedMonth.toUpperCase()}
-    on:close={closeModal}
+    close={closeModal}
   />
 </div>

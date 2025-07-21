@@ -1,23 +1,54 @@
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { getSessionTokenCookie, validateSessionToken } from '../../db/auth'
-import postgres from 'postgres'
+import postgres, { type Row } from 'postgres'
+
+interface StoreMetric extends Row {
+  store_id: string
+  store_name: string
+  country: string
+  total_orders: number
+  total_amount_inr: number
+  last_order_date: Date | null
+  currency_code: string
+  rate: number
+  jan: string
+  feb: string
+  mar: string
+  apr: string
+  may: string
+  jun: string
+  jul: string
+  aug: string
+  sep: string
+  oct: string
+  nov: string
+  dec: string
+  db_name: string
+  envKey?: string
+}
 
 export const litekartStoreRoutes = new Hono()
 
 // Function to execute the query for a single database
-async function fetchStoreMetrics(pgUri: string) {
+async function fetchStoreMetrics(pgUri: string): Promise<StoreMetric[]> {
   const sql = postgres(pgUri)
+  // Extract dbName from the connection string for identification
+  const dbName = pgUri.split('/').pop() || 'unknown'
   try {
-    return await sql`WITH store_metrics AS ( SELECT 
-        s.id as store_id,
-        s.name as store_name,
-        s.country,
-        s.currency currency_code,
+    // Execute query and return results with proper typing
+    const results: StoreMetric[] = await sql`
+      WITH store_metrics AS (
+        SELECT 
+          s.id as store_id,
+          s.name as store_name,
+          s.country,
+          s.currency as currency_code,
         -- Order metrics
         COUNT(DISTINCT o.id) as no_of_orders,
         MAX(o.created_at) as last_order_date,
         ROUND(SUM(o.amount_paid)/100) as total_payment_amount,
+        ${dbName} as db_name, -- Database name for identification
         -- Date parts for grouping
         DATE_TRUNC('month', o.created_at) as month
     FROM 
@@ -40,7 +71,9 @@ currency_exchange AS (
         and effective_to >= CURRENT_DATE
 )
 SELECT 
+    sm.store_id,
     sm.store_name,
+    ${pgUri} as db_name,
     sm.country,
      SUM(COALESCE(sm.no_of_orders, 0)) as total_orders,
     ROUND(SUM(COALESCE(sm.total_payment_amount * cr.rate_to_inr, 0))) as total_amount_inr,
@@ -161,13 +194,16 @@ FROM
 LEFT JOIN 
     currency_exchange cr ON sm.currency_code = cr.code
 GROUP BY 
-    sm.store_name, sm.country, sm.currency_code, cr.rate_to_inr
+    sm.store_id, sm.store_name, sm.country, sm.currency_code, cr.rate_to_inr
 ORDER BY 
     sm.store_name;`
+
+    return results
   } catch (error) {
-    console.error(`Error querying database: ${pgUri}`, error)
+    console.error(`Error fetching store metrics from ${pgUri}:`, error)
     return []
   } finally {
+    // Close the database connection
     await sql.end()
   }
 }
@@ -175,16 +211,20 @@ ORDER BY
 // GET /api/litekart-stores - Get store metrics from multiple databases
 litekartStoreRoutes.get('/', async (c: Context) => {
   try {
+    // Validate session but we don't need the session object
     const sessionToken = getSessionTokenCookie(c)
-    const session = await validateSessionToken(sessionToken || '')
+    await validateSessionToken(sessionToken || '')
 
-    // Dynamically get all PG_URI_* environment variables
-    const pgUris = Object.entries(process.env)
+    // Get all PG_URI_* environment variables with both keys and values
+    const pgConfigs = Object.entries(process.env)
       .filter(([key]) => key.startsWith('PG_URI_'))
-      .map(([_, value]) => value)
-      .filter((value): value is string => Boolean(value))
+      .map(([key, value]) => ({
+        key,
+        uri: value as string,
+      }))
+      .filter((config) => Boolean(config.uri))
 
-    if (pgUris.length === 0) {
+    if (pgConfigs.length === 0) {
       return c.json(
         {
           success: false,
@@ -194,10 +234,18 @@ litekartStoreRoutes.get('/', async (c: Context) => {
       )
     }
 
-    // Execute queries in parallel
-    const allResults = await Promise.all(pgUris.map((uri) => fetchStoreMetrics(uri)))
-    // Flatten and concatenate all results
-    const storeMetrics = allResults.flat()
+    // Execute queries in parallel and include the env key with each result
+    const storeMetrics = (
+      await Promise.all(
+        pgConfigs.map(async ({ key, uri }) => {
+          const metrics = await fetchStoreMetrics(uri)
+          return metrics.map((metric) => ({
+            ...metric,
+            db_name: key,
+          }))
+        })
+      )
+    ).flat()
 
     if (storeMetrics.length === 0) {
       return c.json({
@@ -222,6 +270,70 @@ litekartStoreRoutes.get('/', async (c: Context) => {
     )
   }
 })
+litekartStoreRoutes.get('/daily-sales', async (c: Context) => {
+  const sessionToken = getSessionTokenCookie(c)
+  const session = await validateSessionToken(sessionToken || '')
 
+  const { db_name: dbName } = c.req.query()
+  if (!dbName) {
+    return c.json(
+      {
+        success: false,
+        message: 'Database name required',
+      },
+      400
+    )
+  }
+  // Dynamically get all PG_URI_* environment variables
+  const pgUri = process.env[dbName]
+
+  if (!pgUri) {
+    return c.json(
+      {
+        success: false,
+        message: 'No database connections configured',
+      },
+      500
+    )
+  }
+  // month and year are not currently used in the query
+  const sql = postgres(pgUri)
+
+  try {
+    const data = await sql`SELECT 
+    s.id as store_id,
+    s.name as store_name,
+    s.country,
+    s.currency as currency_code,
+    DATE(o.created_at) as order_date,
+    COUNT(DISTINCT o.id) as no_of_orders,
+    ROUND(SUM(o.amount_paid)) as total_payment_amount,
+    ROUND(SUM(COALESCE(o.amount_paid * cr.rate, 0)/100)) as total_amount_inr
+FROM 
+    store s
+LEFT JOIN 
+    "order" o ON s.id = o.store_id AND o.paid = true
+LEFT JOIN 
+    currency_exchange cr ON s.currency = cr.from_currency
+WHERE 
+    TO_CHAR(o.created_at, 'MON') = 'JUL'
+GROUP BY 
+    s.id, s.name, s.country, s.currency, DATE(o.created_at)
+ORDER BY 
+    s.id, order_date`
+    return c.json(data)
+  } catch (err) {
+    console.error('Error fetching store metrics:', err)
+    return c.json(
+      {
+        success: false,
+        error: 'Failed to fetch store metrics',
+      },
+      500
+    )
+  } finally {
+    await sql.end()
+  }
+})
 // Export the routes
 export default litekartStoreRoutes
