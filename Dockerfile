@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as a parent image
-ARG BASE_IMAGE="node:22-alpine"
+ARG BASE_IMAGE="node:24-alpine"
 FROM ${BASE_IMAGE}
 LABEL author="Swadesh Behera"
 
