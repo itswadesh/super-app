@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '$lib/components/ui/table'
 import { Skeleton } from '$lib/components/ui/skeleton'
+import DailySalesModal from './daily-sales-modal.svelte'
 
 let loading = $state(true)
 let error = $state<string | null>(null)
@@ -36,6 +37,22 @@ interface StoreMetric {
 }
 
 let storeMetrics = $state<StoreMetric[]>([])
+
+// Modal state
+let modalOpen = $state(false)
+let selectedStore = $state('')
+let selectedMonth = $state('')
+
+function openModal(store: string, month: string) {
+  selectedStore = store
+  selectedMonth = month
+  modalOpen = true
+}
+
+function closeModal() {
+  modalOpen = false
+}
+
 const months = [
   'jan',
   'feb',
@@ -129,11 +146,14 @@ function formatCurrency(amount: string) {
                 {/if}
               </TableCell>
               {#each months as month}
-                <TableCell class="text-right">
+                <TableCell 
+                  class="text-right cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-colors"
+                  onclick={() => openModal(store.store_name, month)}
+                >
                   {#if store[month]}
-                    {store[month]}
+                    <span class="hover:underline">{store[month]}</span>
                   {:else}
-                    -
+                    <span>-</span>
                   {/if}
                 </TableCell>
               {/each}
@@ -143,4 +163,11 @@ function formatCurrency(amount: string) {
       </Table>
     </div>
   {/if}
+  
+  <DailySalesModal 
+    isOpen={modalOpen}
+    storeName={selectedStore}
+    month={selectedMonth.toUpperCase()}
+    on:close={closeModal}
+  />
 </div>
