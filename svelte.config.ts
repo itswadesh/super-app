@@ -10,6 +10,9 @@ const config = {
       '@/*': './src/*',
     },
   },
+  vitePlugin: {
+    inspector: true,
+  },
   compilerOptions: {
     runes: true,
     enableSourcemap: true,
