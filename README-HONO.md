@@ -36,23 +36,15 @@ This document explains the architecture and setup of the Hono server integration
 
 ## Local Development
 
-### Starting the Servers
+### Starting the Application
 
-You can run both the SvelteKit frontend and Hono API server concurrently:
-
-```bash
-npm run dev:all
-```
-
-Or run them separately:
+The Hono API is integrated into the SvelteKit application. To start the development server:
 
 ```bash
-# SvelteKit frontend
-npm run dev
-
-# Hono API server
-npm run api:dev
+bun run dev
 ```
+
+This will start both the SvelteKit frontend and the integrated Hono API server.
 
 ### Environment Variables
 

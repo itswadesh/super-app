@@ -20,16 +20,18 @@ export const getOtp = async ({ phone }: { phone: string }) => {
     const userId = crypto.randomUUID()
 
     await db.insert(User).values({
-      id: userId,
+      name: `User ${phone.slice(-4)}`, // Default name based on phone
+      email: '',
       phone: phone,
-      otp: otp,
+      passwordHash: '', // Will be set later if needed
+      role: 'buyer',
+      isVerified: false,
+      avatar: '',
     })
 
     return { success: true, message: 'OTP sent successfully. New user registered.' }
   } else {
-    // User exists, update OTP
-    await db.update(User).set({ otp }).where(eq(User.phone, phone))
-
+    // User exists, just return success
     return { success: true, message: 'OTP sent successfully' }
   }
 }

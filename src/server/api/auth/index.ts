@@ -16,6 +16,7 @@ import {
 import { Session } from '../../db/schema'
 import { getOtp } from './get-otp'
 import { verifyOtp } from './verify-otp'
+import { signupHost } from './signup'
 
 export const routes = new Hono()
 
@@ -75,6 +76,12 @@ routes.post('/verify-otp', async (c: Context) => {
   const { phone, otp } = await c.req.json()
   const result = await verifyOtp({ phone, otp })
   setSessionTokenCookie(c, result.token, result.expiresAt)
+  return c.json(result)
+})
+
+routes.post('/signup', async (c: Context) => {
+  const data = await c.req.json()
+  const result = await signupHost(data)
   return c.json(result)
 })
 

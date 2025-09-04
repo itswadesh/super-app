@@ -275,7 +275,7 @@ async function navigateWithSheetClose(path: string) {
   <footer class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 py-6 mt-auto">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div class="flex flex-col md:flex-row justify-between items-center">
-        <p>&copy; {new Date().getFullYear()} Swadesh Behera. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} Misiki. All rights reserved.</p>
         
         <!-- Dark mode toggle -->
          <!-- Theme Toggle for Desktop -->
