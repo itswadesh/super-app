@@ -43,18 +43,24 @@ const _promotions = [
     title: 'Welcome to HomeFood',
     description: 'Discover amazing homemade food from local chefs',
     color: 'promo1',
+    buttonText: 'Explore Now',
+    href: '/foods',
   },
   {
     id: 2,
-    title: 'Free Delivery',
-    description: 'On orders above ₹200',
+    title: 'Fast Delivery',
+    description: 'Delivery to HAL Township between 6PM to 9:30PM',
     color: 'promo2',
+    buttonText: 'Order Now',
+    href: '/foods',
   },
   {
     id: 3,
     title: 'Become a Chef',
     description: 'Share your cooking skills and joy',
     color: 'promo3',
+    buttonText: 'Join Now',
+    href: '/host',
   },
 ]
 
@@ -103,7 +109,7 @@ const _recentTransactions = [
             <h3 class="font-bold text-lg sm:text-xl mb-2">{promo.title}</h3>
             <p class="text-sm sm:text-base opacity-90">{promo.description}</p>
             <div class="mt-3 inline-flex items-center text-sm font-medium">
-              <span>Order now</span>
+              <span><a href={promo.href}>{promo.buttonText}</a></span>
               <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>

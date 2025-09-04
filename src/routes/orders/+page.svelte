@@ -17,18 +17,18 @@ let orders = $state([
     taxAmount: 20,
     items: [
       { name: 'Homemade Butter Chicken', quantity: 1, price: 250 },
-      { name: 'Fresh Vegetable Biryani', quantity: 1, price: 180 }
+      { name: 'Fresh Vegetable Biryani', quantity: 1, price: 180 },
     ],
     host: {
       name: 'Priya Sharma',
       phone: '+91 9876543210',
-      location: 'Mumbai, Maharashtra'
+      location: 'Mumbai, Maharashtra',
     },
-    deliveryAddress: '123 Main St, Mumbai, Maharashtra 400001',
-    estimatedDelivery: '2024-01-15 7:30 PM',
-    actualDelivery: '2024-01-15 7:45 PM',
+    deliveryAddress: 'HAL Township, Sunabeda, Odisha',
+    estimatedDelivery: '6:00 PM - 9:30 PM',
+    actualDelivery: '7:45 PM',
     specialInstructions: 'Please ring the doorbell twice',
-    createdAt: '2024-01-15 6:00 PM'
+    createdAt: '2024-01-15 6:00 PM',
   },
   {
     id: '2',
@@ -37,38 +37,43 @@ let orders = $state([
     totalAmount: 220,
     deliveryFee: 30,
     taxAmount: 10,
-    items: [
-      { name: 'Italian Pasta Carbonara', quantity: 1, price: 220 }
-    ],
+    items: [{ name: 'Italian Pasta Carbonara', quantity: 1, price: 220 }],
     host: {
       name: 'Maria Rossi',
       phone: '+91 9876543211',
-      location: 'Bangalore, Karnataka'
+      location: 'Bangalore, Karnataka',
     },
-    deliveryAddress: '456 Oak Ave, Bangalore, Karnataka 560001',
-    estimatedDelivery: '2024-01-16 8:00 PM',
+    deliveryAddress: 'HAL Township, Bangalore, Karnataka',
+    estimatedDelivery: '6:00 PM - 9:30 PM',
     specialInstructions: '',
-    createdAt: '2024-01-16 6:30 PM'
-  }
+    createdAt: '2024-01-16 6:30 PM',
+  },
 ])
 
 let activeTab = $state('all')
 
 function getStatusColor(status: string) {
   switch (status) {
-    case 'pending': return 'bg-yellow-100 text-yellow-800'
-    case 'confirmed': return 'bg-blue-100 text-blue-800'
-    case 'preparing': return 'bg-orange-100 text-orange-800'
-    case 'ready': return 'bg-green-100 text-green-800'
-    case 'delivered': return 'bg-gray-100 text-gray-800'
-    case 'cancelled': return 'bg-red-100 text-red-800'
-    default: return 'bg-gray-100 text-gray-800'
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800'
+    case 'confirmed':
+      return 'bg-blue-100 text-blue-800'
+    case 'preparing':
+      return 'bg-orange-100 text-orange-800'
+    case 'ready':
+      return 'bg-green-100 text-green-800'
+    case 'delivered':
+      return 'bg-gray-100 text-gray-800'
+    case 'cancelled':
+      return 'bg-red-100 text-red-800'
+    default:
+      return 'bg-gray-100 text-gray-800'
   }
 }
 
 function filteredOrders() {
   if (activeTab === 'all') return orders
-  return orders.filter(order => order.status === activeTab)
+  return orders.filter((order) => order.status === activeTab)
 }
 
 onMount(() => {

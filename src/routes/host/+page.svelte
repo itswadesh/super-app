@@ -18,6 +18,7 @@ let { data }: Props = $props()
 let hostStats = $state(data.hostStats)
 let myFoods = $state(data.myFoods)
 let recentOrders = $state(data.recentOrders)
+let applicationStatus = $state(data.applicationStatus || null)
 let isLoading = $state(false)
 let currentTab = $state('foods')
 
@@ -599,6 +600,75 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
   <div class="container mx-auto px-4 py-6">
+    <!-- Application Status Banner -->
+    {#if applicationStatus}
+      {#if applicationStatus.status === 'pending'}
+        <div class="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200">Application Under Review</h3>
+              <p class="text-yellow-700 dark:text-yellow-300">
+                Please wait until our team reviews your application. You will receive an email notification once the review is complete.
+              </p>
+              <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+                Applied on {new Date(applicationStatus.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      {:else if applicationStatus.status === 'rejected'}
+        <div class="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-red-800 dark:text-red-200">Application Rejected</h3>
+              <p class="text-red-700 dark:text-red-300">
+                Unfortunately, your application was not approved at this time.
+                {#if applicationStatus.reviewNotes}
+                  Reason: {applicationStatus.reviewNotes}
+                {/if}
+              </p>
+              <p class="text-sm text-red-600 dark:text-red-400 mt-1">
+                Reviewed on {new Date(applicationStatus.reviewedAt).toLocaleDateString()}
+              </p>
+            </div>
+            <Button onclick={() => goto('/host/apply')} class="bg-red-600 hover:bg-red-700 text-white">
+              Reapply
+            </Button>
+          </div>
+        </div>
+      {/if}
+    {:else if !applicationStatus}
+      <!-- No Application Banner -->
+      <div class="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
+            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200">Become a HomeFood Chef</h3>
+            <p class="text-blue-700 dark:text-blue-300">
+              Start your culinary journey with HomeFood. Apply to become a chef and share your delicious dishes with food lovers in your area.
+            </p>
+          </div>
+          <Button onclick={() => goto('/host/apply')} class="bg-blue-600 hover:bg-blue-700 text-white">
+            Apply Now
+          </Button>
+        </div>
+      </div>
+    {/if}
+
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
@@ -610,10 +680,12 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
           </span>
         {/if}
       </div>
-      <Button onclick={openAddFoodModal}>
-        <Plus class="w-4 h-4 mr-2" />
-        Add New Food
-      </Button>
+      {#if applicationStatus?.status === 'approved'}
+        <Button onclick={openAddFoodModal}>
+          <Plus class="w-4 h-4 mr-2" />
+          Add New Food
+        </Button>
+      {/if}
     </div>
 
 
@@ -699,13 +771,30 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {#each myFoods.filter(f => f.status === 'available') as food}
-                  <Card class="border-green-200 dark:border-green-800 shadow-md">
+                  <Card class="border-green-200 dark:border-green-800 shadow-md overflow-hidden">
+                    <!-- Food Image -->
+                    {#if food.image}
+                      <div class="relative h-32 overflow-hidden">
+                        <img
+                          src={food.image}
+                          alt={food.name}
+                          class="w-full h-full object-cover"
+                        />
+                        <div class="absolute top-2 right-2">
+                          <Badge variant="default" class="bg-green-500 hover:bg-green-600">
+                            Available
+                          </Badge>
+                        </div>
+                      </div>
+                    {/if}
                     <CardHeader>
                       <div class="flex items-center justify-between">
                         <CardTitle class="text-lg">{food.name}</CardTitle>
-                        <Badge variant="default" class="bg-green-500 hover:bg-green-600">
-                          Available
-                        </Badge>
+                        {#if !food.image}
+                          <Badge variant="default" class="bg-green-500 hover:bg-green-600">
+                            Available
+                          </Badge>
+                        {/if}
                       </div>
                       <CardDescription>₹{food.price}</CardDescription>
                     </CardHeader>
@@ -758,13 +847,30 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {#each myFoods.filter(f => f.status === 'unavailable') as food}
-                  <Card class="opacity-75">
+                  <Card class="opacity-75 overflow-hidden">
+                    <!-- Food Image -->
+                    {#if food.image}
+                      <div class="relative h-32 overflow-hidden opacity-60">
+                        <img
+                          src={food.image}
+                          alt={food.name}
+                          class="w-full h-full object-cover grayscale"
+                        />
+                        <div class="absolute top-2 right-2">
+                          <Badge variant="secondary">
+                            Unavailable
+                          </Badge>
+                        </div>
+                      </div>
+                    {/if}
                     <CardHeader>
                       <div class="flex items-center justify-between">
                         <CardTitle class="text-lg">{food.name}</CardTitle>
-                        <Badge variant="secondary">
-                          Unavailable
-                        </Badge>
+                        {#if !food.image}
+                          <Badge variant="secondary">
+                            Unavailable
+                          </Badge>
+                        {/if}
                       </div>
                       <CardDescription>₹{food.price}</CardDescription>
                     </CardHeader>

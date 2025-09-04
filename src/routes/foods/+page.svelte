@@ -392,7 +392,7 @@ async function placeOrder() {
         success: true,
         orderId: `ORD${Date.now()}`,
         message: 'Order placed successfully',
-        estimatedDelivery: '30-45 minutes',
+        estimatedDelivery: '6:00 PM - 9:30 PM',
       }
     }
 
@@ -484,6 +484,24 @@ function proceedToPayment() {
       {#if total > 0}
         <p class="text-xs sm:text-sm text-yellow-600 dark:text-yellow-400 font-medium mt-1">{total} restaurants delivering to you</p>
       {/if}
+      <!-- Delivery Information -->
+      <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div class="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span class="font-medium">Delivery Hours:</span>
+          <span>6:00 PM - 9:30 PM</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 mt-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          <span class="font-medium">Service Area:</span>
+          <span>HAL Township Only</span>
+        </div>
+      </div>
     </div>
 
     <!-- Error State -->
@@ -582,7 +600,7 @@ function proceedToPayment() {
                       {#if orderResult?.estimatedDelivery}
                         Estimated delivery: {orderResult.estimatedDelivery}
                       {:else}
-                        Your food will be delivered soon.
+                        Your food will be delivered between 6:00 PM - 9:30 PM today.
                       {/if}
                     </p>
                     <p class="text-xs text-gray-500 dark:text-gray-500 mb-4">Thank you for ordering with HomeFood!</p>

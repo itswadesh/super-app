@@ -1,4 +1,13 @@
-import { pgTable, text, integer, boolean, timestamp, decimal, jsonb, uuid } from 'drizzle-orm/pg-core'
+import {
+  pgTable,
+  text,
+  integer,
+  boolean,
+  timestamp,
+  decimal,
+  jsonb,
+  uuid,
+} from 'drizzle-orm/pg-core'
 
 // Helper function to generate unique IDs
 const generateId = () => crypto.randomUUID()
@@ -18,13 +27,18 @@ export const User = pgTable('user', {
 
 export const Session = pgTable('session', {
   id: uuid('id').primaryKey().$defaultFn(generateId),
-  userId: uuid('user_id').notNull().references(() => User.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => User.id),
   expiresAt: timestamp('expires_at').notNull(),
 })
 
 export const HostProfile = pgTable('host_profile', {
   id: uuid('id').primaryKey().$defaultFn(generateId),
-  userId: uuid('user_id').notNull().references(() => User.id).unique(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => User.id)
+    .unique(),
   bio: text('bio'),
   location: text('location'),
   cuisineSpecialties: jsonb('cuisine_specialties'), // array of cuisines
@@ -48,7 +62,9 @@ export const Category = pgTable('category', {
 
 export const Food = pgTable('food', {
   id: uuid('id').primaryKey().$defaultFn(generateId),
-  hostId: uuid('host_id').notNull().references(() => User.id),
+  hostId: uuid('host_id')
+    .notNull()
+    .references(() => User.id),
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   description: text('description'),
@@ -70,8 +86,12 @@ export const Food = pgTable('food', {
 
 export const Order = pgTable('order', {
   id: uuid('id').primaryKey().$defaultFn(generateId),
-  buyerId: uuid('buyer_id').notNull().references(() => User.id),
-  hostId: uuid('host_id').notNull().references(() => User.id),
+  buyerId: uuid('buyer_id')
+    .notNull()
+    .references(() => User.id),
+  hostId: uuid('host_id')
+    .notNull()
+    .references(() => User.id),
   orderNumber: text('order_number').notNull().unique(),
   status: text('status').default('pending'), // 'pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'
   totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).notNull(),
@@ -89,8 +109,12 @@ export const Order = pgTable('order', {
 
 export const OrderItem = pgTable('order_item', {
   id: uuid('id').primaryKey().$defaultFn(generateId),
-  orderId: uuid('order_id').notNull().references(() => Order.id),
-  foodId: uuid('food_id').notNull().references(() => Food.id),
+  orderId: uuid('order_id')
+    .notNull()
+    .references(() => Order.id),
+  foodId: uuid('food_id')
+    .notNull()
+    .references(() => Food.id),
   quantity: integer('quantity').notNull(),
   unitPrice: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
   totalPrice: decimal('total_price', { precision: 10, scale: 2 }).notNull(),
@@ -100,9 +124,15 @@ export const OrderItem = pgTable('order_item', {
 
 export const FoodRating = pgTable('food_rating', {
   id: uuid('id').primaryKey().$defaultFn(generateId),
-  foodId: uuid('food_id').notNull().references(() => Food.id),
-  userId: uuid('user_id').notNull().references(() => User.id),
-  orderId: uuid('order_id').notNull().references(() => Order.id),
+  foodId: uuid('food_id')
+    .notNull()
+    .references(() => Food.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => User.id),
+  orderId: uuid('order_id')
+    .notNull()
+    .references(() => Order.id),
   rating: integer('rating').notNull(), // 1-5
   review: text('review'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -110,12 +140,50 @@ export const FoodRating = pgTable('food_rating', {
 
 export const HostRating = pgTable('host_rating', {
   id: uuid('id').primaryKey().$defaultFn(generateId),
-  hostId: uuid('host_id').notNull().references(() => User.id),
-  userId: uuid('user_id').notNull().references(() => User.id),
-  orderId: uuid('order_id').notNull().references(() => Order.id),
+  hostId: uuid('host_id')
+    .notNull()
+    .references(() => User.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => User.id),
+  orderId: uuid('order_id')
+    .notNull()
+    .references(() => Order.id),
   rating: integer('rating').notNull(), // 1-5
   review: text('review'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const HostApplication = pgTable('host_application', {
+  id: uuid('id').primaryKey().$defaultFn(generateId),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => User.id)
+    .unique(),
+  fullName: text('full_name').notNull(),
+  email: text('email').notNull(),
+  phone: text('phone').notNull(),
+  experience: text('experience'),
+  specializations: jsonb('specializations'), // array of cuisines
+  kitchenEquipment: text('kitchen_equipment'),
+  availableHours: text('available_hours'),
+  deliveryRadius: text('delivery_radius'),
+  businessLicense: text('business_license'), // file path/URL
+  foodSafetyCertificate: text('food_safety_certificate'), // file path/URL
+  idProof: text('id_proof').notNull(), // file path/URL
+  address: text('address').notNull(),
+  city: text('city').default('Bangalore'),
+  pincode: text('pincode'),
+  bankAccountNumber: text('bank_account_number'),
+  bankName: text('bank_name'),
+  ifscCode: text('ifsc_code'),
+  upiId: text('upi_id'),
+  status: text('status').default('pending'), // 'pending', 'approved', 'rejected'
+  reviewedBy: uuid('reviewed_by').references(() => User.id), // admin who reviewed
+  reviewNotes: text('review_notes'),
+  reviewedAt: timestamp('reviewed_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
 
 // Types
@@ -128,3 +196,4 @@ export type Order = typeof Order.$inferSelect
 export type OrderItem = typeof OrderItem.$inferSelect
 export type FoodRating = typeof FoodRating.$inferSelect
 export type HostRating = typeof HostRating.$inferSelect
+export type HostApplication = typeof HostApplication.$inferSelect

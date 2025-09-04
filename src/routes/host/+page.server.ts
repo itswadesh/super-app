@@ -1,5 +1,5 @@
 import { db } from '../../server/db'
-import { Food, Order, OrderItem, User, HostProfile } from '../../server/db/schema'
+import { Food, Order, OrderItem, User, HostProfile, HostApplication } from '../../server/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import type { PageServerLoad } from './$types'
 
@@ -7,6 +7,13 @@ export const load: PageServerLoad = async ({ locals }) => {
   try {
     // TODO: Get actual host ID from authentication
     const hostId = 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b' // Test host ID from seeded data
+
+    // Check application status
+    const application = await db
+      .select()
+      .from(HostApplication)
+      .where(eq(HostApplication.userId, hostId))
+      .limit(1)
 
     // Get host's foods
     const foods = await db
@@ -91,6 +98,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         rating: food.rating ? parseFloat(food.rating) : 0,
       })),
       recentOrders,
+      applicationStatus: application.length > 0 ? application[0] : null,
     }
   } catch (error) {
     console.error('Error loading host data:', error)
@@ -104,6 +112,7 @@ export const load: PageServerLoad = async ({ locals }) => {
       },
       myFoods: [],
       recentOrders: [],
+      applicationStatus: null,
     }
   }
 }
