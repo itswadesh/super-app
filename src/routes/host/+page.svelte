@@ -4,68 +4,20 @@ import { Button } from '$lib/components/ui/button'
 import { Badge } from '$lib/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs'
 import { Plus, ChefHat, ShoppingCart, Star, TrendingUp, Users } from '@lucide/svelte'
-import { onMount } from 'svelte'
+import type { PageData } from './$types'
 
-// Mock data for host dashboard
-let hostStats = $state({
-  totalFoods: 12,
-  activeOrders: 5,
-  totalOrders: 47,
-  averageRating: 4.6,
-  totalEarnings: 12500
-})
+interface Props {
+  data: PageData
+}
 
-let myFoods = $state([
-  {
-    id: '1',
-    name: 'Homemade Butter Chicken',
-    price: 250,
-    status: 'available',
-    orders: 15,
-    rating: 4.8
-  },
-  {
-    id: '2',
-    name: 'Fresh Vegetable Biryani',
-    price: 180,
-    status: 'available',
-    orders: 8,
-    rating: 4.7
-  },
-  {
-    id: '3',
-    name: 'Italian Pasta Carbonara',
-    price: 220,
-    status: 'unavailable',
-    orders: 3,
-    rating: 4.3
-  }
-])
+let { data }: Props = $props()
 
-let recentOrders = $state([
-  {
-    id: '1',
-    customerName: 'John Doe',
-    foodName: 'Butter Chicken',
-    quantity: 2,
-    totalAmount: 500,
-    status: 'preparing',
-    orderTime: '2 hours ago'
-  },
-  {
-    id: '2',
-    customerName: 'Jane Smith',
-    foodName: 'Vegetable Biryani',
-    quantity: 1,
-    totalAmount: 180,
-    status: 'ready',
-    orderTime: '1 hour ago'
-  }
-])
-
-onMount(() => {
-  // TODO: Fetch host data from API
-})
+// Reactive data from server load function
+let {
+  hostStats,
+  myFoods,
+  recentOrders
+} = $derived(data)
 </script>
 
 <svelte:head>
