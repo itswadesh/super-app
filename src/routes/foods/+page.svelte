@@ -4,9 +4,25 @@ import { Button } from '$lib/components/ui/button'
 import { Badge } from '$lib/components/ui/badge'
 import { Input } from '$lib/components/ui/input'
 import * as Select from '$lib/components/ui/select'
-import { Search, Star, Clock, MapPin, ChefHat, Leaf, Beef, Utensils, Pizza, Coffee, Plus, Minus, ShoppingCart, X } from '@lucide/svelte'
+import {
+  Search,
+  Star,
+  Clock,
+  MapPin,
+  ChefHat,
+  Leaf,
+  Beef,
+  Utensils,
+  Pizza,
+  Coffee,
+  Plus,
+  Minus,
+  ShoppingCart,
+  X,
+} from '@lucide/svelte'
 import { goto } from '$app/navigation'
 import { page } from '$app/stores'
+import { onMount } from 'svelte'
 import type { PageData } from './$types'
 
 interface Props {
@@ -15,23 +31,25 @@ interface Props {
 
 let { data }: Props = $props()
 
-// Reactive data from server load function
-let {
-  foods,
-  categories,
-  total,
-  currentPage,
-  pageSize,
-  searchQuery,
-  selectedCategory,
-  selectedVegetarian,
-  error
-} = $derived(data)
+// Client-side reactive state initialized with server data
+let foods = $state(data.foods || [])
+let categories = $state(data.categories || [])
+let total = $state(data.total || 0)
+let currentPage = $state(data.currentPage || 1)
+let pageSize = $state(data.pageSize || 20)
+let searchQuery = $state(data.searchQuery || '')
+let selectedCategory = $state(data.selectedCategory || 'all')
+let selectedVegetarian = $state(data.selectedVegetarian)
+let error = $state(data.error || null)
 
-// Local state for form inputs
-let localSearchQuery = $state('')
-let localSelectedCategory = $state('all')
-let localSelectedVegetarian = $state<boolean | undefined>(undefined)
+// Loading state to handle navigation timing issues
+let isLoading = $state(true)
+let hasDataLoaded = $state(false)
+
+// Local state for form inputs - initialize from server data
+let localSearchQuery = $state(data.searchQuery || '')
+let localSelectedCategory = $state(data.selectedCategory || 'all')
+let localSelectedVegetarian = $state<boolean | undefined>(data.selectedVegetarian)
 
 // Track if we're currently typing to prevent focus loss
 let isTyping = $state(false)
@@ -55,15 +73,83 @@ let quarterNumber = $state('')
 let isPlacingOrder = $state(false)
 let orderPlaced = $state(false)
 let orderError = $state('')
-let orderResult = $state<{ orderId?: string; estimatedDelivery?: string; message?: string } | null>(null)
+let orderResult = $state<{ orderId?: string; estimatedDelivery?: string; message?: string } | null>(
+  null
+)
 
-// Initialize local state from URL params
+// Update state when server data changes - ensure this runs after component mount
+$effect(() => {
+  // Debug logging to understand data flow
+  console.log('Data effect triggered:', {
+    hasFoods: !!data.foods,
+    foodsLength: data.foods?.length,
+    hasCategories: !!data.categories,
+    categoriesLength: data.categories?.length,
+    total: data.total,
+    currentPage: data.currentPage,
+    searchQuery: data.searchQuery,
+    selectedCategory: data.selectedCategory,
+  })
+
+  // Update foods if data is available and different
+  if (data.foods && Array.isArray(data.foods)) {
+    foods = data.foods
+  }
+
+  // Update categories if data is available and different
+  if (data.categories && Array.isArray(data.categories)) {
+    categories = data.categories
+  }
+
+  // Update other data fields
+  if (data.total !== undefined) {
+    total = data.total
+  }
+  if (data.currentPage !== undefined) {
+    currentPage = data.currentPage
+  }
+  if (data.pageSize !== undefined) {
+    pageSize = data.pageSize
+  }
+  if (data.searchQuery !== undefined) {
+    searchQuery = data.searchQuery
+  }
+  if (data.selectedCategory !== undefined) {
+    selectedCategory = data.selectedCategory
+  }
+  if (data.selectedVegetarian !== undefined) {
+    selectedVegetarian = data.selectedVegetarian
+  }
+  if (data.error !== undefined) {
+    error = data.error
+  }
+
+  // Mark data as loaded once we have the essential data
+  // Check if data is actually loaded (not just defined but populated)
+  if (data.foods !== undefined && data.categories !== undefined && !hasDataLoaded) {
+    hasDataLoaded = true
+    isLoading = false
+    console.log('Data loading completed:', {
+      foodsCount: Array.isArray(data.foods) ? data.foods.length : 0,
+      categoriesCount: Array.isArray(data.categories) ? data.categories.length : 0,
+      hasError: !!data.error,
+    })
+  }
+})
+
+// Initialize local state from URL params - run after server data is synced
 $effect(() => {
   // Only update local state if not currently typing and not focused
   if (!isTyping && !searchFocused) {
-    localSearchQuery = searchQuery || ''
-    localSelectedCategory = selectedCategory || 'all'
-    localSelectedVegetarian = selectedVegetarian
+    if (searchQuery !== undefined) {
+      localSearchQuery = searchQuery || ''
+    }
+    if (selectedCategory !== undefined) {
+      localSelectedCategory = selectedCategory || 'all'
+    }
+    if (selectedVegetarian !== undefined) {
+      localSelectedVegetarian = selectedVegetarian
+    }
   }
 })
 
@@ -73,6 +159,27 @@ $effect(() => {
   if (savedQuarterNumber && !quarterNumber) {
     quarterNumber = savedQuarterNumber
   }
+})
+
+// Fallback mechanism to ensure data loads properly
+onMount(() => {
+  console.log('Component mounted, checking data loading status')
+
+  // Check if data is already available on mount
+  if (data.foods !== undefined && data.categories !== undefined && !hasDataLoaded) {
+    console.log('Data already available on mount, setting loaded state')
+    hasDataLoaded = true
+    isLoading = false
+  }
+
+  // If data hasn't loaded after a short delay, force a reload
+  setTimeout(() => {
+    if (isLoading && !hasDataLoaded) {
+      console.log('Data not loaded after timeout, forcing reload')
+      // Force a page reload to ensure server data is loaded
+      window.location.reload()
+    }
+  }, 2000) // Wait 2 seconds before forcing reload
 })
 
 // Cleanup timeouts on component destroy
@@ -153,7 +260,7 @@ function updateFilters(newFilters: Record<string, string | undefined>) {
   })
 
   // Reset to page 1 when filters change
-  if (Object.keys(newFilters).some(key => key !== 'page')) {
+  if (Object.keys(newFilters).some((key) => key !== 'page')) {
     params.delete('page')
   }
 
@@ -186,10 +293,12 @@ let hasPrevPage = $derived(currentPage > 1)
 let totalCartItems = $derived(Object.values(cart).reduce((sum, qty) => sum + qty, 0))
 let hasItemsInCart = $derived(Object.keys(cart).length > 0)
 let cartItems = $derived(
-  Object.entries(cart).map(([foodId, quantity]) => {
-    const food = foods.find((f: any) => f.id === foodId)
-    return food ? { ...food, quantity } : null
-  }).filter((item): item is NonNullable<typeof item> => item !== null)
+  Object.entries(cart)
+    .map(([foodId, quantity]) => {
+      const food = foods.find((f: any) => f.id === foodId)
+      return food ? { ...food, quantity } : null
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
 )
 
 // Cart functions
@@ -229,19 +338,19 @@ async function placeOrder() {
   try {
     // Prepare order data
     const orderData = {
-      items: cartItems.map(item => ({
+      items: cartItems.map((item) => ({
         foodId: item.id,
         name: item.name,
         quantity: item.quantity,
         price: item.price,
-        total: item.price * item.quantity
+        total: item.price * item.quantity,
       })),
       deliveryAddress: {
-        quarterNumber: quarterNumber.trim()
+        quarterNumber: quarterNumber.trim(),
       },
-      totalAmount: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+      totalAmount: cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
       paymentMethod: 'UPI',
-      orderDate: new Date().toISOString()
+      orderDate: new Date().toISOString(),
     }
 
     // Make API call to place order
@@ -250,9 +359,9 @@ async function placeOrder() {
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(orderData)
+        body: JSON.stringify(orderData),
       })
 
       if (!response.ok) {
@@ -260,7 +369,10 @@ async function placeOrder() {
         let errorMessage = 'Failed to place order'
         try {
           const errorData = await response.json()
-          errorMessage = errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`
+          errorMessage =
+            errorData.message ||
+            errorData.error ||
+            `HTTP ${response.status}: ${response.statusText}`
         } catch (parseError) {
           errorMessage = `HTTP ${response.status}: ${response.statusText}`
         }
@@ -273,14 +385,14 @@ async function placeOrder() {
       console.warn('API not available, simulating order placement:', apiError)
 
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await new Promise((resolve) => setTimeout(resolve, 1500))
 
       // Create mock order response
       result = {
         success: true,
         orderId: `ORD${Date.now()}`,
         message: 'Order placed successfully',
-        estimatedDelivery: '30-45 minutes'
+        estimatedDelivery: '30-45 minutes',
       }
     }
 
@@ -291,13 +403,13 @@ async function placeOrder() {
     orderError = ''
 
     // Don't auto-close - let user see success message and close manually
-
   } catch (error) {
     console.error('Order placement error:', error)
 
     // Handle different types of errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      orderError = 'Network error: Unable to connect to server. Please check your internet connection.'
+      orderError =
+        'Network error: Unable to connect to server. Please check your internet connection.'
     } else if (error instanceof Error) {
       // Try to parse error message from response if available
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
@@ -331,7 +443,7 @@ function closeCartDrawer() {
 
 // UPI Payment functions
 function generateUPIQR() {
-  const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const upiId = 'misiki@icici' // Replace with actual UPI ID
   const merchantName = 'HomeFood'
   const transactionId = `TXN${Date.now()}`
@@ -629,8 +741,16 @@ function proceedToPayment() {
       {/each}
     </div>
 
-    <!-- Food Grid -->
-    {#if foods.length === 0 && !error}
+    <!-- Loading State -->
+    {#if isLoading}
+      <div class="text-center py-12 sm:py-16">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-yellow-100 to-orange-100 dark:from-yellow-900 dark:to-orange-900 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 border-4 border-yellow-400 border-t-orange-500 rounded-full animate-spin"></div>
+        </div>
+        <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Loading delicious food...</h3>
+        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400">Finding the best restaurants near you</p>
+      </div>
+    {:else if foods.length === 0 && !error}
       <div class="text-center py-12 sm:py-16">
         <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
           <ChefHat class="w-8 h-8 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500" />

@@ -1,6 +1,6 @@
-import { db } from '$lib/server/db'
-import { Food, Category, User, HostProfile } from '$lib/server/db/schema'
-import { eq, and, like, or, desc, sql } from 'drizzle-orm'
+import { and, desc, eq, like, or, sql } from 'drizzle-orm'
+import { db } from '../../server/db'
+import { Category, Food, HostProfile, User } from '../../server/db/schema'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ url }) => {
@@ -9,22 +9,23 @@ export const load: PageServerLoad = async ({ url }) => {
   const filters = {
     search: searchParams.get('q') || undefined,
     category: searchParams.get('category') || 'all',
-    vegetarian: searchParams.get('vegetarian') === 'true' ? true :
-                searchParams.get('vegetarian') === 'false' ? false : undefined,
-    page: parseInt(searchParams.get('page') || '1'),
-    limit: parseInt(searchParams.get('limit') || '20')
+    vegetarian:
+      searchParams.get('vegetarian') === 'true'
+        ? true
+        : searchParams.get('vegetarian') === 'false'
+          ? false
+          : undefined,
+    page: parseInt(searchParams.get('page') || '1', 10),
+    limit: parseInt(searchParams.get('limit') || '20', 10),
   }
 
   try {
     // Build where conditions
-    let whereConditions = []
+    const whereConditions = []
 
     if (filters.search) {
       whereConditions.push(
-        or(
-          like(Food.name, `%${filters.search}%`),
-          like(Food.description, `%${filters.search}%`)
-        )
+        or(like(Food.name, `%${filters.search}%`), like(Food.description, `%${filters.search}%`))
       )
     }
 
@@ -58,7 +59,7 @@ export const load: PageServerLoad = async ({ url }) => {
         hostName: User.name,
         hostLocation: HostProfile.location,
         hostRating: HostProfile.rating,
-        categoryName: Category.name
+        categoryName: Category.name,
       })
       .from(Food)
       .leftJoin(User, eq(Food.hostId, User.id))
@@ -70,7 +71,7 @@ export const load: PageServerLoad = async ({ url }) => {
       .offset(offset)
 
     // Transform the data to match the expected format
-    const transformedFoods = foods.map(food => ({
+    const transformedFoods = foods.map((food) => ({
       id: food.id,
       name: food.name,
       description: food.description,
@@ -84,8 +85,8 @@ export const load: PageServerLoad = async ({ url }) => {
       host: {
         name: food.hostName || 'Unknown Host',
         rating: food.hostRating ? parseFloat(food.hostRating) : 0,
-        location: food.hostLocation || 'Unknown Location'
-      }
+        location: food.hostLocation || 'Unknown Location',
+      },
     }))
 
     // Get total count for pagination
@@ -101,15 +102,12 @@ export const load: PageServerLoad = async ({ url }) => {
       .select({
         id: Category.id,
         name: Category.name,
-        slug: Category.slug
+        slug: Category.slug,
       })
       .from(Category)
       .where(eq(Category.isActive, true))
 
-    const categories = [
-      { id: 'all', name: 'All Categories' },
-      ...categoriesData
-    ]
+    const categories = [{ id: 'all', name: 'All Categories' }, ...categoriesData]
 
     return {
       foods: transformedFoods,
@@ -119,7 +117,7 @@ export const load: PageServerLoad = async ({ url }) => {
       pageSize: filters.limit,
       searchQuery: filters.search || '',
       selectedCategory: filters.category,
-      selectedVegetarian: filters.vegetarian
+      selectedVegetarian: filters.vegetarian,
     }
   } catch (error) {
     console.error('Error loading foods:', error)
@@ -132,7 +130,7 @@ export const load: PageServerLoad = async ({ url }) => {
       searchQuery: '',
       selectedCategory: 'all',
       selectedVegetarian: undefined,
-      error: 'Failed to load foods'
+      error: 'Failed to load foods',
     }
   }
 }

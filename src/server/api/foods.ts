@@ -16,12 +16,7 @@ routes.get('/', async (c) => {
   let whereConditions = []
 
   if (search) {
-    whereConditions.push(
-      or(
-        like(Food.name, `%${search}%`),
-        like(Food.description, `%${search}%`)
-      )
-    )
+    whereConditions.push(or(like(Food.name, `%${search}%`), like(Food.description, `%${search}%`)))
   }
 
   if (category && category !== 'all') {
@@ -51,7 +46,7 @@ routes.get('/', async (c) => {
       hostName: User.name,
       hostLocation: HostProfile.location,
       hostRating: HostProfile.rating,
-      categoryName: Category.name
+      categoryName: Category.name,
     })
     .from(Food)
     .leftJoin(User, eq(Food.hostId, User.id))
@@ -63,7 +58,7 @@ routes.get('/', async (c) => {
     .offset(offset)
 
   // Transform the data to match the expected format
-  const transformedFoods = foods.map(food => ({
+  const transformedFoods = foods.map((food) => ({
     id: food.id,
     name: food.name,
     description: food.description,
@@ -77,8 +72,8 @@ routes.get('/', async (c) => {
     host: {
       name: food.hostName || 'Unknown Host',
       rating: food.hostRating ? parseFloat(food.hostRating) : 0,
-      location: food.hostLocation || 'Unknown Location'
-    }
+      location: food.hostLocation || 'Unknown Location',
+    },
   }))
 
   // Get total count for pagination
@@ -91,8 +86,70 @@ routes.get('/', async (c) => {
     foods: transformedFoods,
     total: totalResult.length,
     page: Math.floor(offset / limit) + 1,
-    pageSize: limit
+    pageSize: limit,
   })
+})
+
+// Get categories
+routes.get('/categories', async (c) => {
+  const categories = await db
+    .select({
+      id: Category.id,
+      name: Category.name,
+      slug: Category.slug,
+    })
+    .from(Category)
+    .where(eq(Category.isActive, true))
+
+  // Add "All Categories" option
+  const allCategories = [{ id: 'all', name: 'All Categories' }, ...categories]
+
+  return c.json(allCategories)
+})
+
+// Host-specific endpoints
+
+// Get foods for a specific host
+routes.get('/host/:hostId', async (c) => {
+  const hostId = c.req.param('hostId')
+
+  const foods = await db
+    .select({
+      id: Food.id,
+      name: Food.name,
+      description: Food.description,
+      price: Food.price,
+      image: Food.image,
+      categoryId: Food.categoryId,
+      isVegetarian: Food.isVegetarian,
+      preparationTime: Food.preparationTime,
+      isAvailable: Food.isAvailable,
+      rating: Food.rating,
+      totalRatings: Food.totalRatings,
+      createdAt: Food.createdAt,
+      categoryName: Category.name,
+    })
+    .from(Food)
+    .leftJoin(Category, eq(Food.categoryId, Category.id))
+    .where(eq(Food.hostId, hostId))
+    .orderBy(desc(Food.createdAt))
+
+  const transformedFoods = foods.map((food) => ({
+    id: food.id,
+    name: food.name,
+    description: food.description,
+    price: parseFloat(food.price),
+    image: food.image || '/api/placeholder/300/200',
+    category: food.categoryName || 'Uncategorized',
+    isVegetarian: food.isVegetarian,
+    preparationTime: food.preparationTime || 30,
+    isAvailable: food.isAvailable,
+    rating: food.rating ? parseFloat(food.rating) : 0,
+    totalRatings: food.totalRatings || 0,
+    createdAt: food.createdAt,
+  }))
+
+  return c.json(transformedFoods)
 })
 
 // Get food by ID
@@ -115,7 +172,7 @@ routes.get('/:id', async (c) => {
       hostName: User.name,
       hostLocation: HostProfile.location,
       hostRating: HostProfile.rating,
-      categoryName: Category.name
+      categoryName: Category.name,
     })
     .from(Food)
     .leftJoin(User, eq(Food.hostId, User.id))
@@ -142,76 +199,11 @@ routes.get('/:id', async (c) => {
     host: {
       name: food.hostName || 'Unknown Host',
       rating: food.hostRating ? parseFloat(food.hostRating) : 0,
-      location: food.hostLocation || 'Unknown Location'
-    }
+      location: food.hostLocation || 'Unknown Location',
+    },
   }
 
   return c.json(transformedFood)
-})
-
-// Get categories
-routes.get('/categories', async (c) => {
-  const categories = await db
-    .select({
-      id: Category.id,
-      name: Category.name,
-      slug: Category.slug
-    })
-    .from(Category)
-    .where(eq(Category.isActive, true))
-
-  // Add "All Categories" option
-  const allCategories = [
-    { id: 'all', name: 'All Categories' },
-    ...categories
-  ]
-
-  return c.json(allCategories)
-})
-
-// Host-specific endpoints
-
-// Get foods for a specific host
-routes.get('/host/:hostId', async (c) => {
-  const hostId = c.req.param('hostId')
-
-  const foods = await db
-    .select({
-      id: Food.id,
-      name: Food.name,
-      description: Food.description,
-      price: Food.price,
-      image: Food.image,
-      categoryId: Food.categoryId,
-      isVegetarian: Food.isVegetarian,
-      preparationTime: Food.preparationTime,
-      isAvailable: Food.isAvailable,
-      rating: Food.rating,
-      totalRatings: Food.totalRatings,
-      createdAt: Food.createdAt,
-      categoryName: Category.name
-    })
-    .from(Food)
-    .leftJoin(Category, eq(Food.categoryId, Category.id))
-    .where(eq(Food.hostId, hostId))
-    .orderBy(desc(Food.createdAt))
-
-  const transformedFoods = foods.map(food => ({
-    id: food.id,
-    name: food.name,
-    description: food.description,
-    price: parseFloat(food.price),
-    image: food.image || '/api/placeholder/300/200',
-    category: food.categoryName || 'Uncategorized',
-    isVegetarian: food.isVegetarian,
-    preparationTime: food.preparationTime || 30,
-    isAvailable: food.isAvailable,
-    rating: food.rating ? parseFloat(food.rating) : 0,
-    totalRatings: food.totalRatings || 0,
-    createdAt: food.createdAt
-  }))
-
-  return c.json(transformedFoods)
 })
 
 // Create a new food item
@@ -227,15 +219,49 @@ routes.post('/', async (c) => {
     preparationTime = 30,
     image,
     ingredients,
-    allergens
+    allergens,
   } = body
 
   if (!hostId || !name || !price || !categoryId) {
     return c.json({ error: 'Missing required fields' }, 400)
   }
 
+  // Handle categoryId - it could be a UUID or a category name/slug
+  let actualCategoryId = categoryId
+
+  // Check if categoryId is not a valid UUID (i.e., it's a category name/slug)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(categoryId)) {
+    // Look up category by slug
+    const category = await db
+      .select({ id: Category.id })
+      .from(Category)
+      .where(eq(Category.slug, categoryId))
+      .limit(1)
+
+    if (category.length === 0) {
+      return c.json({ error: 'Invalid category' }, 400)
+    }
+
+    actualCategoryId = category[0].id
+  }
+
   // Generate slug from name
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  let slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  // Ensure slug is unique
+  let existingFood = await db.select({ id: Food.id }).from(Food).where(eq(Food.slug, slug)).limit(1)
+
+  let counter = 1
+  const originalSlug = slug
+  while (existingFood.length > 0) {
+    slug = `${originalSlug}-${counter}`
+    existingFood = await db.select({ id: Food.id }).from(Food).where(eq(Food.slug, slug)).limit(1)
+    counter++
+  }
 
   const newFood = await db
     .insert(Food)
@@ -243,14 +269,14 @@ routes.post('/', async (c) => {
       hostId,
       name,
       slug,
-      description,
+      description: description || null,
       price: price.toString(),
-      categoryId,
+      categoryId: actualCategoryId,
       isVegetarian,
       preparationTime,
       image,
       ingredients,
-      allergens
+      allergens,
     })
     .returning()
 
@@ -265,9 +291,33 @@ routes.put('/:id', async (c) => {
   const updateData: any = {}
 
   if (body.name !== undefined) updateData.name = body.name
-  if (body.description !== undefined) updateData.description = body.description
+  if (body.description !== undefined) updateData.description = body.description || null
   if (body.price !== undefined) updateData.price = body.price.toString()
-  if (body.categoryId !== undefined) updateData.categoryId = body.categoryId
+
+  // Handle categoryId - it could be a UUID or a category name/slug
+  if (body.categoryId !== undefined) {
+    let actualCategoryId = body.categoryId
+
+    // Check if categoryId is not a valid UUID (i.e., it's a category name/slug)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(body.categoryId)) {
+      // Look up category by slug
+      const category = await db
+        .select({ id: Category.id })
+        .from(Category)
+        .where(eq(Category.slug, body.categoryId))
+        .limit(1)
+
+      if (category.length === 0) {
+        return c.json({ error: 'Invalid category' }, 400)
+      }
+
+      actualCategoryId = category[0].id
+    }
+
+    updateData.categoryId = actualCategoryId
+  }
+
   if (body.isVegetarian !== undefined) updateData.isVegetarian = body.isVegetarian
   if (body.preparationTime !== undefined) updateData.preparationTime = body.preparationTime
   if (body.image !== undefined) updateData.image = body.image
@@ -277,11 +327,7 @@ routes.put('/:id', async (c) => {
 
   updateData.updatedAt = new Date()
 
-  const updatedFood = await db
-    .update(Food)
-    .set(updateData)
-    .where(eq(Food.id, id))
-    .returning()
+  const updatedFood = await db.update(Food).set(updateData).where(eq(Food.id, id)).returning()
 
   if (updatedFood.length === 0) {
     return c.json({ error: 'Food not found' }, 404)
@@ -294,10 +340,7 @@ routes.put('/:id', async (c) => {
 routes.delete('/:id', async (c) => {
   const id = c.req.param('id')
 
-  const deletedFood = await db
-    .delete(Food)
-    .where(eq(Food.id, id))
-    .returning()
+  const deletedFood = await db.delete(Food).where(eq(Food.id, id)).returning()
 
   if (deletedFood.length === 0) {
     return c.json({ error: 'Food not found' }, 404)
@@ -320,7 +363,7 @@ routes.patch('/:id/availability', async (c) => {
     .update(Food)
     .set({
       isAvailable,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     })
     .where(eq(Food.id, id))
     .returning()
@@ -338,7 +381,7 @@ export const getFoods = async ({
   category,
   vegetarian,
   limit = 20,
-  offset = 0
+  offset = 0,
 }: {
   search?: string
   category?: string
@@ -347,7 +390,9 @@ export const getFoods = async ({
   offset?: number
 }) => {
   // This will be removed once we fully migrate to API routes
-  const response = await fetch(`http://localhost:5173/api/foods?search=${search || ''}&category=${category || ''}&vegetarian=${vegetarian || ''}&limit=${limit}&offset=${offset}`)
+  const response = await fetch(
+    `http://localhost:5173/api/foods?search=${search || ''}&category=${category || ''}&vegetarian=${vegetarian || ''}&limit=${limit}&offset=${offset}`
+  )
   return response.json()
 }
 

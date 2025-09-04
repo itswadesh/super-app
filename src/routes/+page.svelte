@@ -1,50 +1,47 @@
 <script lang="ts">
-import { Input } from '$lib/components/ui/input'
-import {
-  Search,
-  MessageCircle,
-  Wallet,
-  Hotel,
-  ShoppingCart,
-  Utensils,
-  Bus,
-  Train,
-  Ship,
-  UtensilsCrossed,
-  Zap,
-  ShieldCheck,
-  ChefHat,
-  Flame,
-  Wifi,
-  Smartphone,
-  CreditCard,
-  MoreHorizontal,
-  Building2,
-  Ticket,
-  Receipt,
-} from '@lucide/svelte'
+import { ChefHat, Flame, Receipt, ShoppingCart } from '@lucide/svelte'
 
 // User data - would come from your auth store
-let user = {
+const _user = {
   name: 'John Doe',
   balance: '1,245.50',
   avatar: '/default-avatar.png',
 }
 
 // Featured services
-const services = [
-  { icon: ChefHat, name: 'Browse Food', href: '/foods', color: 'bg-gradient-to-br from-yellow-400 to-orange-500' },
-  { icon: Receipt, name: 'My Orders', href: '/orders', color: 'bg-gradient-to-br from-green-400 to-teal-500' },
-  { icon: Flame, name: 'Host Food', href: '/host', color: 'bg-gradient-to-br from-blue-400 to-indigo-500' },
-  { icon: ShoppingCart, name: 'Cart', href: '/cart', color: 'bg-gradient-to-br from-purple-400 to-pink-500' },
+const _services = [
+  {
+    icon: ChefHat,
+    name: 'Browse Food',
+    href: '/foods',
+    color: 'bg-gradient-to-br from-yellow-400 to-orange-500',
+  },
+  {
+    icon: Receipt,
+    name: 'My Orders',
+    href: '/orders',
+    color: 'bg-gradient-to-br from-green-400 to-teal-500',
+  },
+  {
+    icon: Flame,
+    name: 'Host Food',
+    href: '/host',
+    color: 'bg-gradient-to-br from-blue-400 to-indigo-500',
+  },
+  {
+    icon: ShoppingCart,
+    name: 'Cart',
+    href: '/cart',
+    color: 'bg-gradient-to-br from-purple-400 to-pink-500',
+  },
 ]
 
 // Promotions
-const promotions = [
+const _promotions = [
   {
     id: 1,
     title: 'Welcome to HomeFood',
-    description: 'Discover amazing homemade food from local hosts',
+    description: 'Discover amazing homemade food from local chefs',
     color: 'promo1',
   },
   {
@@ -55,14 +52,14 @@ const promotions = [
   },
   {
     id: 3,
-    title: 'Become a Host',
+    title: 'Become a Chef',
     description: 'Share your cooking skills and joy',
     color: 'promo3',
   },
 ]
 
 // Recent transactions
-const recentTransactions = [
+const _recentTransactions = [
   { id: 1, name: 'Starbucks', amount: '-$4.50', time: '10:30 AM', type: 'food' },
   { id: 2, name: 'Uber Ride', amount: '-$12.75', time: 'Yesterday', type: 'transport' },
   { id: 3, name: 'Salary', amount: '+$2,500.00', time: 'Jun 1', type: 'income' },
@@ -84,7 +81,7 @@ const recentTransactions = [
 
     <!-- Services Grid - Zomato Style -->
     <div class="grid grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-      {#each services as service}
+      {#each _services as service}
         <a
           class="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-400 transition-all duration-200 group"
           href={service.href}
@@ -101,7 +98,7 @@ const recentTransactions = [
     <div class="mb-6 sm:mb-8">
       <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">What's on your mind?</h2>
       <div class="grid grid-cols-1 gap-4 sm:gap-6">
-        {#each promotions as promo}
+        {#each _promotions as promo}
           <div class="{promo.color} p-4 sm:p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-shadow">
             <h3 class="font-bold text-lg sm:text-xl mb-2">{promo.title}</h3>
             <p class="text-sm sm:text-base opacity-90">{promo.description}</p>
