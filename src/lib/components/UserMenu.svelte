@@ -4,6 +4,7 @@ import { page } from '$app/state'
 import { authService } from '$lib/services/auth-service'
 import { onMount } from 'svelte'
 import { fade } from 'svelte/transition'
+import { userStore } from '$lib/stores/userStore'
 
 let isMenuOpen = $state(false)
 let menuRef = $state<HTMLDivElement | null>(null)
@@ -24,8 +25,10 @@ async function handleLogout() {
     console.log('Logout response:', result)
     // Update UI
     isMenuOpen = false
-    await invalidateAll()
-    goto('/')
+    // await invalidateAll()
+    window.location.reload()
+    // window.location.href='/'
+    // goto('/')
   } catch (error) {
     console.error('Error during logout:', error)
     // Still try to clear local state even if server request fails
@@ -127,7 +130,7 @@ onMount(() => {
       {/if}
       <button
         onclick={handleLogout}
-        class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 border-t border-gray-100"
+        class="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 dark:hover:bg-background hover:bg-gray-100 border-t border-gray-100"
         role="menuitem"
       >
         Sign Out

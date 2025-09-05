@@ -43,8 +43,15 @@ $effect(() => {
 })
 
 async function handleLogout() {
-  await authService.logout()
-  sheetOpen = false // Close sheet on logout
+  try {
+    const result = await authService.logout();
+    console.log('Logout response:', result);
+    sheetOpen = false;
+    await invalidateAll();
+    goto('/');
+  } catch (error) {
+    console.error('Error during logout:', error);
+  }
 }
 
 const { events, trackPageView } = useAnalytics()
@@ -164,7 +171,13 @@ async function navigateWithSheetClose(path: string) {
           {#if page.data?.user?.id}
             <UserMenu/>
           {:else}
-            <LoginButton buttonText="Log In" variant="text" class="dark:text-gray-200 dark:hover:text-indigo-400" onclick={(e: any) => { e.preventDefault(); navigateWithSheetClose('/login'); }} />
+            <!-- <LoginButton buttonText="Log In" variant="text" class="dark:text-gray-200 dark:hover:text-indigo-400" onclick={(e: any) => { e?.preventDefault(); navigateWithSheetClose('/login'); }} />
+            /> -->
+            <LoginButton
+              buttonText="Log In"
+              variant="ghost"
+              onclick={() => {}}
+            />
           {/if}
         </div>
 
@@ -244,17 +257,17 @@ async function navigateWithSheetClose(path: string) {
           </a>
           
           <!-- Logout Button -->
-          <button 
-            onclick={() => {
-              sheetOpen = false; // Ensure sheet closes before logout logic
-              setTimeout(async () => {
-                  await handleLogout(); // handleLogout might also navigate or cause re-renders
-              }, 0);
-            }} 
-            class="mt-2 w-full text-left block px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
-          >
-            Log Out
-          </button>
+         <button
+          onclick={() => {
+            sheetOpen = false; // Ensure sheet closes before logout logic
+            setTimeout(async () => {
+              await handleLogout(); // handleLogout might also navigate or cause re-renders
+            }, 0);
+          }}
+          class="mt-2 w-full text-left block px-3 py-2 text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors"
+        >
+          Log Out
+        </button>
         {:else}
           <LoginButton
             buttonText="Log In" 

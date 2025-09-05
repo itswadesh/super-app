@@ -129,6 +129,7 @@ routes.delete('/logout', async (c: Context) => {
   }
   // console.log(auth.sessionCookieName, 'aaaaaaaaaaaaaaaaa')
   deleteSessionTokenCookie(c)
+  deleteCookie(c, 'connect.sid');
   // console.log('All cookie deletion attempts completed');
   return c.json({ success: true, message: 'Logged out successfully' })
 })

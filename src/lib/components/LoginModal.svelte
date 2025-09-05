@@ -1,43 +1,80 @@
 <script lang="ts">
 import { goto, invalidateAll } from '$app/navigation'
+import Button from '$lib/components/ui/button/button.svelte'
+import * as InputOTP from '$lib/components/ui/input-otp'
+import Input from '$lib/components/ui/input/input.svelte'
 import { authService } from '$lib/services/auth-service'
 import { loginModal } from '$lib/stores/loginModal'
 import { userStore } from '$lib/stores/userStore'
 import { tick } from 'svelte'
-import Modal from './Modal.svelte'
-import Button from '$lib/components/ui/button/button.svelte'
-import Input from '$lib/components/ui/input/input.svelte'
-import * as InputOTP from '$lib/components/ui/input-otp'
 import { toast } from 'svelte-sonner'
+import * as Dialog from '$lib/components/ui/dialog'
+import { dev } from '$app/environment'
+import { delay } from '$lib/utils'
+
+// Import types
+import type { User } from '$lib/stores/userStore'
+
+// Define API response user type that extends our base User type
+interface ApiUser extends Omit<NonNullable<User>, 'metadata'> {
+  metadata?: {
+    board?: string
+    class?: string
+  }
+}
 
 // State using Svelte 5 runes
-let phoneNumber = $state('')
-let otp = $state('')
+let phoneNumber = $state(dev ? '8895092508' : '')
+let otp = $state(dev ? '' : '')
 let otpError = $state('')
 let phoneError = $state('')
 let showOtpVerification = $state(false)
 let isLoading = $state(false)
 let resendCooldown = $state(0)
 let phoneInput = $state<HTMLInputElement | null>(null)
-let cooldownInterval: NodeJS.Timeout | null = $state(null)
+let cooldownInterval: ReturnType<typeof setInterval> | null = $state(null)
 
-// Focus on the phone input when modal opens
-$effect(() => {
-  if ($loginModal.isOpen && !showOtpVerification && phoneInput) {
-    setTimeout(() => phoneInput?.focus(), 100)
+let otpCooldownRemainingTime = $state(0)
+
+async function showOtpError(error: any) {
+  otpCooldownRemainingTime = error?.remainingTime
+  for (let i = otpCooldownRemainingTime; i >= 0; i--) {
+    otpCooldownRemainingTime = i
+    await delay(1000)
   }
+}
+
+// Focus management effect
+$effect(() => {
+  if ($loginModal.isOpen) {
+    if (!showOtpVerification && phoneInput) {
+      // Focus phone input when modal opens in phone number mode
+      const timer = setTimeout(() => phoneInput?.focus(), 100)
+      return () => clearTimeout(timer)
+    }
+  }
+  return undefined
 })
 
-// Close modal and reset state
+// Close dialog and reset state
 function handleClose() {
-  phoneNumber = ''
+  // Reset form state
+  phoneNumber = dev ? '8895092508' : ''
   otp = ''
   otpError = ''
   phoneError = ''
   showOtpVerification = false
   isLoading = false
-  resetCooldownTimer()
+
+  // Clear any existing intervals
+  if (cooldownInterval) {
+    clearInterval(cooldownInterval)
+    cooldownInterval = null
+  }
+
+  // Close the modal
   loginModal.close()
+  window.location.reload()
 }
 
 // Start cooldown timer for OTP resend
@@ -92,19 +129,19 @@ function handlePhoneInput(e: Event) {
   updatePhoneError()
 }
 
-// Send OTP to user's phone
-async function sendOTP() {
-  if (!isPhoneNumberValid(phoneNumber)) return
+// Handle phone number submission
+async function handlePhoneSubmit(e: Event) {
+  e.preventDefault()
 
-  // Check for rate limiting - 30 seconds between requests
-  const now = Date.now()
-  const timeSinceLastRequest = now - (cooldownInterval?.startTime ?? 0)
-  if (cooldownInterval && timeSinceLastRequest < 30000) {
-    const remainingSeconds = Math.ceil((30000 - timeSinceLastRequest) / 1000)
-    toast.error(`Please wait ${remainingSeconds} seconds before requesting another OTP`)
+  // Validate phone number (simple validation)
+  if (!phoneNumber || phoneNumber.length < 10) {
+    phoneError = 'Please enter a valid phone number'
+    phoneInput?.focus()
     return
   }
 
+  // Clear any existing errors
+  phoneError = ''
   isLoading = true
 
   try {
@@ -124,6 +161,7 @@ async function sendOTP() {
 
       // Focus is handled automatically by the shadcn OTP component
     } else {
+      showOtpError(result)
       toast.error(result.message || 'Failed to send OTP. Please try again.')
     }
   } catch (error) {
@@ -145,16 +183,19 @@ function handleOtpChange(value: string) {
   }
 }
 
-// Keyboard handling is now managed by the shadcn OTP component
-
 // Verify entered OTP
 async function verifyOTP() {
   // Check if OTP is complete
   if (otp.length !== 4) {
     otpError = 'Please enter the complete 4-digit OTP'
+    // Focus back to OTP input if not complete
+    const otpInput = document.querySelector('input[data-testid="otp-input"]') as HTMLInputElement
+    otpInput?.focus()
     return
   }
 
+  // Clear any existing errors
+  otpError = ''
   isLoading = true
 
   try {
@@ -163,32 +204,54 @@ async function verifyOTP() {
 
     if (result.success) {
       // Update user store with the received user data
-      userStore.updateUser(result.user)
+      if (result.user) {
+        const apiUser = result.user as ApiUser
 
+        // Create user data matching the User type from userStore
+        const userData: NonNullable<User> = {
+          id: apiUser.id,
+          name: apiUser.name || 'User',
+          phone: apiUser.phone || phoneNumber,
+          email: apiUser.email,
+          role: apiUser.role || 'user',
+          board: apiUser.board || apiUser.metadata?.board,
+          class: apiUser.class || apiUser.metadata?.class
+        }
+
+        // Update the store with the user data
+        userStore.updateUser(userData)
+      }
+
+      console.log('res', result)
       // Show success message
       toast.success('Successfully logged in')
 
-      // Invalidate any cached data
-      await invalidateAll()
+      if (result.success && result.user) {
+        // Safely get user metadata with proper typing
+        const user = result.user as UserWithMetadata
+        const userBoard = user.metadata?.board || ''
+        const userClass = user.metadata?.class || ''
+        let redirectAfter = '/dashboard'
 
-      // Check if user has board and class preferences set
-      const needsPreferences = !hasBoard || !hasClass
-
-      if (needsPreferences) {
-        // User needs to set preferences
-        let redirectAfter = '/'
-
-        // Store the original redirect destination
-        if ($loginModal.redirectUrl && $loginModal.redirectUrl !== '/') {
-          redirectAfter = $loginModal.redirectUrl
-        } else if ($loginModal.purchaseInfo) {
-          // If login was from a purchase flow, we'll need to redirect to payment after preferences
-          redirectAfter = `/payment?board=${$loginModal.purchaseInfo.board}&price=${$loginModal.purchaseInfo.price}`
+        if (userBoard === 'CBSE') {
+          redirectAfter = '/cbse'
+        } else if (userBoard === 'WBBSE' || userBoard === 'BSE') {
+          if (userClass === '11' || userClass === '12') {
+            redirectAfter = '/wbchse'
+          } else {
+            redirectAfter = '/wbbse'
+          }
+        } else if (userBoard === 'BSE') {
+          if (userClass === '11' || userClass === '12') {
+            redirectAfter = '/chse'
+          } else {
+            redirectAfter = '/bse'
+          }
         }
 
-        // Close the modal and redirect to preferences
+        // Close the modal and redirect
         loginModal.close()
-        goto(`/user-preferences?redirect=${encodeURIComponent(redirectAfter)}`)
+        window.location.reload()
       } else if ($loginModal.redirectUrl && $loginModal.redirectUrl !== '/') {
         // User has preferences and has a redirect URL
         loginModal.close()
@@ -264,14 +327,34 @@ async function resendOTP() {
 }
 </script>
 
-{#if $loginModal.isOpen}
-  <Modal
-    open={true}
-    title={showOtpVerification ? "Verify Your Phone Number" : "Login to Super App"}
-    closeOnClickOutside={false}
-    size="sm"
-    onClose={handleClose}
-  >
+<Dialog.Root
+  open={$loginModal.isOpen}
+  onOpenChange={(open) => {
+    if (!open) {
+      handleClose();
+    } else {
+      loginModal.open();
+    }
+  }}
+>
+  <Dialog.Portal>
+    <Dialog.Overlay class="fixed inset-0 z-50 bg-black/80 dark:bg-black/90 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+    <Dialog.Content
+      class="fixed left-[50%] top-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 border bg-white dark:bg-gray-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:max-w-[425px] sm:rounded-lg dark:border-gray-800"
+      onEscapeKeyDown={(e: KeyboardEvent) => e.preventDefault()}
+      onPointerDownOutside={(e: PointerEvent) => e.preventDefault()}
+      onOpenAutoFocus={(e: Event) => e.preventDefault()}
+    >
+      <Dialog.Header class="text-center">
+        <Dialog.Title class="text-xl font-semibold text-gray-900 dark:text-white">
+          {showOtpVerification ? 'Verify Your Phone Number' : 'Login to Super App'}
+        </Dialog.Title>
+        {#if !showOtpVerification}
+          <Dialog.Description class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Sign in to continue to your account
+          </Dialog.Description>
+        {/if}
+      </Dialog.Header>
     {#if !showOtpVerification}
       <!-- Phone Number Input Form -->
       <form
@@ -279,22 +362,23 @@ async function resendOTP() {
         onsubmit={(e) => {
           e.preventDefault();
           if (isPhoneNumberValid(phoneNumber) && !isLoading) {
-            sendOTP();
+            handlePhoneSubmit(e);
           }
         }}
       >
         <div class="mt-3">
           <label
             for="phone"
-            class="block text-sm font-medium text-gray-700 mb-1"
-            >Phone Number</label
-          >
+            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-left"
+            >
+            Phone Number
+            </label>
           <div class="relative rounded-md shadow-sm">
             <div class="absolute inset-y-0 left-0 flex items-center pl-3">
               <div class="flex items-center">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 text-indigo-500 mr-1"
+                  class="h-4 w-4 text-indigo-500 dark:text-indigo-400 mr-1"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -314,7 +398,7 @@ async function resendOTP() {
               <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5 text-green-500"
+                  class="h-5 w-5 text-green-500 dark:text-green-400"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -333,62 +417,58 @@ async function resendOTP() {
               bind:this={phoneInput}
               bind:value={phoneNumber}
               oninput={handlePhoneInput}
-              class="block w-full pl-16 pr-10 py-3 border-0 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 bg-gray-50 focus:bg-white sm:text-sm transition-all duration-200 appearance-none"
+              class="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white pl-16 pr-10 py-3 text-base focus:border-indigo-500 focus:ring-indigo-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 sm:text-sm transition-colors duration-200"
               placeholder="Enter your mobile number"
-              autocomplete="tel"
               inputmode="numeric"
               maxlength="10"
               disabled={isLoading}
             />
           </div>
           {#if phoneNumber && !isPhoneNumberValid(phoneNumber)}
-            <p class="mt-2 text-sm text-red-600">{phoneError}</p>
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{phoneError}</p>
           {/if}
         </div>
 
         <div class="mt-6">
           <Button
             type="submit"
-            class="w-full flex justify-center py-3 px-4 border-0 rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-700 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70 transition-all duration-200 transform hover:scale-[1.02] cursor-pointer disabled:cursor-not-allowed"
-            disabled={!isPhoneNumberValid(phoneNumber) || isLoading}
+            variant="default"
+            size="lg"
+            class="w-full bg-gray-600 text-white relative overflow-visible"
+            disabled={otpCooldownRemainingTime || isLoading || !isPhoneNumberValid(phoneNumber)}
+            aria-busy={isLoading}
           >
+            <span class={isLoading ? 'invisible' : 'visible'}>
+              {#if otpCooldownRemainingTime}
+                Please wait {otpCooldownRemainingTime}s to request new OTP
+              {:else}
+                Send OTP
+              {/if}
+
+            </span>
             {#if isLoading}
-              <svg
-                class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Sending OTP...
-            {:else}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 mr-2"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"
-                />
-                <path
-                  d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"
-                />
-              </svg>
-              Send OTP
+              <span class="absolute inset-0 flex items-center justify-center">
+                <svg
+                  class="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              </span>
             {/if}
           </Button>
         </div>
@@ -397,12 +477,12 @@ async function resendOTP() {
       <div class="mt-6">
         <div class="relative">
           <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-300"></div>
+            <div class="w-full border-t border-gray-300 dark:border-gray-700"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-white text-gray-500"
-              >Using Super App for the first time?</span
-            >
+            <span class="px-2 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
+              Using LRNR for the first time?
+            </span>
           </div>
         </div>
 
@@ -413,140 +493,95 @@ async function resendOTP() {
         </div>
 
         <div class="mt-4 text-center">
-          <p class="text-xs text-gray-500">
-            By clicking send OTP, you are accepting our <a
-              href="/terms"
-              class="text-indigo-600 hover:text-indigo-500 underline"
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            By clicking send OTP, you are accepting our{' '}
+            <a
+              href="/legal/terms-and-conditions"
+              class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 underline"
               onclick={(e) => {
                 e.preventDefault();
                 loginModal.close();
-                goto("/terms");
-              }}>terms and conditions</a
+                goto('/terms');
+              }}
             >
+              terms and conditions
+            </a>
           </p>
         </div>
       </div>
     {:else}
       <!-- OTP Verification Form -->
-      <div class="animate-fadeIn space-y-6">
-        <div
-          class="p-6 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100"
-        >
-          <div class="flex items-start">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-5 w-5 text-indigo-500 mr-3 mt-0.5 flex-shrink-0"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-              />
-            </svg>
-            <div class="flex-1">
-              <p class="text-sm text-gray-700">
-                We've sent a 4-digit OTP to
-                <span class="font-semibold text-indigo-700 block mt-1"
-                  >+91 {phoneNumber}</span
-                >
-              </p>
-            </div>
-          </div>
+      <div class="animate-fadeIn space-y-4">
+        <div class="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg border border-indigo-100 dark:border-indigo-800/50">
+          <p class="text-sm text-gray-700 dark:text-gray-200 text-center mb-4">
+            We've sent a 4-digit OTP to
+            <span class="font-medium text-indigo-700 dark:text-indigo-300">+91 {phoneNumber}</span>
+          </p>
 
           <!-- OTP Input -->
-          <div class="mt-6">
-            <label
-              for="otp"
-              class="block text-sm font-medium text-gray-700 mb-2"
-              >Enter OTP</label
-            >
-            <div class="flex justify-center space-x-2">
-              <div class="flex justify-center">
-                <InputOTP.Root
-                  maxlength={4}
-                  value={otp}
-                  onValueChange={handleOtpChange}
-                  class="[&>div]:justify-between [&>div]:w-full"
-                >
-                  {#snippet children({ cells })}
-                    <InputOTP.Group>
-                      {#each cells as cell (cell)}
-                        <InputOTP.Slot {cell} />
-                      {/each}
-                    </InputOTP.Group>
-                  {/snippet}
-                </InputOTP.Root>
-              </div>
+          <div class="mb-4">
+            <div class="flex justify-center">
+              <InputOTP.Root
+                maxlength={4}
+                value={otp}
+                onValueChange={handleOtpChange}
+                class="[&>div]:justify-between [&>div]:w-full"
+              >
+                {#snippet children({ cells })}
+                  <InputOTP.Group class="gap-2">
+                    {#each cells as cell (cell)}
+                      <InputOTP.Slot 
+                        {cell} 
+                        class="h-12 w-12 text-lg font-medium border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                    {/each}
+                  </InputOTP.Group>
+                {/snippet}
+              </InputOTP.Root>
             </div>
             {#if otpError}
-              <p class="mt-2 text-sm text-red-600">{otpError}</p>
+              <p class="mt-2 text-sm text-red-600 dark:text-red-400 text-center">{otpError}</p>
             {/if}
           </div>
 
-          <div class="mt-6 flex items-center justify-between">
-            <Button
+          <div class="flex items-center justify-between text-sm">
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
-              class="text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1.5 rounded-md"
+              class="px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               onclick={() => (showOtpVerification = false)}
               disabled={isLoading}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-4 w-4 mr-1.5 -ml-1"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 111.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              Change Number
-            </Button>
-
-            <Button
+              ← Change Number
+            </button>
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
-              class="text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1.5 rounded-md"
+              class="px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               disabled={isLoading || resendCooldown > 0}
               onclick={resendOTP}
             >
-              {#if resendCooldown > 0}
-                <span>Resend OTP in {resendCooldown}s</span>
-              {:else}
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-4 w-4 mr-1.5 -ml-1"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                Resend OTP
-              {/if}
-            </Button>
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
+            </button>
           </div>
         </div>
 
-        <div class="mt-6">
-          <Button
-            variant="default"
-            size="lg"
-            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-            disabled={otp.length !== 4 || isLoading}
-            onclick={verifyOTP}
-          >
-            {#if isLoading}
+        {#if dev}
+          <div class="mt-6 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              For this demo, the OTP is <span class="font-semibold text-gray-700 dark:text-gray-200">1111</span>
+            </p>
+          </div>
+        {/if}
+
+        <Button
+          variant="default"
+          size="lg"
+          class="w-full bg-gray-600 text-white mt-4"
+          disabled={isLoading}
+          onclick={verifyOTP}
+        >
+          {#if isLoading}
               <svg
-                class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -570,14 +605,8 @@ async function resendOTP() {
               Verify OTP
             {/if}
           </Button>
-        </div>
-
-        <div class="mt-6 text-center">
-          <p class="text-xs text-gray-500">
-            For this demo, the OTP is <span class="font-semibold">1111</span>
-          </p>
-        </div>
       </div>
     {/if}
-  </Modal>
-{/if}
+  </Dialog.Content>
+</Dialog.Portal>
+</Dialog.Root>
