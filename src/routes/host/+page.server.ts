@@ -6,7 +6,22 @@ import type { PageServerLoad } from './$types'
 export const load: PageServerLoad = async ({ locals }) => {
   try {
     // TODO: Get actual host ID from authentication
-    const hostId = 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b' // Test host ID from seeded data
+    const hostId = locals.user?.id // Use authenticated user ID
+
+    if (!hostId) {
+      return {
+        hostStats: {
+          totalFoods: 0,
+          activeOrders: 0,
+          totalOrders: 0,
+          averageRating: 0,
+          totalEarnings: 0,
+        },
+        myFoods: [],
+        recentOrders: [],
+        applicationStatus: null,
+      }
+    }
 
     // Check application status
     const application = await db

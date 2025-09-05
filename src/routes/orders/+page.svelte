@@ -4,51 +4,17 @@ import { Button } from '$lib/components/ui/button'
 import { Badge } from '$lib/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs'
 import { Clock, MapPin, Phone, Star, RefreshCw } from '@lucide/svelte'
-import { onMount } from 'svelte'
+import type { PageData } from './$types'
 
-// Mock data for orders
-let orders = $state([
-  {
-    id: '1',
-    orderNumber: 'HF001',
-    status: 'delivered',
-    totalAmount: 430,
-    deliveryFee: 30,
-    taxAmount: 20,
-    items: [
-      { name: 'Homemade Butter Chicken', quantity: 1, price: 250 },
-      { name: 'Fresh Vegetable Biryani', quantity: 1, price: 180 },
-    ],
-    host: {
-      name: 'Priya Sharma',
-      phone: '+91 9876543210',
-      location: 'Mumbai, Maharashtra',
-    },
-    deliveryAddress: 'HAL Township, Sunabeda, Odisha',
-    estimatedDelivery: '6:00 PM - 9:30 PM',
-    actualDelivery: '7:45 PM',
-    specialInstructions: 'Please ring the doorbell twice',
-    createdAt: '2024-01-15 6:00 PM',
-  },
-  {
-    id: '2',
-    orderNumber: 'HF002',
-    status: 'preparing',
-    totalAmount: 220,
-    deliveryFee: 30,
-    taxAmount: 10,
-    items: [{ name: 'Italian Pasta Carbonara', quantity: 1, price: 220 }],
-    host: {
-      name: 'Maria Rossi',
-      phone: '+91 9876543211',
-      location: 'Bangalore, Karnataka',
-    },
-    deliveryAddress: 'HAL Township, Bangalore, Karnataka',
-    estimatedDelivery: '6:00 PM - 9:30 PM',
-    specialInstructions: '',
-    createdAt: '2024-01-16 6:30 PM',
-  },
-])
+interface Props {
+  data: PageData
+}
+
+let { data }: Props = $props()
+
+// Use real data from server
+let orders = $state(data.orders)
+let stats = $state(data.stats)
 
 let activeTab = $state('all')
 
@@ -75,10 +41,6 @@ function filteredOrders() {
   if (activeTab === 'all') return orders
   return orders.filter((order) => order.status === activeTab)
 }
-
-onMount(() => {
-  // TODO: Fetch orders from API
-})
 </script>
 
 <svelte:head>
@@ -97,14 +59,14 @@ onMount(() => {
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <Card>
         <CardContent class="pt-6">
-          <div class="text-2xl font-bold">{orders.length}</div>
+          <div class="text-2xl font-bold">{stats.totalOrders}</div>
           <p class="text-xs text-muted-foreground">Total Orders</p>
         </CardContent>
       </Card>
       <Card>
         <CardContent class="pt-6">
           <div class="text-2xl font-bold text-green-600">
-            {orders.filter(o => o.status === 'delivered').length}
+            {stats.deliveredOrders}
           </div>
           <p class="text-xs text-muted-foreground">Delivered</p>
         </CardContent>
@@ -112,7 +74,7 @@ onMount(() => {
       <Card>
         <CardContent class="pt-6">
           <div class="text-2xl font-bold text-orange-600">
-            {orders.filter(o => ['preparing', 'ready'].includes(o.status)).length}
+            {stats.inProgressOrders}
           </div>
           <p class="text-xs text-muted-foreground">In Progress</p>
         </CardContent>
@@ -120,7 +82,7 @@ onMount(() => {
       <Card>
         <CardContent class="pt-6">
           <div class="text-2xl font-bold text-blue-600">
-            ₹{orders.reduce((sum, order) => sum + order.totalAmount, 0)}
+            ₹{stats.totalSpent}
           </div>
           <p class="text-xs text-muted-foreground">Total Spent</p>
         </CardContent>
@@ -146,8 +108,8 @@ onMount(() => {
                   <CardDescription>{order.createdAt}</CardDescription>
                 </div>
                 <div class="text-right">
-                  <Badge class={getStatusColor(order.status)}>
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  <Badge class={getStatusColor(order.status || 'unknown')}>
+                    {(order.status || 'Unknown').charAt(0).toUpperCase() + (order.status || 'Unknown').slice(1)}
                   </Badge>
                   <p class="text-lg font-bold mt-1">₹{order.totalAmount}</p>
                 </div>
@@ -239,7 +201,7 @@ onMount(() => {
                     <RefreshCw class="w-4 h-4 mr-2" />
                     Reorder
                   </Button>
-                {:else if ['preparing', 'ready'].includes(order.status)}
+                {:else if order.status && ['preparing', 'ready'].includes(order.status)}
                   <Button size="sm">Track Order</Button>
                 {/if}
               </div>

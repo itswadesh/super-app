@@ -376,32 +376,4 @@ routes.patch('/:id/availability', async (c) => {
 })
 
 // Legacy functions for backward compatibility
-export const getFoods = async ({
-  search,
-  category,
-  vegetarian,
-  limit = 20,
-  offset = 0,
-}: {
-  search?: string
-  category?: string
-  vegetarian?: boolean
-  limit?: number
-  offset?: number
-}) => {
-  // This will be removed once we fully migrate to API routes
-  const response = await fetch(
-    `http://localhost:5173/api/foods?search=${search || ''}&category=${category || ''}&vegetarian=${vegetarian || ''}&limit=${limit}&offset=${offset}`
-  )
-  return response.json()
-}
-
-export const getFoodById = async (id: string) => {
-  const response = await fetch(`http://localhost:5173/api/foods/${id}`)
-  return response.json()
-}
-
-export const getCategories = async () => {
-  const response = await fetch(`http://localhost:5173/api/foods/categories`)
-  return response.json()
-}
+// Legacy functions removed - use API routes directly

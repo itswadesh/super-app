@@ -1,6 +1,6 @@
 import { and, desc, eq, like, or, sql } from 'drizzle-orm'
 import { db } from '../../server/db'
-import { Category, Food, HostProfile, User } from '../../server/db/schema'
+import { Category, Food, HostProfile, User, HostApplication } from '../../server/db/schema'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ url }) => {
@@ -20,6 +20,26 @@ export const load: PageServerLoad = async ({ url }) => {
   }
 
   try {
+    // Get categories first (needed for early return)
+    const categoriesData = await db
+      .select({
+        id: Category.id,
+        name: Category.name,
+        slug: Category.slug,
+      })
+      .from(Category)
+      .where(eq(Category.isActive, true))
+
+    const categories = [{ id: 'all', name: 'All Categories' }, ...categoriesData]
+
+    // Get approved host IDs first
+    const approvedHosts = await db
+      .select({ userId: HostApplication.userId })
+      .from(HostApplication)
+      .where(eq(HostApplication.status, 'approved'))
+
+    const approvedHostIds = approvedHosts.map((host) => host.userId)
+
     // Build where conditions
     const whereConditions = []
 
@@ -39,10 +59,29 @@ export const load: PageServerLoad = async ({ url }) => {
 
     whereConditions.push(eq(Food.isAvailable, true))
 
+    // Add condition to only show foods from approved hosts
+    if (approvedHostIds.length > 0) {
+      whereConditions.push(sql`${Food.hostId} IN (${approvedHostIds.join(',')})`)
+    } else {
+      // If no approved hosts, return empty results
+      return {
+        foods: [],
+        categories,
+        total: 0,
+        currentPage: filters.page,
+        pageSize: filters.limit,
+        searchQuery: filters.search || '',
+        selectedCategory: filters.category,
+        selectedVegetarian: filters.vegetarian,
+        showApprovalNotice: true,
+        approvedHostsCount: 0,
+      }
+    }
+
     // Calculate offset
     const offset = (filters.page - 1) * filters.limit
 
-    // Get foods with joins
+    // Get foods with joins - only from approved hosts
     const foods = await db
       .select({
         id: Food.id,
@@ -97,18 +136,6 @@ export const load: PageServerLoad = async ({ url }) => {
 
     const total = totalResult[0]?.count || 0
 
-    // Get categories
-    const categoriesData = await db
-      .select({
-        id: Category.id,
-        name: Category.name,
-        slug: Category.slug,
-      })
-      .from(Category)
-      .where(eq(Category.isActive, true))
-
-    const categories = [{ id: 'all', name: 'All Categories' }, ...categoriesData]
-
     return {
       foods: transformedFoods,
       categories,
@@ -118,6 +145,8 @@ export const load: PageServerLoad = async ({ url }) => {
       searchQuery: filters.search || '',
       selectedCategory: filters.category,
       selectedVegetarian: filters.vegetarian,
+      showApprovalNotice: false,
+      approvedHostsCount: approvedHostIds.length,
     }
   } catch (error) {
     console.error('Error loading foods:', error)

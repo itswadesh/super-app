@@ -1,13 +1,6 @@
 <script lang="ts">
 import { ChefHat, Flame, Receipt, ShoppingCart } from '@lucide/svelte'
 
-// User data - would come from your auth store
-const _user = {
-  name: 'John Doe',
-  balance: '1,245.50',
-  avatar: '/default-avatar.png',
-}
-
 // Featured services
 const _services = [
   {
@@ -63,13 +56,6 @@ const _promotions = [
     href: '/host',
   },
 ]
-
-// Recent transactions
-const _recentTransactions = [
-  { id: 1, name: 'Starbucks', amount: '-$4.50', time: '10:30 AM', type: 'food' },
-  { id: 2, name: 'Uber Ride', amount: '-$12.75', time: 'Yesterday', type: 'transport' },
-  { id: 3, name: 'Salary', amount: '+$2,500.00', time: 'Jun 1', type: 'income' },
-]
 </script>
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
@@ -100,19 +86,35 @@ const _recentTransactions = [
       {/each}
     </div>
 
-    <!-- Promotions - Zomato Style -->
-    <div class="mb-6 sm:mb-8">
-      <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">What's on your mind?</h2>
-      <div class="grid grid-cols-1 gap-4 sm:gap-6">
+    <!-- Promotions - Elegant Watermark Style -->
+    <div class="mb-6 sm:mb-8 relative">
+      <!-- Watermark Background -->
+      <div class="absolute inset-0 opacity-5 dark:opacity-10 pointer-events-none">
+        <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-orange-200 via-yellow-100 to-pink-100 dark:from-orange-900 dark:via-yellow-900 dark:to-pink-900 rounded-2xl"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl sm:text-8xl font-bold text-orange-300 dark:text-orange-700 opacity-20 select-none">
+          🍽️
+        </div>
+        <div class="absolute top-1/4 right-1/4 text-4xl sm:text-6xl font-bold text-yellow-300 dark:text-yellow-700 opacity-15 select-none">
+          👨‍🍳
+        </div>
+        <div class="absolute bottom-1/4 left-1/4 text-4xl sm:text-6xl font-bold text-pink-300 dark:text-pink-700 opacity-15 select-none">
+          🏠
+        </div>
+      </div>
+
+      <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6 relative z-10">What's on your mind?</h2>
+      <div class="grid grid-cols-1 gap-4 sm:gap-6 relative z-10">
         {#each _promotions as promo}
-          <div class="{promo.color} p-4 sm:p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-shadow">
-            <h3 class="font-bold text-lg sm:text-xl mb-2">{promo.title}</h3>
-            <p class="text-sm sm:text-base opacity-90">{promo.description}</p>
-            <div class="mt-3 inline-flex items-center text-sm font-medium">
-              <span><a href={promo.href}>{promo.buttonText}</a></span>
-              <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-              </svg>
+          <div class="{promo.color} p-4 sm:p-6 rounded-xl text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm">
+            <h3 class="font-bold text-lg sm:text-xl mb-2 drop-shadow-lg">{promo.title}</h3>
+            <p class="text-sm sm:text-base opacity-95 drop-shadow-md">{promo.description}</p>
+            <div class="mt-4 inline-flex items-center text-sm font-medium bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-all duration-200">
+              <a href={promo.href} class="flex items-center text-white hover:text-yellow-100">
+                <span>{promo.buttonText}</span>
+                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </a>
             </div>
           </div>
         {/each}
