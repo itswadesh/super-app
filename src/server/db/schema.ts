@@ -154,7 +154,7 @@ export const HostRating = pgTable('host_rating', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
-export const HostApplication = pgTable('host_application', {
+export const Vendor = pgTable('vendors', {
   id: uuid('id').primaryKey().$defaultFn(generateId),
   userId: uuid('user_id')
     .notNull()
@@ -196,4 +196,4 @@ export type Order = typeof Order.$inferSelect
 export type OrderItem = typeof OrderItem.$inferSelect
 export type FoodRating = typeof FoodRating.$inferSelect
 export type HostRating = typeof HostRating.$inferSelect
-export type HostApplication = typeof HostApplication.$inferSelect
+export type Vendor = typeof Vendor.$inferSelect

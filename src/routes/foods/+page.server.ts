@@ -1,6 +1,6 @@
 import { and, desc, eq, like, or, sql } from 'drizzle-orm'
 import { db } from '../../server/db'
-import { Category, Food, HostProfile, User, HostApplication } from '../../server/db/schema'
+import { Category, Food, HostProfile, User, Vendor } from '../../server/db/schema'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ url }) => {
@@ -34,9 +34,9 @@ export const load: PageServerLoad = async ({ url }) => {
 
     // Get approved host IDs first
     const approvedHosts = await db
-      .select({ userId: HostApplication.userId })
-      .from(HostApplication)
-      .where(eq(HostApplication.status, 'approved'))
+      .select({ userId: Vendor.userId })
+      .from(Vendor)
+      .where(eq(Vendor.status, 'approved'))
 
     const approvedHostIds = approvedHosts.map((host) => host.userId)
 

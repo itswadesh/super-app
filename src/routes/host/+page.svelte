@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tab
 import { Plus, ChefHat, ShoppingCart, Star, TrendingUp, Users, X } from '@lucide/svelte'
 import { toast } from 'svelte-sonner'
 import { onMount } from 'svelte'
+import { goto } from '$app/navigation'
 import type { PageData } from './$types'
 
 interface Props {
@@ -25,6 +26,7 @@ let currentTab = $state('foods')
 // Modal state
 let isAddFoodModalOpen = $state(false)
 let isEditFoodModalOpen = $state(false)
+let isApplicationModalOpen = $state(false)
 let isSubmitting = $state(false)
 let submitError = $state('')
 
@@ -48,6 +50,11 @@ let editingFood = $state({
   isVegetarian: false,
   preparationTime: 30,
   image: null as File | null,
+})
+
+// Application form data
+let applicationForm = $state({
+  businessName: '',
 })
 
 // Image preview
@@ -354,6 +361,21 @@ function closeEditFoodModal() {
   submitError = ''
 }
 
+// Application modal functions
+function openApplicationModal() {
+  isApplicationModalOpen = true
+  submitError = ''
+  // Reset form
+  applicationForm = {
+    businessName: '',
+  }
+}
+
+function closeApplicationModal() {
+  isApplicationModalOpen = false
+  submitError = ''
+}
+
 // Load categories from API
 async function loadCategories() {
   try {
@@ -566,6 +588,46 @@ async function submitEditFood() {
   }
 }
 
+// Submit application
+async function submitApplication() {
+  if (!applicationForm.businessName.trim()) {
+    submitError = 'Please enter a business name'
+    return
+  }
+
+  isSubmitting = true
+  submitError = ''
+
+  try {
+    const response = await fetch('/api/applications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        businessName: applicationForm.businessName.trim(),
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    toast.success('Application submitted successfully!')
+
+    // Close modal and refresh page to show new status
+    closeApplicationModal()
+    window.location.reload()
+  } catch (error) {
+    console.error('Error submitting application:', error)
+    submitError = error instanceof Error ? error.message : 'Failed to submit application'
+  } finally {
+    isSubmitting = false
+  }
+}
+
 // Toggle food availability
 async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
   try {
@@ -602,20 +664,20 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
   <div class="container mx-auto px-4 py-6">
     <!-- Application Status Banner -->
     {#if applicationStatus}
-      {#if applicationStatus.status === 'pending'}
-        <div class="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+      {#if applicationStatus.status === 'pending' || applicationStatus.status === 'approved' || applicationStatus.status === 'rejected'}
+        <div class="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
           <div class="flex items-center">
-            <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mr-3">
-              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200">Application Under Review</h3>
-              <p class="text-yellow-700 dark:text-yellow-300">
-                Please wait until our team reviews your application. You will receive an email notification once the review is complete.
+              <h3 class="text-lg font-semibold text-green-800 dark:text-green-200">Application Received</h3>
+              <p class="text-green-700 dark:text-green-300">
+                We have received your application. You will receive a notification once it is approved. Your items will be available to order after approval.
               </p>
-              <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+              <p class="text-sm text-green-600 dark:text-green-400 mt-1">
                 Applied on {new Date(applicationStatus.createdAt).toLocaleDateString()}
               </p>
             </div>
@@ -647,26 +709,6 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
           </div>
         </div>
       {/if}
-    {:else if !applicationStatus}
-      <!-- No Application Banner -->
-      <div class="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-        <div class="flex items-center">
-          <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
-            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
-            </svg>
-          </div>
-          <div class="flex-1">
-            <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200">Become a HomeFood Chef</h3>
-            <p class="text-blue-700 dark:text-blue-300">
-              Start your culinary journey with HomeFood. Apply to become a chef and share your delicious dishes with food lovers in your area.
-            </p>
-          </div>
-          <Button onclick={() => goto('/host/apply')} class="bg-blue-600 hover:bg-blue-700 text-white">
-            Apply Now
-          </Button>
-        </div>
-      </div>
     {/if}
 
     <!-- Header -->
@@ -1467,6 +1509,74 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                 </svg>
                 Update Food Item
+              {/if}
+            </Button>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Application Modal -->
+    {#if isApplicationModalOpen}
+      <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+          <!-- Modal Header -->
+          <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Apply to Become a Chef</h3>
+            <button
+              onclick={closeApplicationModal}
+              class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+            >
+              <X class="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="p-6 space-y-4">
+            {#if submitError}
+              <div class="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+                {submitError}
+              </div>
+            {/if}
+
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Enter your business name to start the application process. Our team will review your application and get back to you soon.
+            </div>
+
+            <div>
+              <label for="business-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Business Name *
+              </label>
+              <input
+                id="business-name"
+                type="text"
+                bind:value={applicationForm.businessName}
+                placeholder="e.g., John's Home Kitchen"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 outline-none"
+                required
+              />
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              variant="outline"
+              onclick={closeApplicationModal}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onclick={submitApplication}
+              disabled={isSubmitting || !applicationForm.businessName.trim()}
+              class="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {#if isSubmitting}
+                <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Submitting...
+              {:else}
+                Submit Application
               {/if}
             </Button>
           </div>

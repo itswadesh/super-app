@@ -86,6 +86,50 @@ const _promotions = [
       {/each}
     </div>
 
+    <!-- Catalogue Approval System Section -->
+    <div class="mb-6 sm:mb-8 text-center">
+      <h2 class="text-2xl sm:text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">
+        🏠 Catalogue Approval System
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
+        Manage and approve food catalogues from local chefs
+      </p>
+    </div>
+
+    <!-- Quality Assurance Feature Section -->
+    <div class="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6 shadow-lg relative">
+      <!-- Icon positioned absolutely in top-right corner -->
+      <div class="absolute top-4 right-4">
+        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Content using full width -->
+      <div class="pr-16">
+        <p class="text-blue-800 dark:text-blue-200 mb-4 leading-relaxed">
+          <strong>Quality Assurance Feature:</strong> Only approved home chefs can display their food items in our catalogue.
+          This ensures the highest quality and safety standards for our customers.
+        </p>
+        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+          <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">How it works:</h4>
+          <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+            <li>• <strong>Chef Application:</strong> Home chefs apply through our verification process</li>
+            <li>• <strong>Admin Review:</strong> Our team reviews FSSAI documents and credentials</li>
+            <li>• <strong>Approval:</strong> Only verified chefs can showcase their dishes</li>
+            <li>• <strong>Quality Guarantee:</strong> Ensures safe, hygienic, and delicious food</li>
+          </ul>
+        </div>
+        <div class="mt-4 flex items-center gap-2">
+          <div class="text-sm text-blue-700 dark:text-blue-300">
+            <strong>Current Status:</strong> Quality assurance system active
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Promotions - Elegant Watermark Style -->
     <div class="mb-6 sm:mb-8 relative">
       <!-- Watermark Background -->

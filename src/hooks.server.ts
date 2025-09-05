@@ -10,10 +10,20 @@ import type { Handle } from '@sveltejs/kit'
  */
 export const handle: Handle = async ({ event, resolve }) => {
   if (!event.url.pathname.startsWith('/api/')) {
-    const { session, user } = await event.fetch('/api/auth/me').then((res) => res.json())
-    if (session && user) {
-      event.locals.user = user
-      event.locals.session = session
+    // Mock user for testing - user with phone number +918249028220
+    const mockUser = {
+      id: 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b',
+      name: 'Test User',
+      email: 'test@example.com',
+      phone: '+918249028220',
+      role: 'buyer',
+    }
+
+    event.locals.user = mockUser
+    event.locals.session = {
+      id: 'mock-session',
+      userId: mockUser.id,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     }
   }
 

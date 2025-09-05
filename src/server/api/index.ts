@@ -9,6 +9,7 @@ import { productRoutes } from './products'
 import { busBookingRoutes } from './bus-booking'
 import { litekartStoreRoutes } from './litekart-stores'
 import { routes as foodRoutes } from './foods'
+import { routes as applicationRoutes } from './applications'
 
 // Inner router for API paths
 const apiRouter = new Hono()
@@ -52,6 +53,7 @@ apiRouter.route('/categories', categoryRoutes)
 apiRouter.route('/bus-booking', busBookingRoutes)
 apiRouter.route('/litekart/stores', litekartStoreRoutes)
 apiRouter.route('/foods', foodRoutes)
+apiRouter.route('/applications', applicationRoutes)
 
 // Global error handler for all API routes
 apiRouter.onError((err: any, c) => {

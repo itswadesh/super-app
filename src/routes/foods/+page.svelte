@@ -504,43 +504,6 @@ function proceedToPayment() {
       </div>
     </div>
 
-    <!-- Approval Notice - Bold and Prominent -->
-    {#if data.showApprovalNotice || (data.approvedHostsCount !== undefined && data.approvedHostsCount === 0)}
-      <div class="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950 dark:via-indigo-950 dark:to-purple-950 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-6 shadow-lg">
-        <div class="flex items-start gap-4">
-          <div class="flex-shrink-0">
-            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            </div>
-          </div>
-          <div class="flex-1">
-            <h3 class="text-xl font-bold text-blue-900 dark:text-blue-100 mb-2">
-              🏠 Catalogue Approval System
-            </h3>
-            <p class="text-blue-800 dark:text-blue-200 mb-4 leading-relaxed">
-              <strong>Quality Assurance Feature:</strong> Only approved home chefs can display their food items in our catalogue.
-              This ensures the highest quality and safety standards for our customers.
-            </p>
-            <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-              <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-2">How it works:</h4>
-              <ul class="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                <li>• <strong>Chef Application:</strong> Home chefs apply through our verification process</li>
-                <li>• <strong>Admin Review:</strong> Our team reviews documents and credentials</li>
-                <li>• <strong>Approval:</strong> Only verified chefs can showcase their dishes</li>
-                <li>• <strong>Quality Guarantee:</strong> Ensures safe, hygienic, and delicious food</li>
-              </ul>
-            </div>
-            <div class="mt-4 flex items-center gap-2">
-              <div class="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Current Status:</strong> {data.approvedHostsCount || 0} approved chef{data.approvedHostsCount === 1 ? '' : 's'}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    {/if}
 
     <!-- Error State -->
     {#if error}

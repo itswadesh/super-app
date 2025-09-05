@@ -1,5 +1,5 @@
 import { db } from '.'
-import { Category, User, HostProfile } from './schema'
+import { Category, User, HostProfile, Vendor } from './schema'
 
 // Helper function to generate unique IDs
 const generateId = () => crypto.randomUUID()
@@ -48,12 +48,12 @@ async function seedFoodCategories() {
 // Seed a test host user
 async function seedTestHost() {
   const testUserData = {
-    id: generateId(),
-    name: 'Test Host',
-    email: 'test@host.com',
-    phone: '+1234567890',
+    id: 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b', // Use the same ID as in hooks.server.ts
+    name: 'Test User',
+    email: 'test@example.com',
+    phone: '+918249028220', // Use the requested phone number
     passwordHash: 'hashedpassword', // In real app, this would be properly hashed
-    role: 'host' as const,
+    role: 'buyer' as const,
   }
 
   const testHostProfileData = {
@@ -81,6 +81,30 @@ async function seedTestHost() {
   }
 }
 
+// Seed a test application for the test user
+async function seedTestApplication(userId: string) {
+  const testApplicationData = {
+    userId,
+    fullName: 'Test Chef',
+    email: 'test@example.com',
+    phone: '+918249028220',
+    address: 'Test Address',
+    idProof: 'test-proof',
+    status: 'pending' as const,
+  }
+
+  console.log('Seeding test application...')
+
+  try {
+    const insertedApplication = await db.insert(Vendor).values(testApplicationData).returning()
+    console.log('Test application inserted.')
+    return insertedApplication[0]
+  } catch (error) {
+    console.error('Error seeding test application:', error)
+    return null
+  }
+}
+
 // Main seed function
 async function seed() {
   try {
@@ -91,6 +115,11 @@ async function seed() {
 
     // Seed test host
     const testHost = await seedTestHost()
+
+    // Seed test application for the test user
+    if (testHost) {
+      await seedTestApplication(testHost.user.id)
+    }
 
     console.log('Database seeding completed successfully!')
     if (testHost) {

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { db } from '../../../server/db'
-import { HostApplication } from '../../../server/db/schema'
+import { Vendor } from '../../../server/db/schema'
 import { eq } from 'drizzle-orm'
 
 const routes = new Hono()
@@ -8,7 +8,7 @@ const routes = new Hono()
 // Get all applications (admin only)
 routes.get('/', async (c) => {
   try {
-    const applications = await db.select().from(HostApplication).orderBy(HostApplication.createdAt)
+    const applications = await db.select().from(Vendor).orderBy(Vendor.createdAt)
 
     return c.json(applications)
   } catch (error) {
@@ -21,7 +21,7 @@ routes.get('/', async (c) => {
 routes.get('/:id', async (c) => {
   try {
     const id = c.req.param('id')
-    const applications = await db.select().from(HostApplication).where(eq(HostApplication.id, id))
+    const applications = await db.select().from(Vendor).where(eq(Vendor.id, id))
 
     if (applications.length === 0) {
       return c.json({ error: 'Application not found' }, 404)
@@ -58,7 +58,6 @@ routes.post('/', async (c) => {
       bankName,
       ifscCode,
       upiId,
-      termsAccepted,
     } = body
 
     // Validate required fields
@@ -69,8 +68,8 @@ routes.post('/', async (c) => {
     // Check if user already has an application
     const existingApplication = await db
       .select()
-      .from(HostApplication)
-      .where(eq(HostApplication.userId, userId))
+      .from(Vendor)
+      .where(eq(Vendor.userId, userId))
       .limit(1)
 
     if (existingApplication.length > 0) {
@@ -78,7 +77,7 @@ routes.post('/', async (c) => {
     }
 
     const newApplication = await db
-      .insert(HostApplication)
+      .insert(Vendor)
       .values({
         userId,
         fullName,
@@ -99,7 +98,6 @@ routes.post('/', async (c) => {
         bankName,
         ifscCode,
         upiId,
-        termsAccepted,
       })
       .returning()
 
@@ -130,9 +128,9 @@ routes.patch('/:id/status', async (c) => {
     if (reviewedBy) updateData.reviewedBy = reviewedBy
 
     const updatedApplication = await db
-      .update(HostApplication)
+      .update(Vendor)
       .set(updateData)
-      .where(eq(HostApplication.id, id))
+      .where(eq(Vendor.id, id))
       .returning()
 
     if (updatedApplication.length === 0) {
@@ -151,10 +149,7 @@ routes.delete('/:id', async (c) => {
   try {
     const id = c.req.param('id')
 
-    const deletedApplication = await db
-      .delete(HostApplication)
-      .where(eq(HostApplication.id, id))
-      .returning()
+    const deletedApplication = await db.delete(Vendor).where(eq(Vendor.id, id)).returning()
 
     if (deletedApplication.length === 0) {
       return c.json({ error: 'Application not found' }, 404)

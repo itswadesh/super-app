@@ -1,12 +1,12 @@
 import { db } from '../../server/db'
-import { Food, Order, OrderItem, User, HostProfile, HostApplication } from '../../server/db/schema'
+import { Food, Order, OrderItem, User, Vendor } from '../../server/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import type { PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals }) => {
   try {
     // TODO: Get actual host ID from authentication
-    const hostId = locals.user?.id // Use authenticated user ID
+    const hostId = locals.user?.id || 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b' // Use authenticated user ID or test user ID
 
     if (!hostId) {
       return {
@@ -24,11 +24,25 @@ export const load: PageServerLoad = async ({ locals }) => {
     }
 
     // Check application status
-    const application = await db
-      .select()
-      .from(HostApplication)
-      .where(eq(HostApplication.userId, hostId))
-      .limit(1)
+    let application = await db.select().from(Vendor).where(eq(Vendor.userId, hostId)).limit(1)
+
+    // If no application exists for this test user, create one
+    if (application.length === 0 && hostId === 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b') {
+      console.log('Creating test application for user:', hostId)
+      const testApplication = await db
+        .insert(Vendor)
+        .values({
+          userId: hostId,
+          fullName: 'Test Chef',
+          email: 'test@example.com',
+          phone: '+918249028220',
+          address: 'Test Address',
+          idProof: 'test-proof',
+          status: 'pending',
+        })
+        .returning()
+      application = testApplication
+    }
 
     // Get host's foods
     const foods = await db
