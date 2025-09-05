@@ -1,93 +1,115 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { db } from '../db'
-import { Food, Category, User, HostProfile } from '../db/schema'
-import { eq, and, like, or, desc } from 'drizzle-orm'
+import { Food, Category, User, Vendor } from '../db/schema'
+import { eq, and, like, or, desc, sql } from 'drizzle-orm'
+
+declare module 'hono' {
+  interface HonoRequest {
+    user?: {
+      id: string
+      name: string
+      email: string
+      phone: string
+      role: string
+    }
+  }
+}
 
 export const routes = new Hono()
 
 // Get all foods with optional filtering
 routes.get('/', async (c) => {
-  const search = c.req.query('search')
-  const category = c.req.query('category')
-  const vegetarian = c.req.query('vegetarian')
-  const limit = parseInt(c.req.query('limit') || '20')
-  const offset = parseInt(c.req.query('offset') || '0')
+  try {
+    const search = c.req.query('search')
+    const category = c.req.query('category')
+    const vegetarian = c.req.query('vegetarian')
+    const limit = parseInt(c.req.query('limit') || '20')
+    const offset = parseInt(c.req.query('offset') || '0')
 
-  let whereConditions = []
+    const whereConditions = []
 
-  if (search) {
-    whereConditions.push(or(like(Food.name, `%${search}%`), like(Food.description, `%${search}%`)))
-  }
+    if (search) {
+      whereConditions.push(
+        or(like(Food.name, `%${search}%`), like(Food.description, `%${search}%`))
+      )
+    }
 
-  if (category && category !== 'all') {
-    whereConditions.push(eq(Food.categoryId, category))
-  }
+    if (category && category !== 'all') {
+      whereConditions.push(eq(Food.categoryId, category))
+    }
 
-  if (vegetarian !== undefined) {
-    const isVeg = vegetarian === 'true'
-    whereConditions.push(eq(Food.isVegetarian, isVeg))
-  }
+    if (vegetarian !== undefined) {
+      const isVeg = vegetarian === 'true'
+      whereConditions.push(eq(Food.isVegetarian, isVeg))
+    }
 
-  whereConditions.push(eq(Food.isAvailable, true))
+    whereConditions.push(eq(Food.isAvailable, true))
 
-  const foods = await db
-    .select({
-      id: Food.id,
-      name: Food.name,
-      description: Food.description,
-      price: Food.price,
-      image: Food.image,
-      categoryId: Food.categoryId,
-      isVegetarian: Food.isVegetarian,
-      preparationTime: Food.preparationTime,
-      rating: Food.rating,
-      totalRatings: Food.totalRatings,
-      hostId: Food.hostId,
-      hostName: User.name,
-      hostLocation: HostProfile.location,
-      hostRating: HostProfile.rating,
-      categoryName: Category.name,
+    const foods = await db
+      .select({
+        id: Food.id,
+        name: Food.name,
+        description: Food.description,
+        price: Food.price,
+        image: Food.image,
+        categoryId: Food.categoryId,
+        isVegetarian: Food.isVegetarian,
+        preparationTime: Food.preparationTime,
+        rating: Food.rating,
+        totalRatings: Food.totalRatings,
+        hostId: Food.hostId,
+        hostName: User.name,
+        hostAddress: Vendor.address,
+        hostCity: Vendor.city,
+        categoryName: Category.name,
+      })
+      .from(Food)
+      .leftJoin(User, eq(Food.hostId, User.id))
+      .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
+      .leftJoin(Category, eq(Food.categoryId, Category.id))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(desc(Food.createdAt))
+      .limit(limit)
+      .offset(offset)
+
+    // Transform the data to match the expected format
+    const transformedFoods = foods.map((food) => ({
+      id: food.id,
+      name: food.name,
+      description: food.description,
+      price: parseFloat(food.price),
+      image: food.image || '/api/placeholder/300/200',
+      category: food.categoryName || 'Uncategorized',
+      isVegetarian: food.isVegetarian,
+      preparationTime: food.preparationTime || 30,
+      rating: food.rating ? parseFloat(food.rating) : 0,
+      totalRatings: food.totalRatings || 0,
+      isMyFood: c.req.user?.id === food.hostId,
+      host: {
+        name: food.hostName || 'Unknown Host',
+        rating: 0, // Vendor table doesn't have rating
+        location: `${food.hostAddress || 'Unknown Address'}, ${food.hostCity || 'Unknown City'}`,
+      },
+    }))
+
+    // Get total count for pagination
+    const totalResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(Food)
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+
+    const total = totalResult[0]?.count || 0
+
+    return c.json({
+      foods: transformedFoods,
+      total,
+      page: Math.floor(offset / limit) + 1,
+      pageSize: limit,
     })
-    .from(Food)
-    .leftJoin(User, eq(Food.hostId, User.id))
-    .leftJoin(HostProfile, eq(Food.hostId, HostProfile.userId))
-    .leftJoin(Category, eq(Food.categoryId, Category.id))
-    .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-    .orderBy(desc(Food.createdAt))
-    .limit(limit)
-    .offset(offset)
-
-  // Transform the data to match the expected format
-  const transformedFoods = foods.map((food) => ({
-    id: food.id,
-    name: food.name,
-    description: food.description,
-    price: parseFloat(food.price),
-    image: food.image || '/api/placeholder/300/200',
-    category: food.categoryName || 'Uncategorized',
-    isVegetarian: food.isVegetarian,
-    preparationTime: food.preparationTime || 30,
-    rating: food.rating ? parseFloat(food.rating) : 0,
-    totalRatings: food.totalRatings || 0,
-    host: {
-      name: food.hostName || 'Unknown Host',
-      rating: food.hostRating ? parseFloat(food.hostRating) : 0,
-      location: food.hostLocation || 'Unknown Location',
-    },
-  }))
-
-  // Get total count for pagination
-  const totalResult = await db
-    .select({ count: Food.id })
-    .from(Food)
-    .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-
-  return c.json({
-    foods: transformedFoods,
-    total: totalResult.length,
-    page: Math.floor(offset / limit) + 1,
-    pageSize: limit,
-  })
+  } catch (error) {
+    console.error('API Error:', error)
+    return c.json({ message: 'Cannot convert undefined or null to object', status: 500 }, 500)
+  }
 })
 
 // Get categories
@@ -110,8 +132,8 @@ routes.get('/categories', async (c) => {
 // Host-specific endpoints
 
 // Get foods for a specific host
-routes.get('/host/:hostId', async (c) => {
-  const hostId = c.req.param('hostId')
+routes.get('/my', async (c) => {
+  const hostId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' || c.req.user?.id
 
   const foods = await db
     .select({
@@ -170,13 +192,13 @@ routes.get('/:id', async (c) => {
       totalRatings: Food.totalRatings,
       hostId: Food.hostId,
       hostName: User.name,
-      hostLocation: HostProfile.location,
-      hostRating: HostProfile.rating,
+      hostAddress: Vendor.address,
+      hostCity: Vendor.city,
       categoryName: Category.name,
     })
     .from(Food)
     .leftJoin(User, eq(Food.hostId, User.id))
-    .leftJoin(HostProfile, eq(Food.hostId, HostProfile.userId))
+    .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
     .leftJoin(Category, eq(Food.categoryId, Category.id))
     .where(eq(Food.id, id))
 
@@ -196,10 +218,11 @@ routes.get('/:id', async (c) => {
     preparationTime: food.preparationTime || 30,
     rating: food.rating ? parseFloat(food.rating) : 0,
     totalRatings: food.totalRatings || 0,
+    isMyFood: c.req.user?.id === food.hostId,
     host: {
       name: food.hostName || 'Unknown Host',
-      rating: food.hostRating ? parseFloat(food.hostRating) : 0,
-      location: food.hostLocation || 'Unknown Location',
+      rating: 0, // Vendor table doesn't have rating
+      location: `${food.hostAddress || 'Unknown Address'}, ${food.hostCity || 'Unknown City'}`,
     },
   }
 
@@ -207,10 +230,10 @@ routes.get('/:id', async (c) => {
 })
 
 // Create a new food item
-routes.post('/', async (c) => {
+routes.post('/', async (c: Context) => {
   const body = await c.req.json()
+  const hostId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' || c.req.user?.id
   const {
-    hostId,
     name,
     description,
     price,
@@ -222,28 +245,33 @@ routes.post('/', async (c) => {
     allergens,
   } = body
 
-  if (!hostId || !name || !price || !categoryId) {
+  if (!hostId || !name || !price) {
     return c.json({ error: 'Missing required fields' }, 400)
   }
 
-  // Handle categoryId - it could be a UUID or a category name/slug
+  // Handle categoryId - it could be a UUID, a category name/slug, or null/undefined
   let actualCategoryId = categoryId
 
-  // Check if categoryId is not a valid UUID (i.e., it's a category name/slug)
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-  if (!uuidRegex.test(categoryId)) {
-    // Look up category by slug
-    const category = await db
-      .select({ id: Category.id })
-      .from(Category)
-      .where(eq(Category.slug, categoryId))
-      .limit(1)
+  if (categoryId) {
+    // Check if categoryId is not a valid UUID (i.e., it's a category name/slug)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(categoryId)) {
+      // Look up category by slug
+      const category = await db
+        .select({ id: Category.id })
+        .from(Category)
+        .where(eq(Category.slug, categoryId))
+        .limit(1)
 
-    if (category.length === 0) {
-      return c.json({ error: 'Invalid category' }, 400)
+      if (category.length === 0) {
+        return c.json({ error: 'Invalid category' }, 400)
+      }
+
+      actualCategoryId = category[0].id
     }
-
-    actualCategoryId = category[0].id
+  } else {
+    // If no category provided, set to null
+    actualCategoryId = null
   }
 
   // Generate slug from name
@@ -271,7 +299,7 @@ routes.post('/', async (c) => {
       slug,
       description: description || null,
       price: price.toString(),
-      categoryId: actualCategoryId,
+      categoryId: actualCategoryId || null,
       isVegetarian,
       preparationTime,
       image,
@@ -288,31 +316,45 @@ routes.put('/:id', async (c) => {
   const id = c.req.param('id')
   const body = await c.req.json()
 
+  // Check ownership
+  const food = await db.select({ hostId: Food.hostId }).from(Food).where(eq(Food.id, id)).limit(1)
+  if (food.length === 0) {
+    return c.json({ error: 'Food not found' }, 404)
+  }
+  if (c.req.user?.id !== food[0].hostId) {
+    return c.json({ error: 'Unauthorized' }, 403)
+  }
+
   const updateData: any = {}
 
   if (body.name !== undefined) updateData.name = body.name
   if (body.description !== undefined) updateData.description = body.description || null
   if (body.price !== undefined) updateData.price = body.price.toString()
 
-  // Handle categoryId - it could be a UUID or a category name/slug
+  // Handle categoryId - it could be a UUID, a category name/slug, or null/undefined
   if (body.categoryId !== undefined) {
     let actualCategoryId = body.categoryId
 
-    // Check if categoryId is not a valid UUID (i.e., it's a category name/slug)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(body.categoryId)) {
-      // Look up category by slug
-      const category = await db
-        .select({ id: Category.id })
-        .from(Category)
-        .where(eq(Category.slug, body.categoryId))
-        .limit(1)
+    if (body.categoryId) {
+      // Check if categoryId is not a valid UUID (i.e., it's a category name/slug)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      if (!uuidRegex.test(body.categoryId)) {
+        // Look up category by slug
+        const category = await db
+          .select({ id: Category.id })
+          .from(Category)
+          .where(eq(Category.slug, body.categoryId))
+          .limit(1)
 
-      if (category.length === 0) {
-        return c.json({ error: 'Invalid category' }, 400)
+        if (category.length === 0) {
+          return c.json({ error: 'Invalid category' }, 400)
+        }
+
+        actualCategoryId = category[0].id
       }
-
-      actualCategoryId = category[0].id
+    } else {
+      // If empty string or null provided, set to null
+      actualCategoryId = null
     }
 
     updateData.categoryId = actualCategoryId
@@ -340,6 +382,15 @@ routes.put('/:id', async (c) => {
 routes.delete('/:id', async (c) => {
   const id = c.req.param('id')
 
+  // Check ownership
+  const food = await db.select({ hostId: Food.hostId }).from(Food).where(eq(Food.id, id)).limit(1)
+  if (food.length === 0) {
+    return c.json({ error: 'Food not found' }, 404)
+  }
+  if (c.req.user?.id !== food[0].hostId) {
+    return c.json({ error: 'Unauthorized' }, 403)
+  }
+
   const deletedFood = await db.delete(Food).where(eq(Food.id, id)).returning()
 
   if (deletedFood.length === 0) {
@@ -354,6 +405,15 @@ routes.patch('/:id/availability', async (c) => {
   const id = c.req.param('id')
   const body = await c.req.json()
   const { isAvailable } = body
+
+  // Check ownership
+  const food = await db.select({ hostId: Food.hostId }).from(Food).where(eq(Food.id, id)).limit(1)
+  if (food.length === 0) {
+    return c.json({ error: 'Food not found' }, 404)
+  }
+  if (c.req.user?.id !== food[0].hostId) {
+    return c.json({ error: 'Unauthorized' }, 403)
+  }
 
   if (isAvailable === undefined) {
     return c.json({ error: 'isAvailable field is required' }, 400)

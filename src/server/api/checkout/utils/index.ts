@@ -99,7 +99,14 @@ export const razorpayGetOrderInfo = async ({ pg, paymentReferenceId }: any) => {
   return c.json(rzOrder)
 }
 
-export const placeOrder = async ({ pgName, totalAmount, planId, couponCode, phone }: any) => {
+export const placeOrder = async ({
+  pgName,
+  totalAmount,
+  planId,
+  couponCode,
+  phone,
+  userId,
+}: any) => {
   let discountedAmount = totalAmount
   if (couponCode) {
     const coupon = await db
@@ -123,7 +130,7 @@ export const placeOrder = async ({ pgName, totalAmount, planId, couponCode, phon
 
   const OrderValues = {
     id: orderId,
-    customerId: 1,
+    userId: 1,
     planId: planId,
     totalAmount: Math.round(discountedAmount * 100), // Convert to paise/cents
     status: 'created',

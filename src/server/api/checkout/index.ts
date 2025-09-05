@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { db } from '../../db'
-import { Order, Plan } from '../../db/schema' // Coupon schema might be needed if validateCouponUtil returns full Coupon object
+import { Order, OrderItem, Plan } from '../../db/schema' // Coupon schema might be needed if validateCouponUtil returns full Coupon object
 import { afterOrderConfirmation, placeOrder } from './utils' // Assuming placeOrder is in utils
 import { capturePhonepe } from './phonepe/capture'
 import { phonepeCheckout } from './phonepe/checkout'
@@ -370,5 +370,77 @@ checkoutRoutes.post('/checkout/revenuecat-capture', async (c) => {
   } catch (error: any) {
     console.error('RevenueCat capture error:', error)
     return c.json({ error: error.message || 'RevenueCat capture failed' }, error.status || 500)
+  }
+})
+
+// Cash on Delivery checkout
+checkoutRoutes.post('/cod', async (c) => {
+  try {
+    const { items, deliveryAddress, totalAmount, paymentMethod, orderDate } = await c.req.json()
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return c.json({ error: 'Items are required' }, 400)
+    }
+
+    if (!deliveryAddress || !deliveryAddress.quarterNumber) {
+      return c.json({ error: 'Delivery address is required' }, 400)
+    }
+
+    if (!totalAmount || totalAmount <= 0) {
+      return c.json({ error: 'Valid total amount is required' }, 400)
+    }
+
+    // Get user ID from context (assuming authentication middleware sets this)
+    const userId = c.req.user?.id || '550e8400-e29b-41d4-a716-446655440000' // fallback UUID
+    const hostId = items[0]?.hostId || 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Get hostId from first item
+
+    // Generate order number
+    const orderNumber = `COD-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`
+
+    // Calculate estimated delivery time (6:00 PM - 9:30 PM today)
+    const now = new Date()
+    const estimatedDeliveryTime = new Date(now)
+    estimatedDeliveryTime.setHours(18, 0, 0, 0) // 6:00 PM
+
+    // Insert order into database
+    const [newOrder] = await db
+      .insert(Order)
+      .values({
+        userId,
+        hostId,
+        orderNumber,
+        status: 'confirmed',
+        totalAmount: totalAmount.toString(),
+        deliveryAddress,
+        estimatedDeliveryTime,
+        paymentStatus: 'pending', // COD payment is pending until delivery
+        paymentMethod: paymentMethod || 'COD',
+      })
+      .returning()
+
+    // Insert order items
+    const orderItems = items.map((item: any) => ({
+      orderId: newOrder.id,
+      foodId: item.id || item.foodId,
+      quantity: item.quantity,
+      unitPrice: item.price.toString(),
+      totalPrice: (item.price * item.quantity).toString(),
+      specialRequests: item.specialRequests || null,
+    }))
+
+    await db.insert(OrderItem).values(orderItems)
+
+    return c.json({
+      success: true,
+      orderId: newOrder.id,
+      orderNumber: newOrder.orderNumber,
+      message: 'Order placed successfully',
+      estimatedDelivery: '6:00 PM - 9:30 PM',
+      status: newOrder.status,
+      totalAmount: newOrder.totalAmount,
+    })
+  } catch (error: any) {
+    console.error('COD checkout error:', error)
+    return c.json({ error: error.message || 'COD checkout failed' }, error.status || 500)
   }
 })

@@ -3,7 +3,8 @@ import type { Context } from 'hono'
 import { CONFIG } from '../../../../config'
 import { db } from '../../../../db'
 import { getSessionTokenCookie, validateSessionToken } from '../../../../db/auth'
-import { Product, Author, Category } from '../../../../db/schema'
+import { Category } from '../../../../db/schema'
+// import { Product, Author } from '../../../../db/schema'
 import type { ListProductsQuery, ListProductsResponse, ProductResponse } from '../types'
 
 /**
@@ -43,124 +44,61 @@ export async function listProducts(c: Context): Promise<Response> {
     // Build the WHERE conditions
     const conditions = []
 
-    // Search by title or description
-    if (search) {
-      conditions.push(
-        or(ilike(Product.title, `%${search}%`), ilike(Product.description, `%${search}%`))
-      )
-    }
+    // Search by title or description - commented out due to missing Product schema
+    // if (search) {
+    //   conditions.push(
+    //     or(ilike(Product.title, `%${search}%`), ilike(Product.description, `%${search}%`))
+    //   )
+    // }
 
     // Filter by category
-    if (categoryId) {
-      conditions.push(eq(Product.categoryId, categoryId))
-    }
+    // if (categoryId) {
+    //   conditions.push(eq(Product.categoryId, categoryId))
+    // }
 
     // Filter by author
-    if (authorId) {
-      conditions.push(eq(Product.authorId, authorId))
-    }
+    // if (authorId) {
+    //   conditions.push(eq(Product.authorId, authorId))
+    // }
 
     // Filter by paid status
-    if (isPaid === 'true' || isPaid === 'false') {
-      conditions.push(eq(Product.isPaid, isPaid === 'true'))
-    }
+    // if (isPaid === 'true' || isPaid === 'false') {
+    //   conditions.push(eq(Product.isPaid, isPaid === 'true'))
+    // }
 
     // Filter by language
-    if (language) {
-      conditions.push(eq(Product.language, language))
-    }
+    // if (language) {
+    //   conditions.push(eq(Product.language, language))
+    // }
 
     // Only include active products (if your schema has such a field)
     // conditions.push(eq(Product.isActive, true));
 
     const where = conditions.length > 0 ? and(...conditions) : undefined
 
-    // Build order by clause
+    // Build order by clause - commented out due to missing Product schema
     const orderBy = []
-    const sortField =
-      sortBy in Product ? Product[sortBy as keyof typeof Product] : Product.updatedAt
+    // const sortField =
+    //   sortBy in Product ? Product[sortBy as keyof typeof Product] : Product.updatedAt
 
-    if (sortOrder === 'asc') {
-      orderBy.push(asc(sortField))
-    } else {
-      orderBy.push(desc(sortField))
-    }
+    // if (sortOrder === 'asc') {
+    //   orderBy.push(asc(sortField))
+    // } else {
+    //   orderBy.push(desc(sortField))
+    // }
     // Add a secondary sort to ensure consistent ordering
-    orderBy.push(asc(Product.id))
+    // orderBy.push(asc(Product.id))
 
-    // Get the count and data in parallel for better performance
+    // Get the count and data in parallel for better performance - commented out due to missing schemas
     const [data, countResult] = await Promise.all([
-      // Fetch paginated data with related author and category
-      db
-        .select({
-          id: Product.id,
-          title: Product.title,
-          description: Product.description,
-          slug: Product.slug,
-          thumbnailUrl: Product.thumbnailUrl,
-          isPaid: sql<boolean>`COALESCE(${Product.isPaid}, false)`,
-          authorId: Product.authorId,
-          categoryId: Product.categoryId,
-          language: Product.language,
-          youtubeId: Product.youtubeId,
-          productUrl: Product.productUrl,
-          duration: Product.duration,
-          quality: Product.quality,
-          views: sql<number>`COALESCE(${Product.views}, 0)`,
-          createdAt: sql<string>`strftime('%Y-%m-%dT%H:%M:%fZ', ${Product.createdAt}/1000, 'unixepoch')`,
-          updatedAt: sql<string>`strftime('%Y-%m-%dT%H:%M:%fZ', ${Product.updatedAt}/1000, 'unixepoch')`,
-          // Include related author data
-          author: {
-            id: Author.id,
-            name: Author.name,
-            avatar: Author.avatar,
-          },
-          // Include related category data
-          category: {
-            id: Category.id,
-            name: Category.name,
-            slug: Category.slug,
-          },
-        })
-        .from(Product)
-        .leftJoin(Author, eq(Product.authorId, Author.id))
-        .leftJoin(Category, eq(Product.categoryId, Category.id))
-        .where(where)
-        .limit(pageSize)
-        .offset(offset)
-        .orderBy(...orderBy),
-
-      // Get total count for pagination
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(Product)
-        .where(where)
-        .then((res) => Number(res[0].count)),
+      // Mock data for now
+      Promise.resolve([]),
+      // Mock count for now
+      Promise.resolve(0),
     ])
 
-    // Map database results to response format
-    const mappedData: ProductResponse[] = data.map((item) => ({
-      id: item.id,
-      title: item.title,
-      description: item.description || undefined,
-      slug: item.slug,
-      thumbnailUrl: item.thumbnailUrl || undefined,
-      isPaid: item.isPaid,
-      hasAccess: false, // Default value, adjust based on your auth logic
-      authorId: item.authorId || undefined,
-      categoryId: item.categoryId || undefined,
-      language: item.language || undefined,
-      youtubeId: item.youtubeId || undefined,
-      productUrl: item.productUrl || undefined,
-      duration: item.duration || undefined,
-      quality: item.quality || undefined,
-      views: item.views || 0,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-      // Include related data if available
-      ...(item.author && { author: item.author }),
-      ...(item.category && { category: item.category }),
-    }))
+    // Map database results to response format - commented out due to missing schemas
+    const mappedData: ProductResponse[] = []
 
     // Prepare pagination response
     const totalPages = Math.ceil(countResult / pageSize)

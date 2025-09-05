@@ -1,5 +1,5 @@
 import { db } from '.'
-import { Category, User, HostProfile, Vendor } from './schema'
+import { Category, User, Vendor } from './schema'
 
 // Helper function to generate unique IDs
 const generateId = () => crypto.randomUUID()
@@ -48,7 +48,7 @@ async function seedFoodCategories() {
 // Seed a test host user
 async function seedTestHost() {
   const testUserData = {
-    id: 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b', // Use the same ID as in hooks.server.ts
+    id: 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec', // Use the same ID as in hooks.server.ts
     name: 'Test User',
     email: 'test@example.com',
     phone: '+918249028220', // Use the requested phone number
@@ -56,7 +56,7 @@ async function seedTestHost() {
     role: 'buyer' as const,
   }
 
-  const testHostProfileData = {
+  const testVendorData = {
     userId: testUserData.id,
     bio: 'Test host for food ordering system',
     location: 'Test City',
@@ -71,10 +71,10 @@ async function seedTestHost() {
     console.log('Test user inserted.')
 
     // Insert host profile
-    const insertedHostProfile = await db.insert(HostProfile).values(testHostProfileData).returning()
+    const insertedVendor = await db.insert(Vendor).values(testVendorData).returning()
     console.log('Test host profile inserted.')
 
-    return { user: insertedUser[0], hostProfile: insertedHostProfile[0] }
+    return { user: insertedUser[0], hostProfile: insertedVendor[0] }
   } catch (error) {
     console.error('Error seeding test host:', error)
     return null

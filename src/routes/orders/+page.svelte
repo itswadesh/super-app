@@ -4,17 +4,41 @@ import { Button } from '$lib/components/ui/button'
 import { Badge } from '$lib/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs'
 import { Clock, MapPin, Phone, Star, RefreshCw } from '@lucide/svelte'
-import type { PageData } from './$types'
 
-interface Props {
-  data: PageData
+// Fetch data from Hono API
+let orders = $state([])
+let stats = $state({
+  totalOrders: 0,
+  deliveredOrders: 0,
+  inProgressOrders: 0,
+  totalSpent: 0,
+})
+let loading = $state(true)
+let error = $state(null)
+
+async function fetchOrders() {
+  try {
+    loading = true
+    error = null
+    const response = await fetch('/api/orders/user-orders')
+    if (!response.ok) {
+      throw new Error('Failed to fetch orders')
+    }
+    const data = await response.json()
+    orders = data.orders
+    stats = data.stats
+  } catch (err) {
+    error = err.message
+    console.error('Error fetching orders:', err)
+  } finally {
+    loading = false
+  }
 }
 
-let { data }: Props = $props()
-
-// Use real data from server
-let orders = $state(data.orders)
-let stats = $state(data.stats)
+// Fetch orders on component mount
+$effect(() => {
+  fetchOrders()
+})
 
 let activeTab = $state('all')
 
@@ -54,6 +78,28 @@ function filteredOrders() {
       <h1 class="text-2xl font-bold text-gray-900">My Orders</h1>
       <p class="text-gray-600">Track your food orders and order history</p>
     </div>
+
+    {#if loading}
+      <div class="text-center py-12">
+        <div class="text-gray-400 mb-4">
+          <svg class="w-16 h-16 mx-auto animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </div>
+        <p class="text-gray-500">Loading your orders...</p>
+      </div>
+    {:else if error}
+      <div class="text-center py-12">
+        <div class="text-red-400 mb-4">
+          <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Error loading orders</h3>
+        <p class="text-gray-500 mb-4">{error}</p>
+        <Button on:click={fetchOrders}>Try Again</Button>
+      </div>
+    {:else}
 
     <!-- Order Stats -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -221,5 +267,6 @@ function filteredOrders() {
         {/each}
       </TabsContent>
     </Tabs>
+    {/if}
   </div>
 </div>

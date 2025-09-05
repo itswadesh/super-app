@@ -9,22 +9,20 @@ import type { Handle } from '@sveltejs/kit'
  * Combined handler for authentication and Cloudflare caching
  */
 export const handle: Handle = async ({ event, resolve }) => {
-  if (!event.url.pathname.startsWith('/api/')) {
-    // Mock user for testing - user with phone number +918249028220
-    const mockUser = {
-      id: 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b',
-      name: 'Test User',
-      email: 'test@example.com',
-      phone: '+918249028220',
-      role: 'buyer',
-    }
+  // Mock user for testing - user with phone number +918249028220
+  const mockUser = {
+    id: 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec',
+    name: 'Test User',
+    email: 'test@example.com',
+    phone: '+918249028220',
+    role: 'buyer',
+  }
 
-    event.locals.user = mockUser
-    event.locals.session = {
-      id: 'mock-session',
-      userId: mockUser.id,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    }
+  event.locals.user = mockUser
+  event.locals.session = {
+    id: 'mock-session',
+    userId: mockUser.id,
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   }
 
   // ------------- Response & Caching Handling -------------

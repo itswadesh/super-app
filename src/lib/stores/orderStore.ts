@@ -15,7 +15,7 @@ export const orderStore = (() => {
     async createOrder(items: OrderItem[]) {
       update((s) => ({ ...s, isLoading: true, error: null }))
       try {
-        const response = await fetch('/api/orders', {
+        const response = await fetch('/api/checkout/cod', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items }),

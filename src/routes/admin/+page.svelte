@@ -1,78 +1,78 @@
 <script lang="ts">
-  import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card'
-  import { Button } from '$lib/components/ui/button'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs'
-  import { CheckCircle, XCircle, Clock, Users, ChefHat, FileText } from '@lucide/svelte'
-  import { onMount } from 'svelte'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/components/ui/card'
+import { Button } from '$lib/components/ui/button'
+import { Badge } from '$lib/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs'
+import { CheckCircle, XCircle, Clock, Users, ChefHat, FileText } from '@lucide/svelte'
+import { onMount } from 'svelte'
 
-  let applications = $state([])
-  let isLoading = $state(true)
+let applications = $state<any[]>([])
+let isLoading = $state(true)
 
-  // Mock data for demonstration
-  const mockApplications = [
-    {
-      id: '1',
-      fullName: 'Priya Sharma',
-      email: 'priya@example.com',
-      phone: '+91 9876543210',
-      experience: '5 years',
-      specializations: ['North Indian', 'South Indian'],
-      address: '123 Main St, Bangalore',
-      status: 'pending',
-      createdAt: '2024-01-15T10:00:00Z',
-      documents: {
-        businessLicense: '/api/placeholder/300/200',
-        foodSafetyCertificate: '/api/placeholder/300/200',
-        idProof: '/api/placeholder/300/200',
-      }
+// Mock data for demonstration
+const mockApplications = [
+  {
+    id: '1',
+    fullName: 'Priya Sharma',
+    email: 'priya@example.com',
+    phone: '+91 9876543210',
+    experience: '5 years',
+    specializations: ['North Indian', 'South Indian'],
+    address: '123 Main St, Bangalore',
+    status: 'pending',
+    createdAt: '2024-01-15T10:00:00Z',
+    documents: {
+      businessLicense: '/api/placeholder/300/200',
+      foodSafetyCertificate: '/api/placeholder/300/200',
+      idProof: '/api/placeholder/300/200',
     },
-    {
-      id: '2',
-      fullName: 'Maria Rossi',
-      email: 'maria@example.com',
-      phone: '+91 9876543211',
-      experience: '3 years',
-      specializations: ['Italian', 'Desserts'],
-      address: '456 Oak Ave, Bangalore',
-      status: 'pending',
-      createdAt: '2024-01-16T14:30:00Z',
-      documents: {
-        businessLicense: '/api/placeholder/300/200',
-        foodSafetyCertificate: null,
-        idProof: '/api/placeholder/300/200',
-      }
-    }
-  ]
+  },
+  {
+    id: '2',
+    fullName: 'Maria Rossi',
+    email: 'maria@example.com',
+    phone: '+91 9876543211',
+    experience: '3 years',
+    specializations: ['Italian', 'Desserts'],
+    address: '456 Oak Ave, Bangalore',
+    status: 'pending',
+    createdAt: '2024-01-16T14:30:00Z',
+    documents: {
+      businessLicense: '/api/placeholder/300/200',
+      foodSafetyCertificate: null,
+      idProof: '/api/placeholder/300/200',
+    },
+  },
+]
 
-  onMount(() => {
-    // Simulate loading applications
-    setTimeout(() => {
-      applications = mockApplications
-      isLoading = false
-    }, 1000)
-  })
+onMount(() => {
+  // Simulate loading applications
+  setTimeout(() => {
+    applications = mockApplications
+    isLoading = false
+  }, 1000)
+})
 
-  function getStatusColor(status: string) {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'approved': return 'bg-green-100 text-green-800'
-      case 'rejected': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
+function getStatusColor(status: string) {
+  switch (status) {
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800'
+    case 'approved':
+      return 'bg-green-100 text-green-800'
+    case 'rejected':
+      return 'bg-red-100 text-red-800'
+    default:
+      return 'bg-gray-100 text-gray-800'
   }
+}
 
-  function approveApplication(id: string) {
-    applications = applications.map(app =>
-      app.id === id ? { ...app, status: 'approved' } : app
-    )
-  }
+function approveApplication(id: string) {
+  applications = applications.map((app) => (app.id === id ? { ...app, status: 'approved' } : app))
+}
 
-  function rejectApplication(id: string) {
-    applications = applications.map(app =>
-      app.id === id ? { ...app, status: 'rejected' } : app
-    )
-  }
+function rejectApplication(id: string) {
+  applications = applications.map((app) => (app.id === id ? { ...app, status: 'rejected' } : app))
+}
 </script>
 
 <svelte:head>
@@ -259,7 +259,7 @@
                     </div>
                   {:else}
                     <div class="pt-4 border-t">
-                      <Badge class={getStatusColor(application.status)} class="w-full justify-center py-2">
+                      <Badge class="{getStatusColor(application.status)} w-full justify-center py-2">
                         {application.status === 'approved' ? 'Approved' : 'Rejected'}
                       </Badge>
                     </div>

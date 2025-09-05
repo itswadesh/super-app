@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { db } from '../../db'
-import { User, HostProfile } from '../../db/schema'
+import { User, Vendor } from '../../db/schema'
 
 export const routes = new Hono()
 
@@ -50,7 +50,7 @@ export const signupHost = async (data: {
     isActive: true,
   }
 
-  await db.insert(HostProfile).values(hostProfileData)
+  await db.insert(Vendor).values(hostProfileData)
 
   return {
     success: true,

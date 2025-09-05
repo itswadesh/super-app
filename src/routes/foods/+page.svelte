@@ -31,25 +31,102 @@ interface Props {
 
 let { data }: Props = $props()
 
-// Client-side reactive state initialized with server data
-let foods = $state(data.foods || [])
-let categories = $state(data.categories || [])
-let total = $state(data.total || 0)
-let currentPage = $state(data.currentPage || 1)
-let pageSize = $state(data.pageSize || 20)
-let searchQuery = $state(data.searchQuery || '')
-let selectedCategory = $state(data.selectedCategory || 'all')
-let selectedVegetarian = $state(data.selectedVegetarian)
-let error = $state(data.error || null)
+// Client-side reactive state
+let foods = $state([])
+let categories = $state([])
+let total = $state(0)
+let currentPage = $state(data?.initialPage || 1)
+let pageSize = $state(20)
+let searchQuery = $state(data?.initialSearchQuery || '')
+let selectedCategory = $state(data?.initialCategory || 'all')
+let selectedVegetarian = $state(
+  data?.initialVegetarian ? data.initialVegetarian === 'true' : undefined
+)
+let error = $state<string | null>(null)
 
-// Loading state to handle navigation timing issues
+// Loading state
 let isLoading = $state(true)
 let hasDataLoaded = $state(false)
 
-// Local state for form inputs - initialize from server data
-let localSearchQuery = $state(data.searchQuery || '')
-let localSelectedCategory = $state(data.selectedCategory || 'all')
-let localSelectedVegetarian = $state<boolean | undefined>(data.selectedVegetarian)
+// API functions
+async function fetchFoods(params: {
+  search?: string
+  category?: string
+  vegetarian?: string
+  page?: number
+  limit?: number
+}) {
+  try {
+    const searchParams = new URLSearchParams()
+
+    if (params.search) searchParams.set('search', params.search)
+    if (params.category && params.category !== 'all') searchParams.set('category', params.category)
+    if (params.vegetarian) searchParams.set('vegetarian', params.vegetarian)
+    if (params.page) searchParams.set('page', params.page.toString())
+    if (params.limit) searchParams.set('limit', params.limit.toString())
+
+    const response = await fetch(`/api/foods?${searchParams}`)
+    if (!response.ok) throw new Error('Failed to fetch foods')
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching foods:', error)
+    throw error
+  }
+}
+
+async function fetchCategories() {
+  try {
+    const response = await fetch('/api/foods/categories')
+    if (!response.ok) throw new Error('Failed to fetch categories')
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    throw error
+  }
+}
+
+async function loadData() {
+  try {
+    isLoading = true
+    error = null
+
+    // Fetch categories and foods in parallel
+    const [categoriesData, foodsData] = await Promise.all([
+      fetchCategories(),
+      fetchFoods({
+        search: searchQuery,
+        category: selectedCategory,
+        vegetarian: selectedVegetarian?.toString(),
+        page: currentPage,
+        limit: pageSize,
+      }),
+    ])
+
+    categories = categoriesData
+    foods = foodsData.foods || []
+    total = foodsData.total || 0
+    currentPage = foodsData.page || 1
+    pageSize = foodsData.pageSize || 20
+
+    hasDataLoaded = true
+  } catch (err) {
+    error = err instanceof Error ? err.message : 'Failed to load data'
+    foods = []
+    categories = []
+    total = 0
+  } finally {
+    isLoading = false
+  }
+}
+
+// Local state for form inputs
+let localSearchQuery = $state(data?.initialSearchQuery || '')
+let localSelectedCategory = $state(data?.initialCategory || 'all')
+let localSelectedVegetarian = $state<boolean | undefined>(
+  data?.initialVegetarian ? data.initialVegetarian === 'true' : undefined
+)
 
 // Track if we're currently typing to prevent focus loss
 let isTyping = $state(false)
@@ -77,63 +154,31 @@ let orderResult = $state<{ orderId?: string; estimatedDelivery?: string; message
   null
 )
 
-// Update state when server data changes - ensure this runs after component mount
+// Load data on mount
+onMount(async () => {
+  await loadData()
+})
+
+// Update search/filter state when URL changes
 $effect(() => {
-  // Debug logging to understand data flow
-  console.log('Data effect triggered:', {
-    hasFoods: !!data.foods,
-    foodsLength: data.foods?.length,
-    hasCategories: !!data.categories,
-    categoriesLength: data.categories?.length,
-    total: data.total,
-    currentPage: data.currentPage,
-    searchQuery: data.searchQuery,
-    selectedCategory: data.selectedCategory,
-  })
+  const url = new URL(window.location.href)
+  const newSearchQuery = url.searchParams.get('q') || ''
+  const newCategory = url.searchParams.get('category') || 'all'
+  const newVegetarian = url.searchParams.get('vegetarian')
+  const newPage = parseInt(url.searchParams.get('page') || '1', 10)
 
-  // Update foods if data is available and different
-  if (data.foods && Array.isArray(data.foods)) {
-    foods = data.foods
-  }
-
-  // Update categories if data is available and different
-  if (data.categories && Array.isArray(data.categories)) {
-    categories = data.categories
-  }
-
-  // Update other data fields
-  if (data.total !== undefined) {
-    total = data.total
-  }
-  if (data.currentPage !== undefined) {
-    currentPage = data.currentPage
-  }
-  if (data.pageSize !== undefined) {
-    pageSize = data.pageSize
-  }
-  if (data.searchQuery !== undefined) {
-    searchQuery = data.searchQuery
-  }
-  if (data.selectedCategory !== undefined) {
-    selectedCategory = data.selectedCategory
-  }
-  if (data.selectedVegetarian !== undefined) {
-    selectedVegetarian = data.selectedVegetarian
-  }
-  if (data.error !== undefined) {
-    error = data.error
-  }
-
-  // Mark data as loaded once we have the essential data
-  // Check if data is actually loaded (not just defined but populated)
-  if (data.foods !== undefined && data.categories !== undefined && !hasDataLoaded) {
-    hasDataLoaded = true
-    isLoading = false
-    console.log('Data loading completed:', {
-      foodsCount: Array.isArray(data.foods) ? data.foods.length : 0,
-      categoriesCount: Array.isArray(data.categories) ? data.categories.length : 0,
-      hasError: !!data.error,
-    })
+  // Only reload if filters have changed
+  if (
+    newSearchQuery !== searchQuery ||
+    newCategory !== selectedCategory ||
+    newVegetarian !== (selectedVegetarian?.toString() || undefined) ||
+    newPage !== currentPage
+  ) {
+    searchQuery = newSearchQuery
+    selectedCategory = newCategory
+    selectedVegetarian = newVegetarian ? newVegetarian === 'true' : undefined
+    currentPage = newPage
+    loadData()
   }
 })
 
@@ -159,27 +204,6 @@ $effect(() => {
   if (savedQuarterNumber && !quarterNumber) {
     quarterNumber = savedQuarterNumber
   }
-})
-
-// Fallback mechanism to ensure data loads properly
-onMount(() => {
-  console.log('Component mounted, checking data loading status')
-
-  // Check if data is already available on mount
-  if (data.foods !== undefined && data.categories !== undefined && !hasDataLoaded) {
-    console.log('Data already available on mount, setting loaded state')
-    hasDataLoaded = true
-    isLoading = false
-  }
-
-  // If data hasn't loaded after a short delay, force a reload
-  setTimeout(() => {
-    if (isLoading && !hasDataLoaded) {
-      console.log('Data not loaded after timeout, forcing reload')
-      // Force a page reload to ensure server data is loaded
-      window.location.reload()
-    }
-  }, 2000) // Wait 2 seconds before forcing reload
 })
 
 // Cleanup timeouts on component destroy
@@ -208,7 +232,9 @@ function updateSearch() {
   isTyping = true
 
   searchTimeout = setTimeout(() => {
-    updateFilters({ q: localSearchQuery || undefined })
+    searchQuery = localSearchQuery
+    currentPage = 1 // Reset to first page when searching
+    loadData()
     // Stop typing after search completes
     typingTimeout = setTimeout(() => {
       isTyping = false
@@ -241,48 +267,35 @@ function handleSearchBlur() {
   if (!isTyping) {
     clearTimeout(searchTimeout)
     if (localSearchQuery !== (searchQuery || '')) {
-      updateFilters({ q: localSearchQuery || undefined })
+      searchQuery = localSearchQuery
+      currentPage = 1 // Reset to first page when searching
+      loadData()
     }
   }
   isTyping = false
 }
 
-// Update URL with new filters
-function updateFilters(newFilters: Record<string, string | undefined>) {
-  const params = new URLSearchParams($page.url.searchParams)
-
-  Object.entries(newFilters).forEach(([key, value]) => {
-    if (value && value !== 'all') {
-      params.set(key, value)
-    } else {
-      params.delete(key)
-    }
-  })
-
-  // Reset to page 1 when filters change
-  if (Object.keys(newFilters).some((key) => key !== 'page')) {
-    params.delete('page')
-  }
-
-  goto(`?${params}`, { replaceState: true })
-}
-
 // Handle category change
 function handleCategoryChange(value: string) {
   localSelectedCategory = value
-  updateFilters({ category: value === 'all' ? undefined : value })
+  selectedCategory = value
+  currentPage = 1 // Reset to first page when filtering
+  loadData()
 }
 
 // Handle vegetarian filter
 function handleVegetarianChange(value: string) {
   const vegetarian = value === 'true' ? true : value === 'false' ? false : undefined
   localSelectedVegetarian = vegetarian
-  updateFilters({ vegetarian: vegetarian === undefined ? undefined : vegetarian.toString() })
+  selectedVegetarian = vegetarian
+  currentPage = 1 // Reset to first page when filtering
+  loadData()
 }
 
 // Pagination
 function goToPage(page: number) {
-  updateFilters({ page: page.toString() })
+  currentPage = page
+  loadData()
 }
 
 let totalPages = $derived(Math.ceil(total / pageSize))
@@ -290,15 +303,17 @@ let hasNextPage = $derived(currentPage < totalPages)
 let hasPrevPage = $derived(currentPage > 1)
 
 // Cart derived state
-let totalCartItems = $derived(Object.values(cart).reduce((sum, qty) => sum + qty, 0))
-let hasItemsInCart = $derived(Object.keys(cart).length > 0)
+let totalCartItems = $derived(cart ? Object.values(cart).reduce((sum, qty) => sum + qty, 0) : 0)
+let hasItemsInCart = $derived(cart ? Object.keys(cart).length > 0 : false)
 let cartItems = $derived(
-  Object.entries(cart)
-    .map(([foodId, quantity]) => {
-      const food = foods.find((f: any) => f.id === foodId)
-      return food ? { ...food, quantity } : null
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null)
+  cart
+    ? Object.entries(cart)
+        .map(([foodId, quantity]) => {
+          const food = foods.find((f: any) => f.id === foodId)
+          return food ? { ...food, quantity } : null
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+    : []
 )
 
 // Cart functions
@@ -356,7 +371,7 @@ async function placeOrder() {
     // Make API call to place order
     let result
     try {
-      const response = await fetch('/api/orders', {
+      const response = await fetch('/api/checkout/cod', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -782,7 +797,11 @@ function proceedToPayment() {
             localSearchQuery = ''
             localSelectedCategory = 'all'
             localSelectedVegetarian = undefined
-            updateFilters({ q: undefined, category: undefined, vegetarian: undefined })
+            searchQuery = ''
+            selectedCategory = 'all'
+            selectedVegetarian = undefined
+            currentPage = 1
+            loadData()
           }}
         >
           Clear all filters

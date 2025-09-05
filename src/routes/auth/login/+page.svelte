@@ -59,6 +59,14 @@ async function sendOTP() {
   isLoading = true
 
   try {
+    // Special handling for mock login phone number
+    if (phoneNumber === '8249028220') {
+      // For mock login, skip OTP and go directly to verification
+      showOtpVerification = true
+      isLoading = false
+      return
+    }
+
     // In a real application, you would call an API to send OTP
     // For demo purposes, we're simulating an API call
     await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -114,6 +122,27 @@ function handleKeyDown(index: number, event: KeyboardEvent) {
 
 // Verify entered OTP
 async function verifyOTP() {
+  // Special handling for mock login
+  if (phoneNumber === '8249028220') {
+    isLoading = true
+    try {
+      // For mock login, use any OTP or empty OTP
+      const result = await authService.verifyOtp(`+91${phoneNumber}`, '0000')
+
+      if (result.success) {
+        goto(redirectUrl)
+      } else {
+        otpError = result.message
+      }
+    } catch (error) {
+      console.error('Error with mock login:', error)
+      otpError = 'Mock login failed. Please try again.'
+    } finally {
+      isLoading = false
+    }
+    return
+  }
+
   // Check if all OTP digits are provided
   if (otp.some((digit) => digit === '')) {
     otpError = 'Please enter the complete 4-digit OTP'
@@ -127,7 +156,7 @@ async function verifyOTP() {
     // In a real app, you would validate this against an API
     const enteredOtp = otp.join('')
     // Use auth service to verify OTP
-    const result = await authService.verifyOtp(phoneNumber, enteredOtp)
+    const result = await authService.verifyOtp(`+91${phoneNumber}`, enteredOtp)
 
     if (result.success) {
       // OTP validation successful - redirect user
@@ -215,7 +244,7 @@ async function resendOTP() {
                 id="phone"
                 class="pl-12 w-full"
                 placeholder="10-digit mobile number"
-                maxlength="{10}"
+                maxlength={10}
                 bind:value={phoneNumber}
                 oninput={validatePhoneNumber}
               />
@@ -265,24 +294,40 @@ async function resendOTP() {
         <!-- OTP Verification Form -->
         <div>
           <p class="text-sm text-gray-600 mb-4">
-            We've sent a 4-digit OTP to your phone number
-            <span class="font-semibold">+91 {phoneNumber}</span>
+            {#if phoneNumber === '8249028220'}
+              <span class="text-green-600 font-semibold">Mock login detected!</span> No OTP required for +91 {phoneNumber}
+            {:else}
+              We've sent a 4-digit OTP to your phone number
+              <span class="font-semibold">+91 {phoneNumber}</span>
+            {/if}
           </p>
           
-          <label for="otp-0" class="block text-sm font-medium text-gray-700">Enter 4-digit OTP</label>
-          <div class="mt-1 flex justify-center space-x-3">
-            {#each Array(4) as _, i}
-              <input
-                id={`otp-${i}`}
-                type="text"
-                maxlength="1"
-                class="block w-12 h-12 text-center text-xl focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md"
-                value={otp[i]}
-                oninput={(e) => handleOtpChange(i, e)}
-                onkeydown={(e) => handleKeyDown(i, e)}
-              />
-            {/each}
-          </div>
+          {#if phoneNumber !== '8249028220'}
+            <label for="otp-0" class="block text-sm font-medium text-gray-700">Enter 4-digit OTP</label>
+            <div class="mt-1 flex justify-center space-x-3">
+              {#each Array(4) as _, i}
+                <input
+                  id={`otp-${i}`}
+                  type="text"
+                  maxlength="1"
+                  class="block w-12 h-12 text-center text-xl focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md"
+                  value={otp[i]}
+                  oninput={(e) => handleOtpChange(i, e)}
+                  onkeydown={(e) => handleKeyDown(i, e)}
+                />
+              {/each}
+            </div>
+          {:else}
+            <div class="mt-1 flex justify-center">
+              <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                <svg class="w-8 h-8 text-green-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <p class="text-sm text-green-800 font-medium">Mock Login Ready</p>
+                <p class="text-xs text-green-600 mt-1">Click verify to login instantly</p>
+              </div>
+            </div>
+          {/if}
           {#if otpError}
             <p class="mt-2 text-sm text-red-600">{otpError}</p>
           {/if}
@@ -325,11 +370,30 @@ async function resendOTP() {
             </button>
           </div>
 
-          <div class="mt-6 text-center">
-            <p class="text-xs text-gray-500">
-              For this demo, the OTP is <span class="font-semibold">1234</span>
-            </p>
-          </div>
+          {#if phoneNumber !== '8249028220'}
+            {#if phoneNumber !== '8249028220'}
+              <div class="mt-6 text-center">
+                <p class="text-xs text-gray-500">
+                  For this demo, the OTP is <span class="font-semibold">1234</span>
+                </p>
+                <p class="text-xs text-blue-600 mt-1">
+                  💡 In development: Use OTP <span class="font-semibold">0000</span> for instant login
+                </p>
+              </div>
+            {:else}
+              <div class="mt-6 text-center">
+                <p class="text-xs text-green-600">
+                  🎉 Mock login enabled for this number - no OTP required!
+                </p>
+              </div>
+            {/if}
+          {:else}
+            <div class="mt-6 text-center">
+              <p class="text-xs text-green-600">
+                🎉 Mock login enabled for this number - no OTP required!
+              </p>
+            </div>
+          {/if}
         </div>
       {/if}
     </div>

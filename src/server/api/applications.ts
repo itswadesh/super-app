@@ -16,7 +16,7 @@ routes.post('/', async (c) => {
     }
 
     // TODO: Get actual user ID from authentication
-    const userId = 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b' // Test user ID
+    const userId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Test user ID
 
     // Check if user already has a pending or approved application
     const existingApplication = await db
@@ -60,7 +60,7 @@ routes.post('/', async (c) => {
 routes.get('/status', async (c) => {
   try {
     // TODO: Get actual user ID from authentication
-    const userId = 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b' // Test user ID
+    const userId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Test user ID
 
     const application = await db.select().from(Vendor).where(eq(Vendor.userId, userId)).limit(1)
 

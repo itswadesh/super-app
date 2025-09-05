@@ -83,10 +83,10 @@ onMount(() => {
 async function fetchHostData() {
   try {
     isLoading = true
-    const hostId = 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b' // Test host ID from seeded data
+    const hostId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Test host ID from seeded data
 
     // Fetch foods
-    const foodsResponse = await fetch(`/api/foods/host/${hostId}`)
+    const foodsResponse = await fetch(`/api/foods/my`)
     if (foodsResponse.ok) {
       const foodsData = await foodsResponse.json()
       myFoods = foodsData.map((food: any) => ({
@@ -136,10 +136,10 @@ async function fetchHostData() {
 async function fetchOrdersData() {
   try {
     isLoading = true
-    const hostId = 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b' // Test host ID from seeded data
+    const hostId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Test host ID from seeded data
 
     // Fetch orders
-    const ordersResponse = await fetch(`/api/orders/host/${hostId}`)
+    const ordersResponse = await fetch(`/api/orders/my`)
     if (ordersResponse.ok) {
       recentOrders = await ordersResponse.json()
     }
@@ -170,10 +170,10 @@ async function fetchOrdersData() {
 async function fetchAnalyticsData() {
   try {
     isLoading = true
-    const hostId = 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b' // Test host ID from seeded data
+    const hostId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Test host ID from seeded data
 
     // Fetch analytics/stats
-    const analyticsResponse = await fetch(`/api/orders/host/${hostId}/analytics`)
+    const analyticsResponse = await fetch(`/api/orders/my/analytics`)
     if (analyticsResponse.ok) {
       hostStats = await analyticsResponse.json()
     }
@@ -405,12 +405,6 @@ async function submitNewFood() {
     return
   }
 
-  if (!newFood.categoryId) {
-    submitError = 'Please select a category'
-    scrollToFieldAndFocus('food-category')
-    return
-  }
-
   isSubmitting = true
   submitError = ''
 
@@ -426,9 +420,6 @@ async function submitNewFood() {
   }
 
   try {
-    // TODO: Get actual host ID from authentication
-    const hostId = 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b' // Test host ID from seeded data
-
     // For now, we'll handle the image as a base64 string or URL
     // In a real implementation, you'd upload the file to a storage service first
     let imageUrl = '/api/placeholder/300/200' // Default placeholder
@@ -440,7 +431,6 @@ async function submitNewFood() {
     }
 
     const foodData = {
-      hostId,
       name: newFood.name.trim(),
       description: newFood.description.trim(),
       price: parseFloat(newFood.price),
@@ -526,12 +516,6 @@ async function submitEditFood() {
   if (!editingFood.price) {
     submitError = 'Please enter a price'
     scrollToFieldAndFocus('edit-food-price')
-    return
-  }
-
-  if (!editingFood.categoryId) {
-    submitError = 'Please select a category'
-    scrollToFieldAndFocus('edit-food-category')
     return
   }
 
@@ -1038,7 +1022,7 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                     </div>
                   </div>
                   <div class="flex space-x-2 mt-4">
-                    <Button size="sm" variant="outline">View Details</Button>
+                    <!-- <Button size="sm" variant="outline">View Details</Button> -->
                     {#if order.status === 'preparing'}
                       <Button size="sm">Mark as Ready</Button>
                     {:else if order.status === 'ready'}
@@ -1267,15 +1251,14 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
 
             <div>
               <label for="food-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Category *
+                Category
               </label>
               <select
                 id="food-category"
                 bind:value={newFood.categoryId}
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 outline-none"
-                required
               >
-                <option value="">Select a category</option>
+                <option value="">Select a category (optional)</option>
                 {#each categories as category}
                   <option value={category.slug}>{category.name}</option>
                 {/each}
@@ -1459,15 +1442,14 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
 
             <div>
               <label for="edit-food-category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Category *
+                Category
               </label>
               <select
                 id="edit-food-category"
                 bind:value={editingFood.categoryId}
                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 outline-none"
-                required
               >
-                <option value="">Select a category</option>
+                <option value="">Select a category (optional)</option>
                 {#each categories as category}
                   <option value={category.slug}>{category.name}</option>
                 {/each}

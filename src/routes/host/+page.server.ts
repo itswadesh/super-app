@@ -6,7 +6,7 @@ import type { PageServerLoad } from './$types'
 export const load: PageServerLoad = async ({ locals }) => {
   try {
     // TODO: Get actual host ID from authentication
-    const hostId = locals.user?.id || 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b' // Use authenticated user ID or test user ID
+    const hostId = locals.user?.id || 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Use authenticated user ID or test user ID
 
     if (!hostId) {
       return {
@@ -24,22 +24,18 @@ export const load: PageServerLoad = async ({ locals }) => {
     }
 
     // Check application status
-    let application = await db.select().from(Vendor).where(eq(Vendor.userId, hostId)).limit(1)
+    let application = await db.select().from(User).where(eq(User.id, hostId)).limit(1)
 
     // If no application exists for this test user, create one
-    if (application.length === 0 && hostId === 'a3bdbc50-a7cb-43bb-9ad5-469a5810788b') {
+    if (application.length === 0 && hostId === 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec') {
       console.log('Creating test application for user:', hostId)
       const testApplication = await db
-        .insert(Vendor)
-        .values({
-          userId: hostId,
-          fullName: 'Test Chef',
-          email: 'test@example.com',
-          phone: '+918249028220',
-          address: 'Test Address',
-          idProof: 'test-proof',
-          status: 'pending',
+        .update(User)
+        .set({
+          businessName: 'Test Chef',
+          status: 'applied',
         })
+        .where(eq(User.id, hostId))
         .returning()
       application = testApplication
     }
@@ -76,7 +72,7 @@ export const load: PageServerLoad = async ({ locals }) => {
       .from(Order)
       .leftJoin(OrderItem, eq(Order.id, OrderItem.orderId))
       .leftJoin(Food, eq(OrderItem.foodId, Food.id))
-      .leftJoin(User, eq(Order.buyerId, User.id))
+      .leftJoin(User, eq(Order.userId, User.id))
       .where(eq(Order.hostId, hostId))
       .orderBy(desc(Order.createdAt))
       .limit(10)
@@ -97,7 +93,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     // Transform orders for display
     const recentOrders = orders.map((order) => ({
       id: order.id,
-      customerName: order.buyerName || 'Unknown Customer',
+      customerName: order.buyerName || 'Unknown User',
       foodName: order.foodName || 'Unknown Food',
       quantity: order.quantity || 1,
       totalAmount: parseFloat(order.totalAmount),
