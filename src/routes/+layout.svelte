@@ -1,6 +1,6 @@
 <script lang="ts">
 import '../app.css'
-import { goto } from '$app/navigation'
+import { goto, invalidateAll } from '$app/navigation'
 import { page } from '$app/state'
 import { onMount } from 'svelte'
 // import { onMount, tick } from 'svelte'
@@ -44,13 +44,13 @@ $effect(() => {
 
 async function handleLogout() {
   try {
-    const result = await authService.logout();
-    console.log('Logout response:', result);
-    sheetOpen = false;
-    await invalidateAll();
-    goto('/');
+    const result = await authService.logout()
+    console.log('Logout response:', result)
+    sheetOpen = false
+    await invalidateAll()
+    goto('/')
   } catch (error) {
-    console.error('Error during logout:', error);
+    console.error('Error during logout:', error)
   }
 }
 
@@ -249,9 +249,9 @@ async function navigateWithSheetClose(path: string) {
         {#if page.data?.user?.id}
           <!-- User Profile Link -->
           <a 
-            href="/profile" 
+            href="/my/profile" 
             class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors"
-            onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/profile'); }}
+            onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/my/profile'); }}
           >
             My Profile
           </a>

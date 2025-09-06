@@ -115,18 +115,19 @@ const createSubscriptionStore = () => {
     ...(cachedState?.state || {}),
   })
 
-  // Update hasActiveSubscription whenever userSubscription changes
-  const store = derived<typeof subscribe, Omit<SubscriptionStore, 'isLoading' | 'error'>>(
-    subscribe,
-    ($store) => {
-      const { isLoading, error, ...rest } = $store
-      return {
-        ...rest,
-        hasActiveSubscription: isSubscriptionActive(rest.userSubscription),
-      }
-    }
-  )
+  const baseStore = writable<SubscriptionStore>({
+    ...initialState,
+    ...(cachedState?.state || {}),
+  })
 
+  // Update hasActiveSubscription whenever userSubscription changes
+  const store = derived(baseStore, ($store) => {
+    const { isLoading, error, ...rest } = $store
+    return {
+      ...rest,
+      hasActiveSubscription: isSubscriptionActive(rest.userSubscription),
+    }
+  })
   // Load subscription data from API
   const loadSubscription = async (user: User | null): Promise<void> => {
     if (!user?.id) {

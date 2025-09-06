@@ -46,7 +46,7 @@ const mainNavItems: NavItem[] = [
 ]
 
 const userNavItems: NavItem[] = [
-  { href: '/profile', label: 'Profile', icon: User, requiresAuth: true },
+  { href: '/my/profile', label: 'Profile', icon: User, requiresAuth: true },
   { href: '/my-quizzes', label: 'My Quizzes', icon: BookOpenCheck, requiresAuth: true },
   { href: '/user-preferences', label: 'Preferences', icon: Settings, requiresAuth: true },
   { href: '/subscription', label: 'Subscription', icon: CreditCard, requiresAuth: true },
