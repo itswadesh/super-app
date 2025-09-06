@@ -8,7 +8,7 @@ import { Session, User } from './schema'
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24
 
-export const sessionCookieName = 'auth-session'
+export const sessionCookieName = 'connect.sid'
 
 export function generateSessionToken() {
   const bytes = crypto.getRandomValues(new Uint8Array(18))
@@ -18,45 +18,73 @@ export function generateSessionToken() {
 
 export async function createSession(token: string, userId: string) {
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)))
+  // @ts-ignore
   const session: Session = {
     id: sessionId,
     userId,
-    expiresAt: new Date(Date.now() + DAY_IN_MS * 30),
+    token,
+    expiresAt: new Date(Date.now() + DAY_IN_MS * 30).toISOString(),
   }
   await db.insert(Session).values(session)
   return session
 }
 
 export async function validateSessionToken(token: string) {
-  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)))
-  const [result] = await db
-    .select({
-      // Adjusted user table to match the current schema with phone and role
-      user: { id: User.id, phone: User.phone, role: User.role },
-      session: Session,
-    })
-    .from(Session)
-    .innerJoin(User, eq(Session.userId, User.id))
-    .where(eq(Session.id, sessionId))
+  try {
+    const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)))
+    console.log('Validating session token:', { sessionId })
 
-  if (!result) {
+    const [result] = await db
+      .select({
+        user: {
+          id: User.id,
+          phone: User.phone,
+          role: User.role,
+          name: User.name,
+          board: User.board,
+          class: User.class,
+        },
+        session: Session,
+      })
+      .from(Session)
+      .innerJoin(User, eq(Session.userId, User.id))
+      .where(eq(Session.id, sessionId))
+
+    if (!result) {
+      console.log('No session found for token')
+      return { session: null, user: null }
+    }
+
+    const { session, user } = result
+    // console.log('Session found:', {
+    //   userId: user.id,
+    //   expiresAt: session.expiresAt,
+    //   currentTime: new Date().toISOString()
+    // })
+
+    const sessionExpired = Date.now() >= new Date(session.expiresAt).getTime()
+    if (sessionExpired) {
+      console.log('Session expired, deleting...')
+      await db.delete(Session).where(eq(Session.id, session.id))
+      return { session: null, user: null }
+    }
+
+    // Renew session if it's more than halfway through its lifetime
+    const renewSession = Date.now() >= new Date(session.expiresAt).getTime() - DAY_IN_MS * 15
+    if (renewSession) {
+      console.log('Renewing session...')
+      const newExpiresAt = new Date(Date.now() + DAY_IN_MS * 30).toISOString()
+      await db.update(Session).set({ expiresAt: newExpiresAt }).where(eq(Session.id, session.id))
+
+      // Update the session object with new expiry
+      session.expiresAt = newExpiresAt
+    }
+
+    return { session, user }
+  } catch (error) {
+    console.error('Error validating session:', error)
     return { session: null, user: null }
   }
-  const { session, user } = result
-
-  const sessionExpired = Date.now() >= session.expiresAt.getTime()
-  if (sessionExpired) {
-    await db.delete(Session).where(eq(Session.id, session.id))
-    return { session: null, user: null }
-  }
-
-  const renewSession = Date.now() >= session.expiresAt.getTime() - DAY_IN_MS * 15
-  if (renewSession) {
-    session.expiresAt = new Date(Date.now() + DAY_IN_MS * 30)
-    await db.update(Session).set({ expiresAt: session.expiresAt }).where(eq(Session.id, session.id))
-  }
-
-  return { session, user }
 }
 
 export type SessionValidationResult = Awaited<ReturnType<typeof validateSessionToken>>
@@ -69,18 +97,43 @@ export function getSessionTokenCookie(c: Context) {
   return getCookie(c, sessionCookieName)
 }
 
-export function setSessionTokenCookie(c: Context, token: string, expiresAt: Date) {
+export function setSessionTokenCookie(c: Context, token: string, expiresAt: string) {
+  const domain = c.req.header('host')?.split(':')[0]
+  const isLocalhost = domain === 'localhost' || domain?.startsWith('127.0.0.1')
+
+  // Debug log
+  // console.log('Setting session cookie:', {
+  //   name: sessionCookieName,
+  //   domain,
+  //   isLocalhost,
+  //   expiresAt: new Date(expiresAt).toISOString()
+  // })
+
   setCookie(c, sessionCookieName, token, {
-    expires: expiresAt,
+    expires: new Date(expiresAt),
     path: '/',
+    domain: isLocalhost ? undefined : `.${domain}`, // Only set domain for production
     sameSite: 'lax',
-    secure: false,
+    secure: !isLocalhost, // Secure in production
     httpOnly: true,
+    maxAge: 60 * 60 * 24 * 30, // 30 days in seconds
   })
 }
 
 export function deleteSessionTokenCookie(c: Context) {
+  const domain = c.req.header('host')?.split(':')[0]
+  const isLocalhost = domain === 'localhost' || domain?.startsWith('127.0.0.1')
+
+  console.log('Deleting session cookie:', {
+    name: sessionCookieName,
+    domain,
+    isLocalhost,
+  })
+
   deleteCookie(c, sessionCookieName, {
     path: '/',
+    domain: isLocalhost ? undefined : `.${domain}`,
+    secure: !isLocalhost,
+    sameSite: 'lax',
   })
 }

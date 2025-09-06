@@ -2,7 +2,7 @@ import { defineConfig } from 'drizzle-kit'
 import env from './src/server/env'
 
 export default defineConfig({
-  schema: './src/server/db/schema.ts',
+  schema: './src/server/db/schema/index.ts',
   dbCredentials: {
     url: env.DATABASE_URL,
   },

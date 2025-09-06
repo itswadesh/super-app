@@ -1,11 +1,5 @@
-import { sha256 } from '@oslojs/crypto/sha2'
-import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding'
-import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { Context } from 'hono'
-import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
-import { CONFIG } from '../../config'
-import { db } from '../../db'
 import {
   deleteSessionTokenCookie,
   getSessionTokenCookie,
@@ -13,76 +7,32 @@ import {
   setSessionTokenCookie,
   validateSessionToken,
 } from '../../db/auth'
-import { Session } from '../../db/schema'
 import { getOtp } from './get-otp'
 import { verifyOtp } from './verify-otp'
-import { signupHost } from './signup'
 
 export const routes = new Hono()
 
-// export async function invalidateSession(sessionId: string) {
-// 	await db.delete(Session).where(eq(Session.id, sessionId));
-// }
-
-// export function generateSessionToken() {
-//     const bytes = crypto.getRandomValues(new Uint8Array(18));
-//     const token = encodeBase64url(bytes);
-//     return token;
-// }
-
-// export async function createSession(token: string, userId: string) {
-//     const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-//     const session: Session = {
-//         id: sessionId,
-//         userId,
-//         expiresAt: new Date(Date.now() + CONFIG.DAY_IN_MS * 30)
-//     };
-//     await db.insert(Session).values(session);
-//     return session;
-// }
-
-// export const validateSessionToken = async (token: string) => {
-//     const results = await db
-//         .select()
-//         .from(Session)
-//         .where(eq(Session.id, token));
-//     const existingSession = results.at(0);
-//     if (!existingSession) {
-//         throw { status: 404, message: 'Invalid session token.' }
-//     }
-//     return existingSession;
-// }
-
-// export function setSessionTokenCookie(c: Context, token: string, expiresAt: Date) {
-//     setCookie(c, CONFIG.sessionCookieName, token, {
-//         expires: expiresAt,
-//         path: '/',
-//     });
-// }
-
-// export function deleteSessionTokenCookie(c: Context) {
-//     deleteCookie(c, CONFIG.sessionCookieName, {
-//         path: '/',
-//     });
-// }
-
 routes.post('/get-otp', async (c: Context) => {
   const { phone } = await c.req.json()
-  const result = await getOtp({ phone })
-  return c.json(result)
+  try {
+    const result = await getOtp({ phone })
+    return c.json(result)
+  } catch (e: any) {
+    console.error('get-otp error:', e)
+    return c.json({ ...e, success: false })
+  }
 })
 
 routes.post('/verify-otp', async (c: Context) => {
-  const { phone, otp } = await c.req.json()
-  const result = await verifyOtp({ phone, otp })
-  setSessionTokenCookie(c, result.token, result.expiresAt)
-  return c.json(result)
-})
-
-routes.post('/signup', async (c: Context) => {
-  const data = await c.req.json()
-  const result = await signupHost(data)
-  return c.json(result)
+  try {
+    const { phone, otp } = await c.req.json()
+    const result: any = await verifyOtp({ phone, otp })
+    if (!result.success) return c.json(result)
+    setSessionTokenCookie(c, result.token, result.expiresAt)
+    return c.json(result)
+  } catch (e: any) {
+    return c.json({ message: e?.message || 'Verification Failed' }, e?.status || 400)
+  }
 })
 
 routes.get('/me', async (c: Context) => {
@@ -129,7 +79,6 @@ routes.delete('/logout', async (c: Context) => {
   }
   // console.log(auth.sessionCookieName, 'aaaaaaaaaaaaaaaaa')
   deleteSessionTokenCookie(c)
-  deleteCookie(c, 'connect.sid');
   // console.log('All cookie deletion attempts completed');
   return c.json({ success: true, message: 'Logged out successfully' })
 })
