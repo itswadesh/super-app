@@ -1,6 +1,7 @@
 <script lang="ts">
 import { goto } from '$app/navigation'
 import { apiService } from '$lib/services/api.service'
+import { page } from '$app/state'
 import { loginModal } from '$lib/stores/loginModal'
 import { pointsStore } from '$lib/stores/pointsStore'
 import { subscriptionStore } from '$lib/stores/subscriptionStore'
@@ -35,19 +36,7 @@ const subscription = $derived($subscriptionStore?.userSubscription)
 const isSubscriptionLoading = $derived($subscriptionStore?.isLoading || false)
 
 // Authentication state
-const isAuthenticated = $derived($userStore?.user != null)
-
-// Quiz history state
-type QuizAttempt = {
-  id: string
-  quizTitle: string
-  category?: string
-  completedAt: string
-  score: number
-  timeSpent: number
-}
-
-let quizHistory = $state<QuizAttempt[]>([])
+const isAuthenticated = $derived(page.data?.user != null)
 
 // Social sharing and avatar upload functions
 function handleSocialShare(actionId: string) {
@@ -138,52 +127,33 @@ function completeSpecialAction(actionId: string) {
 
 // Check authentication and redirect if not logged in using $effect for Svelte 5
 $effect(() => {
-  if (!$userStore?.user) {
+  if (!page.data?.user) {
     loginModal.open({
-      redirectUrl: '/profile',
+      redirectUrl: '/my/profile',
     })
     return
   }
 
   // Initialize user data from store
-  userData.name = $userStore.user.name || ''
-  userData.phone = $userStore.user.phone || ''
+  userData.name = page.data.user?.name || ''
+  userData.phone = page.data.user?.phone || ''
 })
 
 // Load data on mount
 onMount(() => {
   // Load quiz history, points, and subscription info
-  loadQuizHistory()
+  // loadQuizHistory()
   pointsStore.loadUserPoints()
-  subscriptionStore.checkSubscription()
 })
-
-// Load user's quiz history
-async function loadQuizHistory() {
-  isLoading = true
-  try {
-    const response = await apiService.user.getQuizHistory()
-    if (response.success) {
-      quizHistory = response.data?.attempts || []
-    } else {
-      toast.error('Failed to load quiz history')
-    }
-  } catch (error) {
-    console.error('Error loading quiz history:', error)
-    toast.error('An error occurred while loading your quiz history')
-  } finally {
-    isLoading = false
-  }
-}
 
 // Toggle edit mode
 function toggleEditMode() {
   isEditMode = !isEditMode
 
   // If canceling edit, restore original data
-  if (!isEditMode && $userStore?.user) {
-    userData.name = $userStore.user.name || ''
-    userData.phone = $userStore.user.phone || ''
+  if (!isEditMode && page.data?.user) {
+    userData.name = page.data.user?.name || ''
+    userData.phone = page.data.user?.phone || ''
   }
 }
 
@@ -201,7 +171,7 @@ function formatDate(dateString: string) {
 
 // Save profile changes
 async function saveProfile() {
-  if (!$userStore?.user) return
+  if (!page.data?.user) return
 
   isLoading = true
   try {
@@ -226,17 +196,15 @@ async function saveProfile() {
   }
 }
 
-// View a specific quiz result
-function viewQuizResult(attemptId: string) {
-  goto(`/quiz-results/${attemptId}`)
-}
-
 // Logout function
 function logout() {
   // This should clear the user session
-  $userStore.logout()
+  page.data.logout()
   goto('/')
 }
+
+// $inspect('is authenticated', isAuthenticated)
+// $inspect('page data', page.data)
 </script>
 
 <div class="max-w-6xl mx-auto px-4 py-8">
@@ -245,7 +213,7 @@ function logout() {
       <h1 class="text-2xl font-bold mb-4">Please Log In</h1>
       <p class="mb-6">You need to be logged in to view your profile.</p>
       <button 
-        onclick={(e) => loginModal.open({ redirectUrl: '/profile' })}
+        onclick={(e) => loginModal.open({ redirectUrl: '/my/profile' })}
         class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
       >
         Log In
@@ -709,7 +677,7 @@ function logout() {
               <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <p class="mt-2 text-gray-600">Loading your quiz history...</p>
             </div>
-          {:else if quizHistory.length === 0}
+          <!-- {:else if quizHistory.length === 0}
             <div class="bg-gray-50 rounded-md p-6 text-center">
               <p class="text-gray-600">You haven't taken any quizzes yet.</p>
               <a 
@@ -718,7 +686,7 @@ function logout() {
               >
                 Browse Available Quizzes
               </a>
-            </div>
+            </div> -->
           {:else}
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200">
@@ -731,7 +699,7 @@ function logout() {
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 bg-white">
+                <!-- <tbody class="divide-y divide-gray-200 bg-white">
                   {#each quizHistory as attempt}
                     <tr>
                       <td class="px-4 py-4 whitespace-nowrap">
@@ -763,7 +731,7 @@ function logout() {
                       </td>
                     </tr>
                   {/each}
-                </tbody>
+                </tbody> -->
               </table>
             </div>
           {/if}
@@ -778,7 +746,7 @@ function logout() {
             Your Statistics
           </h2>
           
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-blue-50 rounded-lg p-4 text-center">
               <div class="text-3xl font-bold text-blue-700">{quizHistory.length}</div>
               <div class="text-sm text-gray-600 mt-1">Quizzes Completed</div>
@@ -797,7 +765,7 @@ function logout() {
               </div>
               <div class="text-sm text-gray-600 mt-1">Quizzes Passed</div>
             </div>
-          </div>
+          </div> -->
         </div>
         
         <!-- Weekly Goals Section -->
