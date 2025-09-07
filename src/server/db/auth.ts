@@ -41,8 +41,6 @@ export async function validateSessionToken(token: string) {
           phone: User.phone,
           role: User.role,
           name: User.name,
-          board: User.board,
-          class: User.class,
         },
         session: Session,
       })
