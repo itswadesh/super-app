@@ -1,13 +1,4 @@
-import {
-  pgTable,
-  text,
-  integer,
-  boolean,
-  timestamp,
-  decimal,
-  jsonb,
-  uuid,
-} from 'drizzle-orm/pg-core'
+import { pgTable, integer, boolean, timestamp, decimal, jsonb, varchar } from 'drizzle-orm/pg-core'
 import { User } from './user'
 import { Category } from './category'
 
@@ -15,20 +6,20 @@ import { Category } from './category'
 const generateId = () => crypto.randomUUID()
 
 export const Food = pgTable('foods', {
-  id: uuid('id').primaryKey().$defaultFn(generateId),
-  hostId: uuid('host_id')
+  id: varchar('id').primaryKey().$defaultFn(generateId),
+  hostId: varchar('host_id')
     .notNull()
     .references(() => User.id),
-  name: text('name').notNull(),
-  slug: text('slug').notNull().unique(),
-  description: text('description'),
+  name: varchar('name').notNull(),
+  slug: varchar('slug').notNull().unique(),
+  description: varchar('description'),
   price: decimal('price', { precision: 10, scale: 2 }).notNull(),
-  image: text('image'),
-  categoryId: uuid('category_id').references(() => Category.id),
+  image: varchar('image'),
+  categoryId: varchar('category_id').references(() => Category.id),
   ingredients: jsonb('ingredients'), // array of ingredients
   allergens: jsonb('allergens'), // array of allergens
   preparationTime: integer('preparation_time'), // in minutes
-  servingSize: text('serving_size'),
+  servingSize: varchar('serving_size'),
   isAvailable: boolean('is_available').default(true),
   isVegetarian: boolean('is_vegetarian').default(false),
   isVegan: boolean('is_vegan').default(false),

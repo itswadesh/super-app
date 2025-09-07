@@ -5,9 +5,6 @@ type InferSelect<T> = T extends { $inferSelect: infer U } ? U : never
 export type User = InferSelect<typeof import('./user').User>
 export type Session = InferSelect<typeof import('./user').Session>
 
-// Author
-export type Author = InferSelect<typeof import('./author').Author>
-
 // Category
 export type Category = InferSelect<typeof import('./category').Category>
 
@@ -26,6 +23,8 @@ export type FoodRating = InferSelect<typeof import('./food-rating').FoodRating>
 export type Order = InferSelect<typeof import('./order').Order>
 export type OrderItem = InferSelect<typeof import('./order-item').OrderItem>
 
-// Host Profile & Host Rating
-export type HostProfile = InferSelect<typeof import('./host-profile').HostProfile>
+// Host Rating
 export type HostRating = InferSelect<typeof import('./host-rating').HostRating>
+
+// Vendor
+export type Vendor = InferSelect<typeof import('./vendor').Vendor>
