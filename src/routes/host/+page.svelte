@@ -556,12 +556,22 @@ async function submitEditFood() {
       throw new Error(errorMessage)
     }
 
-    // Success - close modal and refresh data
+    // Success - update food in list reactively
+    const foodIndex = myFoods.findIndex((f) => f.id === editingFood.id)
+    if (foodIndex !== -1) {
+      myFoods[foodIndex] = {
+        ...myFoods[foodIndex],
+        name: editingFood.name,
+        description: editingFood.description,
+        price: parseFloat(editingFood.price),
+        categoryId: editingFood.categoryId,
+        isVegetarian: editingFood.isVegetarian,
+        preparationTime: editingFood.preparationTime,
+        image: imagePreview || myFoods[foodIndex].image,
+      }
+    }
     closeEditFoodModal()
     toast.success('Food item updated successfully!')
-
-    // TODO: Refresh the foods list
-    window.location.reload()
   } catch (error) {
     console.error('Error updating food:', error)
     submitError = error instanceof Error ? error.message : 'Failed to update food item'
@@ -597,11 +607,9 @@ async function submitApplication() {
     }
 
     const result = await response.json()
-    toast.success('Application submitted successfully!')
-
-    // Close modal and refresh page to show new status
+    applicationStatus = result
     closeApplicationModal()
-    window.location.reload()
+    toast.success('Application submitted successfully!')
   } catch (error) {
     console.error('Error submitting application:', error)
     submitError = error instanceof Error ? error.message : 'Failed to submit application'
@@ -627,10 +635,16 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
-    toast.success(`Food item ${!currentStatus ? 'enabled' : 'disabled'} successfully!`)
+    // Update food status reactively
+    const foodIndex = myFoods.findIndex((f) => f.id === foodId)
+    if (foodIndex !== -1) {
+      myFoods[foodIndex] = {
+        ...myFoods[foodIndex],
+        status: !currentStatus ? 'available' : 'unavailable',
+      }
+    }
 
-    // TODO: Refresh the foods list
-    window.location.reload()
+    toast.success(`Food item ${!currentStatus ? 'enabled' : 'disabled'} successfully!`)
   } catch (error) {
     console.error('Error toggling food availability:', error)
     toast.error('Failed to update food availability')
