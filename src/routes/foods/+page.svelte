@@ -656,27 +656,17 @@ function proceedToPayment() {
                       <div class="space-y-1">
                         {#each order.items as item}
                           <div class="text-sm text-gray-700 dark:text-gray-300">
-                            <span>{item.name} by {order.businessName}  Rs{item.price}  * {item.quantity} = Rs{item.price * item.quantity}</span>
+                            <span>{item.name} by {order.hostName}  ₹{item.unitPrice}  * {item.quantity} = ₹{item.unitPrice * item.quantity}</span>
                           </div>
                         {/each}
                       </div>
                     </div>
                     {/each}
-                    {:else if orderedItems.length > 0}
-                    <div class="mt-4">
-                      <h4 class="text-md font-semibold text-gray-900 dark:text-gray-100 mb-2">Your Order Details:</h4>
-                      <div class="space-y-1">
-                        {#each orderedItems as item}
-                          <div class="text-sm text-gray-700 dark:text-gray-300">
-                            <span>{item.name} by {item.host.name}  Rs{item.price}  * {item.quantity} = Rs{item.price * item.quantity}</span>
-                          </div>
-                        {/each}
-                      </div>
-                    </div>
-                    {/if}
+                   
+                  {/if} 
                     <button
                       onclick={closeCartDrawer}
-                      class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white py-2 rounded-lg font-medium transition-colors"
+                      class="mt-6 w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white py-2 rounded-lg font-medium transition-colors"
                     >
                       Continue Shopping
                     </button>
