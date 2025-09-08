@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { db } from '../../db'
 import { Food, Category, User, Vendor } from '../../db/schema'
-import { authenticate } from '../../middlewares/auth'
+import { authenticate, optionalAuthenticate } from '../../middlewares/auth'
 
 export const routes = new Hono()
 
@@ -18,7 +18,7 @@ const generateSlug = (name: string): string => {
 }
 
 // GET /api/foods - Get all foods with optional filtering
-routes.get('/', async (c: Context) => {
+routes.get('/', optionalAuthenticate, async (c: Context) => {
   const search = c.req.query('search')
   const category = c.req.query('category')
   const vegetarian = c.req.query('vegetarian')
@@ -46,6 +46,64 @@ routes.get('/', async (c: Context) => {
 
     whereConditions.push(eq(Food.isAvailable, true))
     whereConditions.push(eq(Vendor.status, 'approved'))
+
+    // Debug: Check approved vendors
+    const approvedVendors = await db
+      .select({
+        id: Vendor.id,
+        userId: Vendor.userId,
+        status: Vendor.status,
+        fullName: Vendor.fullName,
+      })
+      .from(Vendor)
+      .where(eq(Vendor.status, 'approved'))
+    console.log('Approved vendors:', approvedVendors)
+
+    // Debug: Check all foods
+    const allFoods = await db
+      .select({
+        id: Food.id,
+        name: Food.name,
+        hostId: Food.hostId,
+        isAvailable: Food.isAvailable,
+      })
+      .from(Food)
+      .limit(50)
+    console.log('All foods in database:', allFoods)
+
+    // Debug: Check foods with vendor join
+    const foodsWithVendors = await db
+      .select({
+        foodId: Food.id,
+        foodName: Food.name,
+        hostId: Food.hostId,
+        isAvailable: Food.isAvailable,
+        vendorId: Vendor.id,
+        vendorUserId: Vendor.userId,
+        vendorStatus: Vendor.status,
+        vendorName: Vendor.fullName,
+      })
+      .from(Food)
+      .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
+      .limit(50)
+    console.log('Foods with vendor join:', foodsWithVendors)
+
+    // Debug: Check if approved vendors have foods
+    if (approvedVendors.length > 0) {
+      for (const vendor of approvedVendors) {
+        const vendorFoods = await db
+          .select({
+            id: Food.id,
+            name: Food.name,
+            hostId: Food.hostId,
+            isAvailable: Food.isAvailable,
+          })
+          .from(Food)
+          .where(eq(Food.hostId, vendor.userId))
+        console.log(`Foods for vendor ${vendor.fullName} (${vendor.userId}):`, vendorFoods)
+      }
+    }
+
     const foods = await db
       .select({
         id: Food.id,
@@ -73,6 +131,8 @@ routes.get('/', async (c: Context) => {
       .limit(limit)
       .offset(offset)
 
+    console.log('Filtered foods result:', foods)
+
     // Transform the data to match the expected format
     const transformedFoods = foods.map((food) => ({
       id: food.id,
@@ -85,7 +145,7 @@ routes.get('/', async (c: Context) => {
       preparationTime: food.preparationTime || 30,
       rating: food.rating ? parseFloat(food.rating) : 0,
       totalRatings: food.totalRatings || 0,
-      isMyFood: c.req.user?.id === food.hostId,
+      isMyFood: c.get('user')?.id === food.hostId,
       host: {
         name: food.hostName || 'Unknown Host',
         rating: 0, // Vendor table doesn't have rating
@@ -97,9 +157,12 @@ routes.get('/', async (c: Context) => {
     const totalResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(Food)
+      .leftJoin(User, eq(Food.hostId, User.id))
+      .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
+      .leftJoin(Category, eq(Food.categoryId, Category.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
 
-    const total = totalResult[0]?.count || 0
+    const total = +totalResult[0]?.count || 0
 
     return c.json({
       foods: transformedFoods,
@@ -197,6 +260,7 @@ routes.post('/', authenticate, async (c: Context) => {
       image: image || null,
       isVegetarian,
       preparationTime: preparationTime || null,
+      isAvailable: true, // Explicitly set to ensure availability
     }
 
     // Only add categoryId if we have a valid UUID

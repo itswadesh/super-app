@@ -116,9 +116,9 @@ vendorRoutes.get('/:id', authenticateAdmin, async (c) => {
 vendorRoutes.patch('/:id', authenticateAdmin, async (c) => {
   try {
     const id = c.req.param('id')
+    const reviewedBy = c.get('user')?.id
     const body = await c.req.json()
-    const { status, reviewNotes, reviewedBy } = body
-
+    const { status, reviewNotes } = body
     if (!id) {
       return c.json({ error: 'Vendor ID is required' }, 400)
     }

@@ -32,7 +32,7 @@ export async function createSession(token: string, userId: string) {
 export async function validateSessionToken(token: string) {
   try {
     const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)))
-    console.log('Validating session token:', sessionId )
+    // console.log('Validating session token:', sessionId)
 
     const [result] = await db
       .select({
@@ -47,7 +47,7 @@ export async function validateSessionToken(token: string) {
       .from(Session)
       .innerJoin(User, eq(Session.userId, User.id))
       .where(eq(Session.id, sessionId))
-console.log('userId:::' , result?.user?.id)
+    // console.log('userId:::', result?.user?.id)
     if (!result) {
       console.log('No session found for token')
       return { session: null, user: null }
@@ -122,11 +122,11 @@ export function deleteSessionTokenCookie(c: Context) {
   const domain = c.req.header('host')?.split(':')[0]
   const isLocalhost = domain === 'localhost' || domain?.startsWith('127.0.0.1')
 
-  console.log('Deleting session cookie:', {
-    name: sessionCookieName,
-    domain,
-    isLocalhost,
-  })
+  // console.log('Deleting session cookie:', {
+  //   name: sessionCookieName,
+  //   domain,
+  //   isLocalhost,
+  // })
 
   deleteCookie(c, sessionCookieName, {
     path: '/',

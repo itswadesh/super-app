@@ -1,5 +1,5 @@
 import { db } from '.'
-import { Category, User, Vendor } from './schema'
+import { Category, User, Vendor, Food } from './schema'
 
 // Helper function to generate unique IDs
 const generateId = () => crypto.randomUUID()
@@ -56,13 +56,6 @@ async function seedTestHost() {
     role: 'buyer' as const,
   }
 
-  const testVendorData = {
-    userId: testUserData.id,
-    bio: 'Test host for food ordering system',
-    location: 'Test City',
-    cuisineSpecialties: ['Indian', 'Chinese'],
-  }
-
   console.log('Seeding test host...')
 
   try {
@@ -70,11 +63,7 @@ async function seedTestHost() {
     const insertedUser = await db.insert(User).values(testUserData).returning()
     console.log('Test user inserted.')
 
-    // Insert host profile
-    const insertedVendor = await db.insert(Vendor).values(testVendorData).returning()
-    console.log('Test host profile inserted.')
-
-    return { user: insertedUser[0], hostProfile: insertedVendor[0] }
+    return { user: insertedUser[0], hostProfile: null }
   } catch (error) {
     console.error('Error seeding test host:', error)
     return null
@@ -89,19 +78,72 @@ async function seedTestApplication(userId: string) {
     email: 'test@example.com',
     phone: '+918249028220',
     address: 'Test Address',
+    city: 'Bangalore',
     idProof: 'test-proof',
-    status: 'pending' as const,
+    status: 'approved' as const, // Set to approved for testing
   }
 
   console.log('Seeding test application...')
 
   try {
     const insertedApplication = await db.insert(Vendor).values(testApplicationData).returning()
-    console.log('Test application inserted.')
+    console.log('Test application inserted with approved status.')
     return insertedApplication[0]
   } catch (error) {
     console.error('Error seeding test application:', error)
     return null
+  }
+}
+
+// Seed test foods for the approved vendor
+async function seedTestFoods(userId: string, categories: any[]) {
+  const testFoods = [
+    {
+      hostId: userId,
+      name: 'Butter Chicken',
+      slug: 'butter-chicken',
+      description: 'Creamy and rich butter chicken with authentic spices',
+      price: '250.00',
+      categoryId: categories.find((c) => c.slug === 'indian')?.id,
+      isVegetarian: false,
+      isAvailable: true,
+      preparationTime: 30,
+    },
+    {
+      hostId: userId,
+      name: 'Paneer Tikka',
+      slug: 'paneer-tikka',
+      description: 'Marinated paneer cubes grilled to perfection',
+      price: '180.00',
+      categoryId: categories.find((c) => c.slug === 'indian')?.id,
+      isVegetarian: true,
+      isAvailable: true,
+      preparationTime: 25,
+    },
+    {
+      hostId: userId,
+      name: 'Chicken Fried Rice',
+      slug: 'chicken-fried-rice',
+      description: 'Wok-tossed rice with vegetables and tender chicken',
+      price: '150.00',
+      categoryId: categories.find((c) => c.slug === 'chinese')?.id,
+      isVegetarian: false,
+      isAvailable: true,
+      preparationTime: 20,
+    },
+  ]
+
+  console.log('Seeding test foods...')
+
+  try {
+    for (const food of testFoods) {
+      await db.insert(Food).values(food)
+    }
+    console.log(`${testFoods.length} test foods inserted.`)
+    return testFoods
+  } catch (error) {
+    console.error('Error seeding test foods:', error)
+    return []
   }
 }
 
@@ -118,7 +160,12 @@ async function seed() {
 
     // Seed test application for the test user
     if (testHost) {
-      await seedTestApplication(testHost.user.id)
+      const vendor = await seedTestApplication(testHost.user.id)
+
+      // Seed test foods for the approved vendor
+      if (vendor && seededCategories) {
+        await seedTestFoods(testHost.user.id, seededCategories)
+      }
     }
 
     console.log('Database seeding completed successfully!')
