@@ -7,50 +7,72 @@ import { CheckCircle, XCircle, Clock, Users, ChefHat, FileText } from '@lucide/s
 import { onMount } from 'svelte'
 
 let applications = $state<any[]>([])
+let stats = $state({
+  total: 0,
+  pending: 0,
+  approved: 0,
+  rejected: 0,
+})
 let isLoading = $state(true)
+let isUpdating = $state<string | null>(null)
 
-// Mock data for demonstration
-const mockApplications = [
-  {
-    id: '1',
-    fullName: 'Priya Sharma',
-    email: 'priya@example.com',
-    phone: '+91 9876543210',
-    experience: '5 years',
-    specializations: ['North Indian', 'South Indian'],
-    address: '123 Main St, Bangalore',
-    status: 'pending',
-    createdAt: '2024-01-15T10:00:00Z',
-    documents: {
-      businessLicense: '/api/placeholder/300/200',
-      foodSafetyCertificate: '/api/placeholder/300/200',
-      idProof: '/api/placeholder/300/200',
-    },
-  },
-  {
-    id: '2',
-    fullName: 'Maria Rossi',
-    email: 'maria@example.com',
-    phone: '+91 9876543211',
-    experience: '3 years',
-    specializations: ['Italian', 'Desserts'],
-    address: '456 Oak Ave, Bangalore',
-    status: 'pending',
-    createdAt: '2024-01-16T14:30:00Z',
-    documents: {
-      businessLicense: '/api/placeholder/300/200',
-      foodSafetyCertificate: null,
-      idProof: '/api/placeholder/300/200',
-    },
-  },
-]
+// API functions
+async function fetchApplications() {
+  try {
+    const response = await fetch('/api/admin/vendors')
+    if (!response.ok) throw new Error('Failed to fetch applications')
+    const data = await response.json()
+    applications = data
+  } catch (error) {
+    console.error('Error fetching applications:', error)
+  }
+}
 
-onMount(() => {
-  // Simulate loading applications
-  setTimeout(() => {
-    applications = mockApplications
-    isLoading = false
-  }, 1000)
+async function fetchStats() {
+  try {
+    const response = await fetch('/api/admin/vendors/stats/summary')
+    if (!response.ok) throw new Error('Failed to fetch stats')
+    const data = await response.json()
+    stats = data
+  } catch (error) {
+    console.error('Error fetching stats:', error)
+  }
+}
+
+async function updateApplicationStatus(
+  id: string,
+  status: 'approved' | 'rejected',
+  reviewNotes?: string
+) {
+  try {
+    isUpdating = id
+    const response = await fetch(`/api/admin/vendors/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status,
+        reviewNotes: reviewNotes || '',
+        reviewedBy: 'admin', // TODO: Get from authenticated user
+      }),
+    })
+
+    if (!response.ok) throw new Error('Failed to update application')
+
+    // Refresh data
+    await Promise.all([fetchApplications(), fetchStats()])
+  } catch (error) {
+    console.error('Error updating application:', error)
+    // TODO: Show error message to user
+  } finally {
+    isUpdating = null
+  }
+}
+
+onMount(async () => {
+  await Promise.all([fetchApplications(), fetchStats()])
+  isLoading = false
 })
 
 function getStatusColor(status: string) {
@@ -64,14 +86,6 @@ function getStatusColor(status: string) {
     default:
       return 'bg-gray-100 text-gray-800'
   }
-}
-
-function approveApplication(id: string) {
-  applications = applications.map((app) => (app.id === id ? { ...app, status: 'approved' } : app))
-}
-
-function rejectApplication(id: string) {
-  applications = applications.map((app) => (app.id === id ? { ...app, status: 'rejected' } : app))
 }
 </script>
 
@@ -94,7 +108,7 @@ function rejectApplication(id: string) {
           <div class="flex items-center">
             <Users class="w-8 h-8 text-blue-600 mr-3" />
             <div>
-              <div class="text-2xl font-bold">{applications.filter(a => a.status === 'pending').length}</div>
+              <div class="text-2xl font-bold">{stats.pending}</div>
               <p class="text-xs text-muted-foreground">Pending Applications</p>
             </div>
           </div>
@@ -106,8 +120,8 @@ function rejectApplication(id: string) {
           <div class="flex items-center">
             <CheckCircle class="w-8 h-8 text-green-600 mr-3" />
             <div>
-              <div class="text-2xl font-bold">{applications.filter(a => a.status === 'approved').length}</div>
-              <p class="text-xs text-muted-foreground">Approved Chefs</p>
+              <div class="text-2xl font-bold">{stats.approved}</div>
+              <p class="text-xs text-muted-foreground">Approved Vendors</p>
             </div>
           </div>
         </CardContent>
@@ -118,7 +132,7 @@ function rejectApplication(id: string) {
           <div class="flex items-center">
             <XCircle class="w-8 h-8 text-red-600 mr-3" />
             <div>
-              <div class="text-2xl font-bold">{applications.filter(a => a.status === 'rejected').length}</div>
+              <div class="text-2xl font-bold">{stats.rejected}</div>
               <p class="text-xs text-muted-foreground">Rejected Applications</p>
             </div>
           </div>
@@ -130,7 +144,7 @@ function rejectApplication(id: string) {
           <div class="flex items-center">
             <ChefHat class="w-8 h-8 text-purple-600 mr-3" />
             <div>
-              <div class="text-2xl font-bold">{applications.length}</div>
+              <div class="text-2xl font-bold">{stats.total}</div>
               <p class="text-xs text-muted-foreground">Total Applications</p>
             </div>
           </div>
@@ -148,9 +162,9 @@ function rejectApplication(id: string) {
 
       <TabsContent value="applications" class="space-y-4">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Chef Applications</h2>
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Vendor Applications</h2>
           <Badge variant="secondary">
-            {applications.filter(a => a.status === 'pending').length} pending
+            {stats.pending} pending
           </Badge>
         </div>
 
@@ -191,34 +205,45 @@ function rejectApplication(id: string) {
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Experience</h4>
-                      <p class="text-sm text-gray-600 dark:text-gray-400">{application.experience}</p>
+                      <p class="text-sm text-gray-600 dark:text-gray-400">{application.experience || 'Not specified'}</p>
                     </div>
                     <div>
                       <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Specializations</h4>
                       <div class="flex flex-wrap gap-1">
-                        {#each application.specializations as spec}
-                          <Badge variant="outline" class="text-xs">{spec}</Badge>
-                        {/each}
+                        {#if application.specializations && Array.isArray(application.specializations)}
+                          {#each application.specializations as spec}
+                            <Badge variant="outline" class="text-xs">{spec}</Badge>
+                          {/each}
+                        {:else}
+                          <span class="text-sm text-gray-500">Not specified</span>
+                        {/if}
                       </div>
                     </div>
                   </div>
 
                   <div>
                     <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Address</h4>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">{application.address}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                      {application.address}{application.city ? `, ${application.city}` : ''}{application.pincode ? ` - ${application.pincode}` : ''}
+                    </p>
                   </div>
 
                   <!-- Documents -->
                   <div>
                     <h4 class="font-medium text-gray-900 dark:text-gray-100 mb-2">Documents</h4>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                      {#if application.documents.businessLicense}
+                      {#if application.businessLicense}
                         <div class="flex items-center gap-2 text-sm">
                           <FileText class="w-4 h-4 text-green-600" />
                           <span>Business License</span>
                         </div>
+                      {:else}
+                        <div class="flex items-center gap-2 text-sm text-gray-400">
+                          <FileText class="w-4 h-4" />
+                          <span>Business License (Missing)</span>
+                        </div>
                       {/if}
-                      {#if application.documents.foodSafetyCertificate}
+                      {#if application.foodSafetyCertificate}
                         <div class="flex items-center gap-2 text-sm">
                           <FileText class="w-4 h-4 text-green-600" />
                           <span>Food Safety Cert</span>
@@ -229,10 +254,15 @@ function rejectApplication(id: string) {
                           <span>Food Safety Cert (Missing)</span>
                         </div>
                       {/if}
-                      {#if application.documents.idProof}
+                      {#if application.idProof}
                         <div class="flex items-center gap-2 text-sm">
                           <FileText class="w-4 h-4 text-green-600" />
                           <span>ID Proof</span>
+                        </div>
+                      {:else}
+                        <div class="flex items-center gap-2 text-sm text-gray-400">
+                          <FileText class="w-4 h-4" />
+                          <span>ID Proof (Missing)</span>
                         </div>
                       {/if}
                     </div>
@@ -242,25 +272,42 @@ function rejectApplication(id: string) {
                   {#if application.status === 'pending'}
                     <div class="flex space-x-2 pt-4 border-t">
                       <Button
-                        onclick={() => approveApplication(application.id)}
+                        onclick={() => updateApplicationStatus(application.id, 'approved')}
+                        disabled={isUpdating === application.id}
                         class="bg-green-500 hover:bg-green-600 text-white flex-1"
                       >
-                        <CheckCircle class="w-4 h-4 mr-2" />
-                        Approve
+                        {#if isUpdating === application.id}
+                          <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Updating...
+                        {:else}
+                          <CheckCircle class="w-4 h-4 mr-2" />
+                          Approve
+                        {/if}
                       </Button>
                       <Button
-                        onclick={() => rejectApplication(application.id)}
+                        onclick={() => updateApplicationStatus(application.id, 'rejected')}
+                        disabled={isUpdating === application.id}
                         variant="outline"
                         class="border-red-300 text-red-600 hover:bg-red-50 flex-1"
                       >
-                        <XCircle class="w-4 h-4 mr-2" />
-                        Reject
+                        {#if isUpdating === application.id}
+                          <div class="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Updating...
+                        {:else}
+                          <XCircle class="w-4 h-4 mr-2" />
+                          Reject
+                        {/if}
                       </Button>
                     </div>
                   {:else}
                     <div class="pt-4 border-t">
                       <Badge class="{getStatusColor(application.status)} w-full justify-center py-2">
                         {application.status === 'approved' ? 'Approved' : 'Rejected'}
+                        {#if application.reviewedAt}
+                          <span class="text-xs ml-2">
+                            on {new Date(application.reviewedAt).toLocaleDateString()}
+                          </span>
+                        {/if}
                       </Badge>
                     </div>
                   {/if}

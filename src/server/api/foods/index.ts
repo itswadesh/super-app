@@ -7,7 +7,6 @@ import { authenticate } from '../../middlewares/auth'
 
 export const routes = new Hono()
 
-
 // Helper function to generate slug from name
 const generateSlug = (name: string): string => {
   return name
@@ -20,14 +19,14 @@ const generateSlug = (name: string): string => {
 
 // GET /api/foods - Get all foods with optional filtering
 routes.get('/', async (c: Context) => {
-  try {
-    const search = c.req.query('search')
-    const category = c.req.query('category')
-    const vegetarian = c.req.query('vegetarian')
-    const page = parseInt(c.req.query('page') || '1')
-    const limit = parseInt(c.req.query('limit') || '20')
-    const offset = (page - 1) * limit
+  const search = c.req.query('search')
+  const category = c.req.query('category')
+  const vegetarian = c.req.query('vegetarian')
+  const page = parseInt(c.req.query('page') || '1')
+  const limit = parseInt(c.req.query('limit') || '20')
+  const offset = (page - 1) * limit
 
+  try {
     const whereConditions = []
 
     if (search) {
@@ -46,7 +45,7 @@ routes.get('/', async (c: Context) => {
     }
 
     whereConditions.push(eq(Food.isAvailable, true))
-
+    whereConditions.push(eq(Vendor.status, 'approved'))
     const foods = await db
       .select({
         id: Food.id,
@@ -86,6 +85,7 @@ routes.get('/', async (c: Context) => {
       preparationTime: food.preparationTime || 30,
       rating: food.rating ? parseFloat(food.rating) : 0,
       totalRatings: food.totalRatings || 0,
+      isMyFood: c.req.user?.id === food.hostId,
       host: {
         name: food.hostName || 'Unknown Host',
         rating: 0, // Vendor table doesn't have rating
@@ -109,7 +109,7 @@ routes.get('/', async (c: Context) => {
     })
   } catch (error) {
     console.error('Error fetching foods:', error)
-    return c.json({ error: 'Failed to fetch foods' }, 500)
+    return c.json({ foods: [], total: 0, page, pageSize: limit })
   }
 })
 
@@ -203,7 +203,6 @@ routes.post('/', authenticate, async (c: Context) => {
     if (categoryUuid) {
       insertData.categoryId = categoryUuid
     }
-console.log(insertData,'iiiiiiiiiiiiii')
     const newFood = await db.insert(Food).values(insertData).returning()
 
     return c.json(newFood[0], 201)
@@ -239,7 +238,10 @@ routes.get('/categories', async (c: Context) => {
 
     return c.json(allCategories, 200)
   } catch (error) {
-    console.error('Error fetching categories:', error instanceof Error ? error.message : String(error))
+    console.error(
+      'Error fetching categories:',
+      error instanceof Error ? error.message : String(error)
+    )
     return c.json({ error: 'Failed to fetch categories' }, 500)
   }
 })
@@ -282,7 +284,10 @@ routes.get('/my', authenticate, async (c: Context) => {
 
     return c.json(foods, 200)
   } catch (error) {
-    console.error('Error fetching foods for host:', error instanceof Error ? error.message : String(error))
+    console.error(
+      'Error fetching foods for host:',
+      error instanceof Error ? error.message : String(error)
+    )
     return c.json({ error: 'Failed to fetch foods' }, 500)
   }
 })
@@ -292,7 +297,6 @@ routes.put('/:id', authenticate, async (c: Context) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
-    const user = c.get('user')
 
     if (!id) {
       return c.json({ error: 'Food ID is required' }, 400)
@@ -356,7 +360,6 @@ routes.patch('/:id/availability', authenticate, async (c: Context) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
-    const user = c.get('user')
 
     if (!id) {
       return c.json({ error: 'Food ID is required' }, 400)
@@ -387,7 +390,10 @@ routes.patch('/:id/availability', authenticate, async (c: Context) => {
 
     return c.json(updatedFood[0], 200)
   } catch (error) {
-    console.error('Error updating food availability:', error instanceof Error ? error.message : String(error))
+    console.error(
+      'Error updating food availability:',
+      error instanceof Error ? error.message : String(error)
+    )
     return c.json({ error: 'Failed to update food availability' }, 500)
   }
 })

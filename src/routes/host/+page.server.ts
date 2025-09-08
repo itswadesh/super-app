@@ -24,24 +24,24 @@ export const load: PageServerLoad = async ({ locals }) => {
     }
 
     // Check application status
-    let application = await db.select().from(User).where(eq(User.id, hostId)).limit(1)
+    let application = await db.query.Vendor.findFirst({ where: eq(Vendor.userId, hostId) })
 
     // If no application exists for this test user, create one
     // if (application.length === 0 && hostId === 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec') {
-      // console.log('Creating test application for user:', hostId)
-      // const testApplication = await db
-      //   .insert(Vendor)
-      //   .values({
-      //     userId: hostId,
-      //     fullName: 'Test Chef',
-      //     email: 'test@example.com',
-      //     phone: '0000000000',
-      //     address: 'Test Address',
-      //     idProof: 'test-proof',
-      //     status: 'pending',
-      //   })
-      //   .returning()
-      // application = testApplication
+    // console.log('Creating test application for user:', hostId)
+    // const testApplication = await db
+    //   .insert(Vendor)
+    //   .values({
+    //     userId: hostId,
+    //     fullName: 'Test Chef',
+    //     email: 'test@example.com',
+    //     phone: '0000000000',
+    //     address: 'Test Address',
+    //     idProof: 'test-proof',
+    //     status: 'pending',
+    //   })
+    //   .returning()
+    // application = testApplication
     // }
 
     // Get host's foods
@@ -127,7 +127,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         rating: food.rating ? parseFloat(food.rating) : 0,
       })),
       recentOrders,
-      applicationStatus: application.length > 0 ? application[0] : null,
+      applicationStatus: application ? application : null,
     }
   } catch (error) {
     console.error('Error loading host data:', error)

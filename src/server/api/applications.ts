@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { db } from '../db'
-import { Vendor } from '../db/schema'
+import { Vendor, User } from '../db/schema'
 import { eq } from 'drizzle-orm'
 import { authenticate } from '../middlewares'
 
@@ -10,10 +10,23 @@ export const routes = new Hono()
 routes.post('/', authenticate, async (c) => {
   try {
     const body = await c.req.json()
-    const { businessName } = body
+    const { fullName, businessName, phone, address } = body
+
+    // Validate required fields
+    if (!fullName || !fullName.trim()) {
+      return c.json({ error: 'Full name is required' }, 400)
+    }
 
     if (!businessName || !businessName.trim()) {
       return c.json({ error: 'Business name is required' }, 400)
+    }
+
+    if (!phone || !phone.trim()) {
+      return c.json({ error: 'Business phone number is required' }, 400)
+    }
+
+    if (!address || !address.trim()) {
+      return c.json({ error: 'Address is required' }, 400)
     }
 
     // TODO: Get actual user ID from authentication
@@ -35,16 +48,25 @@ routes.post('/', authenticate, async (c) => {
       }
     }
 
-    // Create new application with required fields
-    // Map businessName to fullName and provide defaults for other required fields
+    // Get user's email from the User table to store in Vendor
+    const userData = await db
+      .select({ email: User.email })
+      .from(User)
+      .where(eq(User.id, userId))
+      .limit(1)
+
+    const userEmail =
+      userData.length > 0 && userData[0].email ? userData[0].email : 'placeholder@example.com'
+
+    // Create new application with complete form data
     const newApplication = await db
       .insert(Vendor)
       .values({
         userId,
-        fullName: businessName.trim(), // Map businessName to fullName
-        email: 'placeholder@example.com', // TODO: Get from user auth
-        phone: '0000000000', // TODO: Get from user profile
-        address: 'To be updated', // TODO: Collect in full application form
+        fullName: fullName.trim(),
+        email: userEmail, // Use user's email from User table
+        phone: phone.trim(),
+        address: address.trim(),
         idProof: 'pending', // TODO: Collect in full application form
         status: 'pending',
       })
@@ -60,7 +82,6 @@ routes.post('/', authenticate, async (c) => {
 // Get user's application status
 routes.get('/status', authenticate, async (c) => {
   try {
-
     const userId = c.get('user')?.id
     const application = await db.select().from(Vendor).where(eq(Vendor.userId, userId)).limit(1)
 

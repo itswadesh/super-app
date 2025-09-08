@@ -6,7 +6,7 @@ export const Vendor = pgTable('vendors', {
   id: varchar('id')
     .primaryKey()
     .notNull()
-    .$defaultFn(() => generateEntityId('ven')),
+    .$defaultFn(() => generateEntityId('vendor')),
   userId: varchar('user_id')
     .notNull()
     .references(() => User.id)

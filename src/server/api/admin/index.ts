@@ -5,6 +5,7 @@ import errorRoutes from './errors'
 import { productRoutes } from './products'
 import { authorRoutes } from './authors'
 import { userRoutes } from './users'
+import { vendorRoutes } from './vendors'
 // Create admin router for all admin-related API endpoints
 const router = new Hono()
 
@@ -40,5 +41,6 @@ router.route('/products', productRoutes)
 router.route('/categories', categoryRoutes)
 router.route('/authors', authorRoutes)
 router.route('/users', userRoutes)
+router.route('/vendors', vendorRoutes)
 
 export default router

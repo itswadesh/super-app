@@ -646,7 +646,26 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
   <div class="container mx-auto px-4 py-6">
     <!-- Application Status Banner -->
     {#if applicationStatus}
-      {#if applicationStatus.status === 'pending' || applicationStatus.status === 'approved' || applicationStatus.status === 'rejected'}
+      {#if applicationStatus.status === 'pending'}
+        <div class="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200">Application Under Review</h3>
+              <p class="text-yellow-700 dark:text-yellow-300">
+                Your application is being reviewed by our team. You will receive a notification once a decision is made. Your items will be available to order after approval.
+              </p>
+              <p class="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+                Applied on {new Date(applicationStatus.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      {:else if applicationStatus.status === 'approved'}
         <div class="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
           <div class="flex items-center">
             <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
@@ -655,12 +674,12 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="text-lg font-semibold text-green-800 dark:text-green-200">Application Received</h3>
+              <h3 class="text-lg font-semibold text-green-800 dark:text-green-200">Application Approved!</h3>
               <p class="text-green-700 dark:text-green-300">
-                We have received your application. You will receive a notification once it is approved. Your items will be available to order after approval.
+                Congratulations! Your application has been approved. You can now start adding your delicious dishes and accepting orders.
               </p>
               <p class="text-sm text-green-600 dark:text-green-400 mt-1">
-                Applied on {new Date(applicationStatus.createdAt).toLocaleDateString()}
+                Approved on {new Date(applicationStatus.reviewedAt || applicationStatus.createdAt).toLocaleDateString()}
               </p>
             </div>
           </div>
@@ -682,7 +701,7 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                 {/if}
               </p>
               <p class="text-sm text-red-600 dark:text-red-400 mt-1">
-                Reviewed on {new Date(applicationStatus.reviewedAt).toLocaleDateString()}
+                Reviewed on {new Date(applicationStatus.reviewedAt || applicationStatus.createdAt).toLocaleDateString()}
               </p>
             </div>
             <Button onclick={() => goto('/host/apply')} class="bg-red-600 hover:bg-red-700 text-white">
@@ -691,6 +710,28 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
           </div>
         </div>
       {/if}
+    {:else}
+      <!-- No Application Banner -->
+      <div class="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
+              <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200">Ready to Start Selling?</h3>
+              <p class="text-blue-700 dark:text-blue-300">
+                Apply to become a HomeFood chef and start sharing your delicious dishes with food lovers in your area.
+              </p>
+            </div>
+          </div>
+          <Button onclick={() => goto('/host/apply')} class="bg-blue-600 hover:bg-blue-700 text-white">
+            Apply Now
+          </Button>
+        </div>
+      </div>
     {/if}
 
     <!-- Header -->

@@ -7,7 +7,7 @@ export const Order = pgTable('orders', {
   id: varchar('id')
     .primaryKey()
     .notNull()
-    .$defaultFn(() => generateEntityId('ord')),
+    .$defaultFn(() => generateEntityId('order')),
   userId: varchar('user_id')
     .notNull()
     .references(() => User.id),
