@@ -39,12 +39,12 @@ const _services = [
     href: '/host',
     color: 'bg-gradient-to-br from-blue-400 to-indigo-500',
   },
-  {
-    icon: ShoppingCart,
-    name: 'Cart',
-    href: '/cart',
-    color: 'bg-gradient-to-br from-purple-400 to-pink-500',
-  },
+  // {
+  //   icon: ShoppingCart,
+  //   name: 'Cart',
+  //   href: '/cart',
+  //   color: 'bg-gradient-to-br from-purple-400 to-pink-500',
+  // },
 ]
 
 // Promotions
@@ -90,7 +90,7 @@ const _promotions = [
     </div> -->
 
     <!-- Services Grid - Zomato Style -->
-    <div class="grid grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+    <div class="grid grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
       {#each _services as service}
         <button
           class="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-400 transition-all duration-200 group w-full"

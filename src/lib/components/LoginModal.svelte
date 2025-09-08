@@ -252,21 +252,50 @@ async function verifyOTP() {
         // Clear the auth redirect cookie
         document.cookie = 'auth_redirect_url=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
 
-        // Close the modal and redirect
+        // Close the modal
         loginModal.close()
-        window.location.reload()
-      } else if ($loginModal.redirectUrl && $loginModal.redirectUrl !== '/') {
-        // User has preferences and has a redirect URL
-        loginModal.close()
-        goto($loginModal.redirectUrl)
-      } else if ($loginModal.purchaseInfo) {
-        // If login was from a purchase flow, redirect to payment
-        loginModal.close()
-        goto(
-          `/payment?board=${$loginModal.purchaseInfo.board}&price=${$loginModal.purchaseInfo.price}`
-        )
+
+        // Priority order for redirects:
+        // 1. Modal redirect URL (from button clicks)
+        // 2. Purchase flow redirect
+        // 3. User preference based redirect
+        // 4. Default reload
+
+        if ($loginModal.redirectUrl && $loginModal.redirectUrl !== '/') {
+          // Redirect to the URL specified in the modal (from button clicks)
+          goto($loginModal.redirectUrl)
+        } else if ($loginModal.purchaseInfo) {
+          // If login was from a purchase flow, redirect to payment
+          goto(
+            `/payment?board=${$loginModal.purchaseInfo.board}&price=${$loginModal.purchaseInfo.price}`
+          )
+        } else {
+          // Check user preferences for redirect
+          const user = result.user as ApiUser
+          const userBoard = user.metadata?.board || ''
+          const userClass = user.metadata?.class || ''
+
+          if (userBoard === 'CBSE') {
+            goto('/cbse')
+          } else if (userBoard === 'WBBSE') {
+            if (userClass === '11' || userClass === '12') {
+              goto('/wbchse')
+            } else {
+              goto('/wbbse')
+            }
+          } else if (userBoard === 'BSE') {
+            if (userClass === '11' || userClass === '12') {
+              goto('/chse')
+            } else {
+              goto('/bse')
+            }
+          } else {
+            // Default case - reload current page
+            window.location.reload()
+          }
+        }
       } else {
-        // Default case - just close the modal
+        // Login failed - just close the modal
         setTimeout(() => {
           handleClose()
         }, 1000)

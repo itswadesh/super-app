@@ -1,10 +1,11 @@
 import { pgTable, text, boolean, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
-
-// Helper function to generate unique IDs
-const generateId = () => crypto.randomUUID()
+import { generateEntityId } from '../../utils'
 
 export const Category = pgTable('categories', {
-  id: varchar('id').primaryKey().$defaultFn(generateId),
+  id: varchar('id')
+    .primaryKey()
+    .notNull()
+    .$defaultFn(() => generateEntityId('cat')),
   name: varchar('name').notNull(),
   slug: varchar('slug').notNull().unique(),
   description: varchar('description'),

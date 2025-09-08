@@ -1,11 +1,13 @@
 import { pgTable, varchar, timestamp, decimal, jsonb } from 'drizzle-orm/pg-core'
 import { User } from './user'
-
-// Helper function to generate unique IDs
-const generateId = () => crypto.randomUUID()
+import { Payment } from './payment'
+import { generateEntityId } from '../../utils'
 
 export const Order = pgTable('orders', {
-  id: varchar('id').primaryKey().$defaultFn(generateId),
+  id: varchar('id')
+    .primaryKey()
+    .notNull()
+    .$defaultFn(() => generateEntityId('ord')),
   userId: varchar('user_id')
     .notNull()
     .references(() => User.id),
@@ -23,6 +25,7 @@ export const Order = pgTable('orders', {
   actualDeliveryTime: timestamp('actual_delivery_time'),
   paymentStatus: varchar('payment_status').default('pending'), // 'pending', 'paid', 'failed', 'refunded'
   paymentMethod: varchar('payment_method'),
+  paymentId: varchar('payment_id').references(() => Payment.id), // Reference to Payment table
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

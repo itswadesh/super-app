@@ -405,7 +405,7 @@ async function placeOrder() {
       // Create mock order response
       result = {
         success: true,
-        orderId: `ORD${Date.now()}`,
+        orderNo: `ORD${Date.now()}`,
         message: 'Order placed successfully',
         estimatedDelivery: '6:00 PM - 9:30 PM',
       }
@@ -609,8 +609,8 @@ function proceedToPayment() {
                       </svg>
                     </div>
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Order Placed Successfully!</h3>
-                    {#if orderResult?.orderId}
-                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Order ID: {orderResult.orderId}</p>
+                    {#if orderResult?.orderNo}
+                      <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Order ID: {orderResult.orderNo}</p>
                     {/if}
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
                       {#if orderResult?.estimatedDelivery}

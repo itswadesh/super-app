@@ -8,6 +8,7 @@ export { Order } from './order'
 export { OrderItem } from './order-item'
 export { HostRating } from './host-rating'
 export { Vendor } from './vendor'
+export { Payment } from './payment'
 
 // Export common utilities and types
 export { generateId, commonFields } from './utils'
@@ -26,3 +27,5 @@ export type {
   ErrorOccurrence as ErrorOccurrenceType,
   ErrorNote as ErrorNoteType,
 } from './types'
+
+export type { Payment as PaymentType } from './payment'

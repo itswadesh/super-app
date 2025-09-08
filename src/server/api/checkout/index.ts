@@ -1,14 +1,15 @@
 import { zValidator } from '@hono/zod-validator'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { db } from '../../db'
-import { Order, OrderItem, Plan } from '../../db/schema' // Coupon schema might be needed if validateCouponUtil returns full Coupon object
+import { Order, OrderItem, Food, Payment } from '../../db/schema' // Coupon schema might be needed if validateCouponUtil returns full Coupon object
 import { afterOrderConfirmation, placeOrder } from './utils' // Assuming placeOrder is in utils
 import { capturePhonepe } from './phonepe/capture'
 import { phonepeCheckout } from './phonepe/checkout'
 import { validateCoupon as validateCouponUtil } from './validate-coupon'
+import { authenticate } from '@/server/middlewares'
 
 // Create a checkout router
 export const checkoutRoutes = new Hono()
@@ -374,7 +375,7 @@ checkoutRoutes.post('/checkout/revenuecat-capture', async (c) => {
 })
 
 // Cash on Delivery checkout
-checkoutRoutes.post('/cod', async (c) => {
+checkoutRoutes.post('/cod', authenticate, async (c) => {
   try {
     const { items, deliveryAddress, totalAmount, paymentMethod, orderDate } = await c.req.json()
 
@@ -391,56 +392,179 @@ checkoutRoutes.post('/cod', async (c) => {
     }
 
     // Get user ID from context (assuming authentication middleware sets this)
-    const userId = c.req.user?.id
-    const hostId = items[0]?.hostId
+    const user = c.get('user')
+    const userId = user?.id
 
-    // Generate order number
-    const orderNumber = `COD-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`
+    // Extract foodIds from items
+    const foodIds = items.map((item: any) => item.id || item.foodId)
 
-    // Calculate estimated delivery time (6:00 PM - 9:30 PM today)
-    const now = new Date()
-    const estimatedDeliveryTime = new Date(now)
-    estimatedDeliveryTime.setHours(18, 0, 0, 0) // 6:00 PM
+    // Query foods to get hostId and price for each foodId
+    const foods = await db.query.Food.findMany({
+      where: inArray(Food.id, foodIds),
+      columns: { id: true, hostId: true, price: true },
+    })
 
-    // Insert order into database
-    const [newOrder] = await db
-      .insert(Order)
+    // Check if all foodIds exist
+    if (foods.length !== foodIds.length) {
+      return c.json({ error: 'One or more food items not found' }, 400)
+    }
+
+    // Create map of foodId to food details
+    const foodMap = foods.reduce(
+      (acc, food) => {
+        acc[food.id] = { hostId: food.hostId, price: parseFloat(food.price) }
+        return acc
+      },
+      {} as Record<string, { hostId: string; price: number }>
+    )
+
+    // Group items by hostId and calculate totals
+    const hostGroups: Record<string, { items: any[]; totalAmount: number }> = {}
+    for (const item of items) {
+      const foodId = item.id || item.foodId
+      const foodDetails = foodMap[foodId]
+      if (!foodDetails) continue // Should not happen due to earlier check
+
+      const hostId = foodDetails.hostId
+      if (!hostGroups[hostId]) {
+        hostGroups[hostId] = { items: [], totalAmount: 0 }
+      }
+      hostGroups[hostId].items.push(item)
+      hostGroups[hostId].totalAmount += foodDetails.price * item.quantity
+    }
+
+    // Generate base order number for customer
+    const baseOrderNumber = `COD-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`
+
+    // Calculate total amount for all orders combined
+    const totalOrderAmount = Object.values(hostGroups).reduce(
+      (sum, group) => sum + group.totalAmount,
+      0
+    )
+
+    // Create single payment record for the entire order
+    const [paymentRecord] = await db
+      .insert(Payment)
       .values({
         userId,
-        hostId,
-        orderNumber,
-        status: 'confirmed',
-        totalAmount: totalAmount.toString(),
-        deliveryAddress,
-        estimatedDeliveryTime,
-        paymentStatus: 'pending', // COD payment is pending until delivery
+        orderNo: baseOrderNumber,
+        totalAmount: totalOrderAmount.toString(),
+        paymentStatus: 'pending',
         paymentMethod: paymentMethod || 'COD',
       })
       .returning()
 
-    // Insert order items
-    const orderItems = items.map((item: any) => ({
-      orderId: newOrder.id,
-      foodId: item.id || item.foodId,
-      quantity: item.quantity,
-      unitPrice: item.price.toString(),
-      totalPrice: (item.price * item.quantity).toString(),
-      specialRequests: item.specialRequests || null,
-    }))
+    // Create orders for each host
+    const createdOrders = []
+    let orderIndex = 1
+    for (const [hostId, group] of Object.entries(hostGroups)) {
+      // Generate internal order number with suffix
+      const internalOrderNumber = `${baseOrderNumber}-${orderIndex}`
 
-    await db.insert(OrderItem).values(orderItems)
+      // Calculate estimated delivery time
+      const now = new Date()
+      const estimatedDeliveryTime = new Date(now)
+      estimatedDeliveryTime.setHours(18, 0, 0, 0) // 6:00 PM
+
+      // Insert order into database with internal order number
+      const [newOrder] = await db
+        .insert(Order)
+        .values({
+          userId,
+          hostId,
+          orderNumber: internalOrderNumber,
+          status: 'pending', // Orders start as pending, will be confirmed on payment success
+          totalAmount: group.totalAmount.toString(),
+          deliveryAddress,
+          estimatedDeliveryTime,
+          paymentStatus: 'pending', // COD payment is pending until delivery
+          paymentMethod: paymentMethod || 'COD',
+          paymentId: paymentRecord.id, // Link to payment record immediately
+        })
+        .returning()
+
+      // Insert order items
+      const orderItems = group.items.map((item: any) => ({
+        orderId: newOrder.id,
+        foodId: item.id || item.foodId,
+        quantity: item.quantity,
+        unitPrice: foodMap[item.id || item.foodId].price.toString(),
+        totalPrice: (foodMap[item.id || item.foodId].price * item.quantity).toString(),
+        specialRequests: item.specialRequests || null,
+      }))
+
+      await db.insert(OrderItem).values(orderItems)
+
+      createdOrders.push({
+        orderId: newOrder.id,
+        orderNo: baseOrderNumber, // Show customer the base order number
+        parentOrderNo: internalOrderNumber, // Parent order number for internal reference
+        paymentId: paymentRecord.id, // Use the same payment ID for all orders
+        hostId,
+        totalAmount: newOrder.totalAmount,
+        status: 'pending', // Orders are created as pending
+        estimatedDelivery: '6:00 PM - 9:30 PM',
+        items: orderItems.length,
+      })
+
+      orderIndex++
+    }
 
     return c.json({
       success: true,
-      orderId: newOrder.id,
-      orderNumber: newOrder.orderNumber,
-      message: 'Order placed successfully',
-      estimatedDelivery: '6:00 PM - 9:30 PM',
-      status: newOrder.status,
-      totalAmount: newOrder.totalAmount,
+      orderNo: baseOrderNumber, // Customer-facing order number
+      paymentId: paymentRecord.id, // Shared payment ID for all orders
+      orders: createdOrders,
+      message: `${createdOrders.length} order(s) created and pending payment confirmation`,
     })
   } catch (error: any) {
     console.error('COD checkout error:', error)
     return c.json({ error: error.message || 'COD checkout failed' }, error.status || 500)
+  }
+})
+
+// Payment success endpoint - updates all orders for a payment
+checkoutRoutes.post('/payment-success', async (c) => {
+  try {
+    const { paymentId, paymentReferenceId, amountPaid } = await c.req.json()
+
+    if (!paymentId) return c.json({ error: 'paymentId is required' }, 400)
+
+    // Update payment status to paid
+    await db
+      .update(Payment)
+      .set({
+        paymentStatus: 'paid',
+        paymentReferenceId: paymentReferenceId || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(Payment.id, paymentId))
+
+    // Find all orders with this paymentId
+    const ordersToUpdate = await db.query.Order.findMany({
+      where: eq(Order.paymentId, paymentId),
+    })
+
+    // Update all orders to confirmed and paid status
+    for (const order of ordersToUpdate) {
+      await db
+        .update(Order)
+        .set({
+          status: 'confirmed',
+          paymentStatus: 'paid',
+          updatedAt: new Date(),
+        })
+        .where(eq(Order.id, order.id))
+    }
+
+    return c.json({
+      success: true,
+      message: `${ordersToUpdate.length} order(s) confirmed and marked as paid`,
+      paymentId,
+      ordersUpdated: ordersToUpdate.length,
+    })
+  } catch (error: any) {
+    console.error('Payment success error:', error)
+    return c.json({ error: error.message || 'Payment success update failed' }, error.status || 500)
   }
 })

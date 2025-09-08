@@ -481,8 +481,9 @@ async function submitNewFood() {
     // Success - close modal and refresh data
     closeAddFoodModal()
 
-    // TODO: Refresh the foods list or navigate to reload the page
-    // For now, we'll just close the modal
+    // Refresh the foods list to show the newly created item
+    await fetchHostData()
+
     toast.success('Food item added successfully!')
   } catch (error) {
     console.error('Error adding food:', error)
@@ -935,7 +936,7 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
       <TabsContent value="orders" class="space-y-4">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Orders</h2>
-          <Button variant="outline">View All Orders</Button>
+          <!-- <Button variant="outline">View All Orders</Button> -->
         </div>
 
         {#if recentOrders.length === 0}
