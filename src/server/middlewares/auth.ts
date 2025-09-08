@@ -72,3 +72,37 @@ export const optionalAuthenticate = async (c: Context, next: Next) => {
 
   await next()
 }
+
+/**
+* Admin authentication middleware
+* Requires authentication and admin role
+*/
+export const authenticateAdmin = async (c: Context, next: Next) => {
+  const sessionToken = getSessionTokenCookie(c)
+
+  if (!sessionToken) {
+    return c.json({ error: 'No session token provided' }, 401)
+  }
+
+  try {
+    const { session, user } = await validateSessionToken(sessionToken)
+
+    if (!session || !user) {
+      return c.json({ error: 'Invalid or expired session' }, 401)
+    }
+
+    // Check if user has admin role
+    if (user.role !== 'admin') {
+      return c.json({ error: 'Admin access required' }, 403)
+    }
+
+    // Attach user and session to context
+    c.set('user', user)
+    c.set('session', session)
+
+    await next()
+  } catch (error) {
+    console.error('Admin authentication error:', error)
+    return c.json({ error: 'Authentication failed' }, 401)
+  }
+}

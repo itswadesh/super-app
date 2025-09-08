@@ -3,11 +3,12 @@ import { db } from '../../db'
 import { Vendor, User } from '../../db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
+import { authenticateAdmin } from '../../middlewares'
 
 export const vendorRoutes = new Hono()
 
 // GET /api/admin/vendors - Get all vendor applications
-vendorRoutes.get('/', async (c) => {
+vendorRoutes.get('/', authenticateAdmin, async (c) => {
   try {
     const vendors = await db
       .select({
@@ -54,7 +55,7 @@ vendorRoutes.get('/', async (c) => {
 })
 
 // GET /api/admin/vendors/:id - Get specific vendor application
-vendorRoutes.get('/:id', async (c) => {
+vendorRoutes.get('/:id', authenticateAdmin, async (c) => {
   try {
     const id = c.req.param('id')
 
@@ -112,7 +113,7 @@ vendorRoutes.get('/:id', async (c) => {
 })
 
 // PATCH /api/admin/vendors/:id - Update vendor application status
-vendorRoutes.patch('/:id', async (c) => {
+vendorRoutes.patch('/:id', authenticateAdmin, async (c) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
@@ -163,7 +164,7 @@ vendorRoutes.patch('/:id', async (c) => {
 })
 
 // GET /api/admin/vendors/stats - Get vendor statistics
-vendorRoutes.get('/stats/summary', async (c) => {
+vendorRoutes.get('/stats/summary', authenticateAdmin, async (c) => {
   try {
     const stats = await db
       .select({
@@ -175,7 +176,9 @@ vendorRoutes.get('/stats/summary', async (c) => {
 
     const statsMap = stats.reduce(
       (acc, stat) => {
-        acc[stat.status] = stat.count
+        if (stat.status) {
+          acc[stat.status] = stat.count
+        }
         return acc
       },
       {} as Record<string, number>
