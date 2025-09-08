@@ -1,12 +1,13 @@
 import { pgTable, integer, boolean, timestamp, decimal, jsonb, varchar } from 'drizzle-orm/pg-core'
 import { User } from './user'
 import { Category } from './category'
-
-// Helper function to generate unique IDs
-const generateId = () => crypto.randomUUID()
+import { generateEntityId } from '@/server/utils'
 
 export const Food = pgTable('foods', {
-  id: varchar('id').primaryKey().$defaultFn(generateId),
+  id: varchar('id')
+    .primaryKey()
+    .notNull()
+    .$defaultFn(() => generateEntityId('prod')),
   hostId: varchar('host_id')
     .notNull()
     .references(() => User.id),

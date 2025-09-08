@@ -2,11 +2,12 @@ import { Hono } from 'hono'
 import { db } from '../db'
 import { Vendor } from '../db/schema'
 import { eq } from 'drizzle-orm'
+import { authenticate } from '../middlewares'
 
 export const routes = new Hono()
 
 // Create a new application
-routes.post('/', async (c) => {
+routes.post('/', authenticate, async (c) => {
   try {
     const body = await c.req.json()
     const { businessName } = body
@@ -16,7 +17,7 @@ routes.post('/', async (c) => {
     }
 
     // TODO: Get actual user ID from authentication
-    const userId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Test user ID
+    const userId = c.get('user')?.id
 
     // Check if user already has a pending or approved application
     const existingApplication = await db
@@ -57,11 +58,10 @@ routes.post('/', async (c) => {
 })
 
 // Get user's application status
-routes.get('/status', async (c) => {
+routes.get('/status', authenticate, async (c) => {
   try {
-    // TODO: Get actual user ID from authentication
-    const userId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Test user ID
 
+    const userId = c.get('user')?.id
     const application = await db.select().from(Vendor).where(eq(Vendor.userId, userId)).limit(1)
 
     if (application.length === 0) {

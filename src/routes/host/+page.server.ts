@@ -6,7 +6,7 @@ import type { PageServerLoad } from './$types'
 export const load: PageServerLoad = async ({ locals }) => {
   try {
     // TODO: Get actual host ID from authentication
-    const hostId = locals.user?.id || 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Use authenticated user ID or test user ID
+    const hostId = locals.user?.id
 
     if (!hostId) {
       return {
@@ -27,18 +27,22 @@ export const load: PageServerLoad = async ({ locals }) => {
     let application = await db.select().from(User).where(eq(User.id, hostId)).limit(1)
 
     // If no application exists for this test user, create one
-    if (application.length === 0 && hostId === 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec') {
-      console.log('Creating test application for user:', hostId)
-      const testApplication = await db
-        .update(User)
-        .set({
-          businessName: 'Test Chef',
-          status: 'applied',
-        })
-        .where(eq(User.id, hostId))
-        .returning()
-      application = testApplication
-    }
+    // if (application.length === 0 && hostId === 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec') {
+      // console.log('Creating test application for user:', hostId)
+      // const testApplication = await db
+      //   .insert(Vendor)
+      //   .values({
+      //     userId: hostId,
+      //     fullName: 'Test Chef',
+      //     email: 'test@example.com',
+      //     phone: '0000000000',
+      //     address: 'Test Address',
+      //     idProof: 'test-proof',
+      //     status: 'pending',
+      //   })
+      //   .returning()
+      // application = testApplication
+    // }
 
     // Get host's foods
     const foods = await db

@@ -83,7 +83,6 @@ onMount(() => {
 async function fetchHostData() {
   try {
     isLoading = true
-    const hostId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Test host ID from seeded data
 
     // Fetch foods
     const foodsResponse = await fetch(`/api/foods/my`)
@@ -136,7 +135,6 @@ async function fetchHostData() {
 async function fetchOrdersData() {
   try {
     isLoading = true
-    const hostId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Test host ID from seeded data
 
     // Fetch orders
     const ordersResponse = await fetch(`/api/orders/my`)
@@ -170,7 +168,6 @@ async function fetchOrdersData() {
 async function fetchAnalyticsData() {
   try {
     isLoading = true
-    const hostId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Test host ID from seeded data
 
     // Fetch analytics/stats
     const analyticsResponse = await fetch(`/api/orders/my/analytics`)

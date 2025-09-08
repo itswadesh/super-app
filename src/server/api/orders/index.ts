@@ -3,10 +3,12 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { db } from '../../db'
 import { Order, OrderItem, Food, User, Vendor } from '../../db/schema'
+import { getSessionTokenCookie, validateSessionToken } from '../../db/auth'
+import { authenticate } from '../../middlewares/auth'
 
 export const ordersRoutes = new Hono()
 
-ordersRoutes.get('/user-orders', async (c) => {
+ordersRoutes.get('/user-orders', authenticate, async (c) => {
   const q = c.req.query()
   try {
     const data = await db
@@ -32,8 +34,14 @@ ordersRoutes.get('/public', async (c) => {
 })
 
 // Get orders for a specific host
-ordersRoutes.get('/my', async (c) => {
-  const hostId = c.req.user?.id || 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec'
+ordersRoutes.get('/my', authenticate, async (c) => {
+  //  const sessionToken = getSessionTokenCookie(c)
+  //     const session = await validateSessionToken(sessionToken || '')
+  //     if (!session) {
+  //       return c.json({ error: 'Unauthorized' }, 401)
+  //     }
+  const user = c.get('user')
+  const hostId = user?.id
   const limit = parseInt(c.req.query('limit') || '10')
   const orders = await db
     .select({
@@ -68,8 +76,9 @@ ordersRoutes.get('/my', async (c) => {
 })
 
 // Get analytics/stats for a specific host
-ordersRoutes.get('/my/analytics', async (c) => {
-  const hostId = c.req.user?.id || 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec'
+ordersRoutes.get('/my/analytics', authenticate, async (c) => {
+  const user = c.get('user')
+  const hostId = user?.id 
 
   // Get foods for the host
   const foods = await db
@@ -116,8 +125,9 @@ ordersRoutes.get('/my/analytics', async (c) => {
 })
 
 // Get orders for the authenticated user
-ordersRoutes.get('/user-orders', async (c) => {
-  const userId = c.req.user?.id
+ordersRoutes.get('/user-orders', authenticate, async (c) => {
+  const user = c.get('user')
+  const userId = user?.id
 
   if (!userId) {
     throw new HTTPException(401, { message: 'Authentication required' })

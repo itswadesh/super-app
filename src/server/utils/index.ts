@@ -1,8 +1,8 @@
 import 'dotenv/config'
 import { getCookie } from 'hono/cookie'
 import { verify } from 'hono/jwt'
+import { ulid } from 'ulid'
 
-import { nanoid } from 'nanoid'
 
 export const getSortingParams = (sort: string, sortlist: string[] = []) => {
   if (!sortlist.includes(sort)) {
@@ -24,11 +24,8 @@ export const getSortingParams = (sort: string, sortlist: string[] = []) => {
  * @param prefix
  */
 export function generateEntityId(prefix?: string): string {
-  // if (idProperty) {
-  //   return idProperty
-  // }
-
-  const id = nanoid()
+  const id = ulid()
+  // console.log(id)
   prefix = prefix ? `${prefix}_` : ''
   return `${prefix}${id}`
 }

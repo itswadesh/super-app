@@ -2,6 +2,7 @@ import { Hono, type Context } from 'hono'
 import { db } from '../db'
 import { Food, Category, User, Vendor } from '../db/schema'
 import { eq, and, like, or, desc, sql } from 'drizzle-orm'
+import { authenticate } from '../middlewares'
 
 declare module 'hono' {
   interface HonoRequest {
@@ -132,9 +133,8 @@ routes.get('/categories', async (c) => {
 // Host-specific endpoints
 
 // Get foods for a specific host
-routes.get('/my', async (c) => {
-  const hostId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' || c.req.user?.id
-
+routes.get('/my', authenticate, async (c) => {
+const hostId = c.get('user')?.id
   const foods = await db
     .select({
       id: Food.id,
@@ -230,9 +230,9 @@ routes.get('/:id', async (c) => {
 })
 
 // Create a new food item
-routes.post('/', async (c: Context) => {
+routes.post('/', authenticate, async (c: Context) => {
   const body = await c.req.json()
-  const hostId = 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' || c.req.user?.id
+const hostId = c.get('user')?.id
   const {
     name,
     description,

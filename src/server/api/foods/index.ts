@@ -1,10 +1,12 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, sql, like, or, desc } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { db } from '../../db'
-import { Food, Category, User } from '../../db/schema'
+import { Food, Category, User, Vendor } from '../../db/schema'
+import { authenticate } from '../../middlewares/auth'
 
 export const routes = new Hono()
+
 
 // Helper function to generate slug from name
 const generateSlug = (name: string): string => {
@@ -16,12 +18,108 @@ const generateSlug = (name: string): string => {
     .trim()
 }
 
+// GET /api/foods - Get all foods with optional filtering
+routes.get('/', async (c: Context) => {
+  try {
+    const search = c.req.query('search')
+    const category = c.req.query('category')
+    const vegetarian = c.req.query('vegetarian')
+    const page = parseInt(c.req.query('page') || '1')
+    const limit = parseInt(c.req.query('limit') || '20')
+    const offset = (page - 1) * limit
+
+    const whereConditions = []
+
+    if (search) {
+      whereConditions.push(
+        or(like(Food.name, `%${search}%`), like(Food.description, `%${search}%`))
+      )
+    }
+
+    if (category && category !== 'all') {
+      whereConditions.push(eq(Food.categoryId, category))
+    }
+
+    if (vegetarian !== undefined) {
+      const isVeg = vegetarian === 'true'
+      whereConditions.push(eq(Food.isVegetarian, isVeg))
+    }
+
+    whereConditions.push(eq(Food.isAvailable, true))
+
+    const foods = await db
+      .select({
+        id: Food.id,
+        name: Food.name,
+        description: Food.description,
+        price: Food.price,
+        image: Food.image,
+        categoryId: Food.categoryId,
+        isVegetarian: Food.isVegetarian,
+        preparationTime: Food.preparationTime,
+        rating: Food.rating,
+        totalRatings: Food.totalRatings,
+        hostId: Food.hostId,
+        hostName: User.name,
+        hostAddress: Vendor.address,
+        hostCity: Vendor.city,
+        categoryName: Category.name,
+      })
+      .from(Food)
+      .leftJoin(User, eq(Food.hostId, User.id))
+      .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
+      .leftJoin(Category, eq(Food.categoryId, Category.id))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(desc(Food.createdAt))
+      .limit(limit)
+      .offset(offset)
+
+    // Transform the data to match the expected format
+    const transformedFoods = foods.map((food) => ({
+      id: food.id,
+      name: food.name,
+      description: food.description,
+      price: parseFloat(food.price),
+      image: food.image || '/api/placeholder/300/200',
+      category: food.categoryName || 'Uncategorized',
+      isVegetarian: food.isVegetarian,
+      preparationTime: food.preparationTime || 30,
+      rating: food.rating ? parseFloat(food.rating) : 0,
+      totalRatings: food.totalRatings || 0,
+      host: {
+        name: food.hostName || 'Unknown Host',
+        rating: 0, // Vendor table doesn't have rating
+        location: `${food.hostAddress || 'Unknown Address'}, ${food.hostCity || 'Unknown City'}`,
+      },
+    }))
+
+    // Get total count for pagination
+    const totalResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(Food)
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+
+    const total = totalResult[0]?.count || 0
+
+    return c.json({
+      foods: transformedFoods,
+      total,
+      page,
+      pageSize: limit,
+    })
+  } catch (error) {
+    console.error('Error fetching foods:', error)
+    return c.json({ error: 'Failed to fetch foods' }, 500)
+  }
+})
+
 // POST /api/foods - Create a new food
-routes.post('/', async (c: Context) => {
-  console.log('Received request body:......................', c.req.user)
+routes.post('/', authenticate, async (c: Context) => {
+  // console.log('Received request body:......................', c.get('user'))
   try {
     const body = await c.req.json()
-    const hostId = c.req.user?.id
+    const user = c.get('user')
+    const hostId = user?.id
     const {
       name,
       description,
@@ -65,13 +163,13 @@ routes.post('/', async (c: Context) => {
 
     // If categoryId is provided, look up the category UUID from the slug
     let categoryUuid = undefined
-    // console.log('Checking categoryId condition:', {
-    //   categoryId,
-    //   isEmptyString: categoryId === '',
-    //   trimmed: categoryId?.trim(),
-    //   isTruthy: !!categoryId,
-    //   trimTruthy: !!categoryId?.trim(),
-    // })
+    console.log('Checking categoryId condition:', {
+      categoryId,
+      isEmptyString: categoryId === '',
+      trimmed: categoryId?.trim(),
+      isTruthy: !!categoryId,
+      trimTruthy: !!categoryId?.trim(),
+    })
 
     if (categoryId && typeof categoryId === 'string' && categoryId.trim().length > 0) {
       // console.log('CategoryId is valid, looking up UUID for slug:', categoryId)
@@ -105,7 +203,7 @@ routes.post('/', async (c: Context) => {
     if (categoryUuid) {
       insertData.categoryId = categoryUuid
     }
-
+console.log(insertData,'iiiiiiiiiiiiii')
     const newFood = await db.insert(Food).values(insertData).returning()
 
     return c.json(newFood[0], 201)
@@ -141,18 +239,19 @@ routes.get('/categories', async (c: Context) => {
 
     return c.json(allCategories, 200)
   } catch (error) {
-    console.error('Error fetching categories:', error)
+    console.error('Error fetching categories:', error instanceof Error ? error.message : String(error))
     return c.json({ error: 'Failed to fetch categories' }, 500)
   }
 })
 
-// GET /api/foods/host/:hostId - Get foods for a specific host
-routes.get('/my', async (c: Context) => {
+// GET /api/foods/my - Get foods for the authenticated user
+routes.get('/my', authenticate, async (c: Context) => {
   try {
-    const hostId = c.req.param('hostId')
+    const user = c.get('user')
+    const hostId = user?.id
 
     if (!hostId) {
-      return c.json({ error: 'Host ID is required' }, 400)
+      return c.json({ error: 'User not authenticated' }, 401)
     }
 
     const foods = await db
@@ -183,16 +282,17 @@ routes.get('/my', async (c: Context) => {
 
     return c.json(foods, 200)
   } catch (error) {
-    console.error('Error fetching foods for host:', error)
+    console.error('Error fetching foods for host:', error instanceof Error ? error.message : String(error))
     return c.json({ error: 'Failed to fetch foods' }, 500)
   }
 })
 
 // PUT /api/foods/:id - Update a food
-routes.put('/:id', async (c: Context) => {
+routes.put('/:id', authenticate, async (c: Context) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
+    const user = c.get('user')
 
     if (!id) {
       return c.json({ error: 'Food ID is required' }, 400)
@@ -246,16 +346,17 @@ routes.put('/:id', async (c: Context) => {
 
     return c.json(updatedFood[0], 200)
   } catch (error) {
-    console.error('Error updating food:', error)
+    console.error('Error updating food:', error instanceof Error ? error.message : String(error))
     return c.json({ error: 'Failed to update food' }, 500)
   }
 })
 
 // PATCH /api/foods/:id/availability - Toggle food availability
-routes.patch('/:id/availability', async (c: Context) => {
+routes.patch('/:id/availability', authenticate, async (c: Context) => {
   try {
     const id = c.req.param('id')
     const body = await c.req.json()
+    const user = c.get('user')
 
     if (!id) {
       return c.json({ error: 'Food ID is required' }, 400)
@@ -286,7 +387,7 @@ routes.patch('/:id/availability', async (c: Context) => {
 
     return c.json(updatedFood[0], 200)
   } catch (error) {
-    console.error('Error updating food availability:', error)
+    console.error('Error updating food availability:', error instanceof Error ? error.message : String(error))
     return c.json({ error: 'Failed to update food availability' }, 500)
   }
 })
@@ -308,7 +409,7 @@ routes.get('/:id', async (c: Context) => {
 
     return c.json(foods[0], 200)
   } catch (error) {
-    console.error('Error fetching food:', error)
+    console.error('Error fetching food:', error instanceof Error ? error.message : String(error))
     return c.json({ error: 'Failed to fetch food' }, 500)
   }
 })

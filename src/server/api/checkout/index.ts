@@ -391,8 +391,8 @@ checkoutRoutes.post('/cod', async (c) => {
     }
 
     // Get user ID from context (assuming authentication middleware sets this)
-    const userId = c.req.user?.id || '550e8400-e29b-41d4-a716-446655440000' // fallback UUID
-    const hostId = items[0]?.hostId || 'dd4c4faf-4ee0-4c64-88e5-acb5e7aca9ec' // Get hostId from first item
+    const userId = c.req.user?.id
+    const hostId = items[0]?.hostId
 
     // Generate order number
     const orderNumber = `COD-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`
