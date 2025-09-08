@@ -1,5 +1,23 @@
 <script lang="ts">
 import { ChefHat, Flame, Receipt, ShoppingCart } from '@lucide/svelte'
+import { page } from '$app/state'
+import { loginModal } from '$lib/stores/loginModal'
+import { goto } from '$app/navigation'
+
+// Handle service navigation with authentication check
+function handleServiceClick(href: string, e: Event) {
+  const isAuthenticated = page.data?.user?.id
+  const isProtectedRoute = !href.startsWith('/api/') && href !== '/' && href !== '/foods'
+
+  if (!isAuthenticated && isProtectedRoute) {
+    // Prevent navigation and open login modal
+    e.preventDefault()
+    loginModal.open({ redirectUrl: href })
+  } else {
+    // Allow normal navigation
+    goto(href)
+  }
+}
 
 // Featured services
 const _services = [
@@ -74,15 +92,15 @@ const _promotions = [
     <!-- Services Grid - Zomato Style -->
     <div class="grid grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
       {#each _services as service}
-        <a
-          class="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-400 transition-all duration-200 group"
-          href={service.href}
+        <button
+          class="flex flex-col items-center justify-center p-3 sm:p-4 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:shadow-md border border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-400 transition-all duration-200 group w-full"
+          onclick={(e) => handleServiceClick(service.href, e)}
         >
           <div class="w-12 h-12 sm:w-14 sm:h-14 {service.color} rounded-full flex items-center justify-center text-white mb-2 sm:mb-3 transition-colors">
             <svelte:component this={service.icon} class="w-6 h-6 sm:w-7 sm:h-7" />
           </div>
           <span class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium text-center leading-tight group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">{service.name}</span>
-        </a>
+        </button>
       {/each}
     </div>
 
@@ -153,12 +171,12 @@ const _promotions = [
             <h3 class="font-bold text-lg sm:text-xl mb-2 drop-shadow-lg">{promo.title}</h3>
             <p class="text-sm sm:text-base opacity-95 drop-shadow-md">{promo.description}</p>
             <div class="mt-4 inline-flex items-center text-sm font-medium bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/30 transition-all duration-200">
-              <a href={promo.href} class="flex items-center text-white hover:text-yellow-100">
+              <button onclick={(e) => handleServiceClick(promo.href, e)} class="flex items-center text-white hover:text-yellow-100">
                 <span>{promo.buttonText}</span>
                 <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
-              </a>
+              </button>
             </div>
           </div>
         {/each}

@@ -1,7 +1,7 @@
 import { pgTable, integer, boolean, timestamp, decimal, jsonb, varchar } from 'drizzle-orm/pg-core'
 import { User } from './user'
 import { Category } from './category'
-import { generateEntityId } from '@/server/utils'
+import { generateEntityId } from '../../utils'
 
 export const Food = pgTable('foods', {
   id: varchar('id')

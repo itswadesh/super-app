@@ -215,7 +215,7 @@ async function verifyOTP() {
           email: apiUser.email,
           role: apiUser.role || 'user',
           board: apiUser.board || apiUser.metadata?.board,
-          class: apiUser.class || apiUser.metadata?.class
+          class: apiUser.class || apiUser.metadata?.class,
         }
 
         // Update the store with the user data
@@ -248,6 +248,9 @@ async function verifyOTP() {
             redirectAfter = '/bse'
           }
         }
+
+        // Clear the auth redirect cookie
+        document.cookie = 'auth_redirect_url=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
 
         // Close the modal and redirect
         loginModal.close()

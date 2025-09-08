@@ -3,6 +3,7 @@ import '../app.css'
 import { goto, invalidateAll } from '$app/navigation'
 import { page } from '$app/state'
 import { onMount } from 'svelte'
+import { browser } from '$app/environment'
 // import { onMount, tick } from 'svelte'
 import LoginButton from '$lib/components/LoginButton.svelte'
 // Remove LoginModal and Modal if they are only used for the old mobile menu, otherwise keep them.
@@ -11,6 +12,7 @@ import LoginModal from '$lib/components/LoginModal.svelte'
 import UserMenu from '$lib/components/UserMenu.svelte'
 import { authService } from '$lib/services/auth-service'
 import { useAnalytics } from '$lib/stores/analytics_store'
+import { loginModal } from '$lib/stores/loginModal'
 // import { apiService } from '$lib/services/api.service'
 // Import Shadcn Sheet components
 import {
@@ -80,6 +82,25 @@ onMount(() => {
   if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
     document.documentElement.classList.add('dark')
     darkMode = true
+  }
+
+  // Check for auth redirect cookie and open login modal if needed
+  if (browser) {
+    const pathname = window.location.pathname
+    const isProtectedRoute =
+      !pathname.startsWith('/api/') && pathname !== '/' && pathname !== '/foods'
+    const isAuthenticated = page.data?.user?.id
+
+    if (isProtectedRoute && !isAuthenticated) {
+      // Get the redirect URL from cookie
+      const redirectUrl = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('auth_redirect_url='))
+        ?.split('=')[1]
+
+      // Open login modal with redirect URL
+      loginModal.open({ redirectUrl: redirectUrl || pathname })
+    }
   }
 })
 
