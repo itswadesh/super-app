@@ -29,11 +29,32 @@ interface Props {
   data: PageData
 }
 
+interface Food {
+  id: string
+  name: string
+  price: number
+  image: string
+  rating: number
+  isVegetarian: boolean
+  host: {
+    name: string
+    location: string
+  }
+  category: string
+  totalRatings: number
+  preparationTime: number
+}
+
+interface Category {
+  id: string
+  name: string
+}
+
 let { data }: Props = $props()
 
 // Client-side reactive state
-let foods = $state([])
-let categories = $state([])
+let foods = $state<Food[]>([])
+let categories = $state<Category[]>([])
 let total = $state(0)
 let currentPage = $state(data?.initialPage || 1)
 let pageSize = $state(20)
@@ -141,6 +162,9 @@ let shouldRefocus = $state(false)
 // Cart state
 let cart = $state<Record<string, number>>({})
 
+// Ordered items for success screen
+let orderedItems = $state<(Food & { quantity: number })[]>([])
+
 // Drawer state
 let isCartDrawerOpen = $state(false)
 let isPaymentMode = $state(false)
@@ -150,9 +174,13 @@ let quarterNumber = $state('')
 let isPlacingOrder = $state(false)
 let orderPlaced = $state(false)
 let orderError = $state('')
-let orderResult = $state<{ orderId?: string; estimatedDelivery?: string; message?: string } | null>(
-  null
-)
+let orderResult = $state<{
+  orderId?: string
+  orderNo?: string
+  estimatedDelivery?: string
+  message?: string
+  orders?: any[]
+} | null>(null)
 
 // Load data on mount
 onMount(async () => {
@@ -411,7 +439,8 @@ async function placeOrder() {
       }
     }
 
-    // Success - clear cart and show success state
+    // Success - save ordered items and clear cart
+    orderedItems = [...cartItems]
     cart = {}
     orderPlaced = true
     orderResult = result
@@ -620,6 +649,31 @@ function proceedToPayment() {
                       {/if}
                     </p>
                     <p class="text-xs text-gray-500 dark:text-gray-500 mb-4">Thank you for ordering with HomeFood!</p>
+                    {#if orderResult?.orders}
+                    {#each orderResult.orders as order}
+                    <div class="mt-4">
+                      <h4 class="text-md font-semibold text-gray-900 dark:text-gray-100 mb-2">Your Order Details:</h4>
+                      <div class="space-y-1">
+                        {#each order.items as item}
+                          <div class="text-sm text-gray-700 dark:text-gray-300">
+                            <span>{item.name} by {order.businessName}  Rs{item.price}  * {item.quantity} = Rs{item.price * item.quantity}</span>
+                          </div>
+                        {/each}
+                      </div>
+                    </div>
+                    {/each}
+                    {:else if orderedItems.length > 0}
+                    <div class="mt-4">
+                      <h4 class="text-md font-semibold text-gray-900 dark:text-gray-100 mb-2">Your Order Details:</h4>
+                      <div class="space-y-1">
+                        {#each orderedItems as item}
+                          <div class="text-sm text-gray-700 dark:text-gray-300">
+                            <span>{item.name} by {item.host.name}  Rs{item.price}  * {item.quantity} = Rs{item.price * item.quantity}</span>
+                          </div>
+                        {/each}
+                      </div>
+                    </div>
+                    {/if}
                     <button
                       onclick={closeCartDrawer}
                       class="w-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white py-2 rounded-lg font-medium transition-colors"

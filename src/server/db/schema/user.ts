@@ -14,6 +14,7 @@ export const User = pgTable(
       .primaryKey()
       .$defaultFn(() => generateEntityId('user')),
     name: varchar('name'),
+    businessName: varchar('business_name'),
     email: varchar('email'),
     phone: varchar('phone').notNull().unique(),
     role: varchar('role').default('user'),

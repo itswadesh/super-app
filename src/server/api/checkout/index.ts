@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { db } from '../../db'
-import { Order, OrderItem, Food, Payment } from '../../db/schema' // Coupon schema might be needed if validateCouponUtil returns full Coupon object
+import { Order, OrderItem, Food, Payment, User } from '../../db/schema' // Coupon schema might be needed if validateCouponUtil returns full Coupon object
 import { afterOrderConfirmation, placeOrder } from './utils' // Assuming placeOrder is in utils
 import { capturePhonepe } from './phonepe/capture'
 import { phonepeCheckout } from './phonepe/checkout'
@@ -433,8 +433,10 @@ checkoutRoutes.post('/cod', authenticate, async (c) => {
       hostGroups[hostId].totalAmount += foodDetails.price * item.quantity
     }
 
-    // Generate base order number for customer
-    const baseOrderNumber = `COD-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`
+    // Generate running serial number for order
+    const orderCount = await db.$count(Order)
+    const serialNumber = (orderCount + 1).toString().padStart(6, '0') // Pad with zeros to make it 6 digits
+    const baseOrderNumber = `${serialNumber}`
 
     // Calculate total amount for all orders combined
     const totalOrderAmount = Object.values(hostGroups).reduce(
@@ -495,19 +497,48 @@ checkoutRoutes.post('/cod', authenticate, async (c) => {
 
       await db.insert(OrderItem).values(orderItems)
 
+      // Fetch host name for better user experience
+      const host = await db.query.User.findFirst({
+        where: eq(User.id, hostId),
+        columns: { name: true },
+      })
+
       createdOrders.push({
         orderId: newOrder.id,
         orderNo: baseOrderNumber, // Show customer the base order number
         parentOrderNo: internalOrderNumber, // Parent order number for internal reference
         paymentId: paymentRecord.id, // Use the same payment ID for all orders
         hostId,
+        hostName: host?.name || 'Unknown Host', // Add host business name
         totalAmount: newOrder.totalAmount,
         status: 'pending', // Orders are created as pending
         estimatedDelivery: '6:00 PM - 9:30 PM',
-        items: orderItems.length,
+        items: orderItems, // Display full item details instead of just count
       })
 
       orderIndex++
+    }
+
+    // Create order summary by host
+    const orderSummary = []
+    for (const [hostId, group] of Object.entries(hostGroups)) {
+      const host = await db.query.User.findFirst({
+        where: eq(User.id, hostId),
+        columns: { name: true },
+      })
+
+      const hostItems = group.items.map((item: any) => ({
+        name: item.name || 'Unknown Item',
+        quantity: item.quantity,
+        price: item.price || 0,
+      }))
+
+      orderSummary.push({
+        hostName: host?.businessName || 'Unknown Host',
+        items: hostItems,
+        totalItems: hostItems.reduce((sum, item) => sum + item.quantity, 0),
+        subtotal: group.totalAmount,
+      })
     }
 
     return c.json({
@@ -516,6 +547,8 @@ checkoutRoutes.post('/cod', authenticate, async (c) => {
       paymentId: paymentRecord.id, // Shared payment ID for all orders
       orders: createdOrders,
       message: `${createdOrders.length} order(s) created and pending payment confirmation`,
+      thankYouMessage: 'Thank you for ordering with HomeFood!',
+      orderSummary: orderSummary, // Summary of all items grouped by host
     })
   } catch (error: any) {
     console.error('COD checkout error:', error)
@@ -546,6 +579,7 @@ checkoutRoutes.post('/payment-success', async (c) => {
     })
 
     // Update all orders to confirmed and paid status
+    const updatedOrders = []
     for (const order of ordersToUpdate) {
       await db
         .update(Order)
@@ -555,13 +589,43 @@ checkoutRoutes.post('/payment-success', async (c) => {
           updatedAt: new Date(),
         })
         .where(eq(Order.id, order.id))
+
+      // Fetch the updated order with items
+      const updatedOrder = await db.query.Order.findFirst({
+        where: eq(Order.id, order.id),
+      })
+
+      // Fetch order items
+      const orderItems = await db.query.OrderItem.findMany({
+        where: eq(OrderItem.orderId, order.id),
+      })
+
+      // Fetch host name
+      const host = await db.query.User.findFirst({
+        where: eq(User.id, updatedOrder?.hostId || ''),
+        columns: { name: true },
+      })
+
+      updatedOrders.push({
+        orderId: updatedOrder?.id,
+        orderNo: updatedOrder?.orderNumber?.split('-').slice(0, -1).join('-'), // Extract base order number
+        parentOrderNo: updatedOrder?.orderNumber,
+        paymentId: updatedOrder?.paymentId,
+        hostId: updatedOrder?.hostId,
+        hostName: host?.name || 'Unknown Host', // Add host name
+        totalAmount: updatedOrder?.totalAmount,
+        status: updatedOrder?.status,
+        paymentStatus: updatedOrder?.paymentStatus,
+        estimatedDelivery: '6:00 PM - 9:30 PM',
+        items: orderItems,
+      })
     }
 
     return c.json({
       success: true,
-      message: `${ordersToUpdate.length} order(s) confirmed and marked as paid`,
+      message: `${updatedOrders.length} order(s) confirmed and marked as paid`,
       paymentId,
-      ordersUpdated: ordersToUpdate.length,
+      orders: updatedOrders,
     })
   } catch (error: any) {
     console.error('Payment success error:', error)
