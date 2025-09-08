@@ -5,6 +5,7 @@ import { db } from '../../db'
 import { Order, OrderItem, Food, User, Vendor } from '../../db/schema'
 import { authenticate } from '../../middlewares/auth'
 import type { User as UserType } from '../../db/schema'
+import { formatDateTimeHumanReadable } from '../../../lib/utils/format'
 
 // Define variables for Hono context
 type Variables = {
@@ -64,7 +65,7 @@ ordersRoutes.get('/my', authenticate, async (c) => {
         customerName: order.buyerName || 'Unknown User',
         totalAmount: parseFloat(order.totalAmount),
         status: order.status,
-        orderTime: order.createdAt.toISOString(),
+        orderTime: formatDateTimeHumanReadable(order.createdAt),
         items: items.map((item) => ({
           foodName: item.name || 'Unknown Food',
           quantity: item.quantity || 1,
@@ -150,7 +151,7 @@ ordersRoutes.get('/user-orders', authenticate, async (c) => {
         actualDelivery: Order.actualDeliveryTime,
         createdAt: Order.createdAt,
         hostId: Order.hostId,
-        hostName: User.name,
+        hostName: Vendor.businessName,
         hostPhone: User.phone,
         hostLocation: Vendor.address,
       })
@@ -189,31 +190,12 @@ ordersRoutes.get('/user-orders', authenticate, async (c) => {
           totalAmount: parseFloat(order.totalAmount),
           deliveryFee: parseFloat(order.deliveryFee || '0'),
           taxAmount: parseFloat(order.taxAmount || '0'),
-          createdAt:
-            order.createdAt.toISOString().split('T')[0] +
-            ' ' +
-            new Date(order.createdAt).toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true,
-            }),
+          createdAt: formatDateTimeHumanReadable(order.createdAt),
           estimatedDelivery: order.estimatedDelivery
-            ? new Date(order.estimatedDelivery).toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-              })
+            ? formatDateTimeHumanReadable(order.estimatedDelivery)
             : null,
           actualDelivery: order.actualDelivery
-            ? new Date(order.actualDelivery).toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-              })
+            ? formatDateTimeHumanReadable(order.actualDelivery)
             : null,
           deliveryAddress:
             typeof order.deliveryAddress === 'object' && order.deliveryAddress !== null
@@ -240,5 +222,42 @@ ordersRoutes.get('/user-orders', authenticate, async (c) => {
   } catch (error) {
     console.error('Error fetching user orders:', error)
     throw new HTTPException(500, { message: 'Failed to fetch orders' })
+  }
+})
+
+// Update order status
+ordersRoutes.patch('/:id/status', authenticate, async (c) => {
+  const user = c.get('user')
+  const userId = user?.id
+  const orderId = c.req.param('id')
+  const { status } = await c.req.json()
+
+  if (!userId) {
+    throw new HTTPException(401, { message: 'Authentication required' })
+  }
+
+  if (!status) {
+    throw new HTTPException(400, { message: 'Status is required' })
+  }
+
+  try {
+    // Check if the order belongs to the user
+    const order = await db.select().from(Order).where(eq(Order.id, orderId)).limit(1)
+
+    if (!order[0]) {
+      throw new HTTPException(404, { message: 'Order not found' })
+    }
+
+    if (order[0].userId !== userId) {
+      throw new HTTPException(403, { message: 'You can only update your own orders' })
+    }
+
+    // Update the status
+    await db.update(Order).set({ status }).where(eq(Order.id, orderId))
+
+    return c.json({ message: 'Order status updated successfully' })
+  } catch (error) {
+    console.error('Error updating order status:', error)
+    throw new HTTPException(500, { message: 'Failed to update order status' })
   }
 })

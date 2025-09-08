@@ -458,10 +458,13 @@ checkoutRoutes.post('/cod', authenticate, async (c) => {
 
     // Create orders for each host
     const createdOrders = []
+    const hostCount = Object.keys(hostGroups).length
     let orderIndex = 1
+
     for (const [hostId, group] of Object.entries(hostGroups)) {
-      // Generate internal order number with suffix
-      const internalOrderNumber = `${baseOrderNumber}-${orderIndex}`
+      // Generate internal order number - only add suffix if there are multiple vendors
+      const internalOrderNumber =
+        hostCount === 1 ? baseOrderNumber : `${baseOrderNumber}-${orderIndex}`
 
       // Calculate estimated delivery time
       const now = new Date()
@@ -606,9 +609,16 @@ checkoutRoutes.post('/payment-success', async (c) => {
         columns: { name: true },
       })
 
+      // Extract base order number - only split if there's a suffix (multiple vendors)
+      const orderNumber = updatedOrder?.orderNumber || ''
+      const hasSuffix = orderNumber.includes('-')
+      const baseOrderNumber = hasSuffix
+        ? orderNumber.split('-').slice(0, -1).join('-')
+        : orderNumber
+
       updatedOrders.push({
         orderId: updatedOrder?.id,
-        orderNo: updatedOrder?.orderNumber?.split('-').slice(0, -1).join('-'), // Extract base order number
+        orderNo: baseOrderNumber, // Extract base order number only if suffixed
         parentOrderNo: updatedOrder?.orderNumber,
         paymentId: updatedOrder?.paymentId,
         hostId: updatedOrder?.hostId,

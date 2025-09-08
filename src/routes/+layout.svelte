@@ -269,13 +269,13 @@ async function navigateWithSheetClose(path: string) {
       <SheetFooter class="mt-auto pt-6 border-t border-gray-200">
         {#if page.data?.user?.id}
           <!-- User Profile Link -->
-          <a 
+          <!-- <a 
             href="/my/profile" 
             class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md transition-colors"
             onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/my/profile'); }}
           >
             My Profile
-          </a>
+          </a> -->
           
           <!-- Logout Button -->
          <button

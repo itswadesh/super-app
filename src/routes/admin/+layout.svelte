@@ -51,12 +51,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { name: 'Dashboard', href: '/admin', icon: 'layoutDashboard' },
-  { name: 'Videos', href: '/admin/videos', icon: 'video' },
-  { name: 'Notes', href: '/admin/notes', icon: 'fileText' },
-  { name: 'Quizzes', href: '/admin/quizzes', icon: 'bookCheck' },
-  { name: 'Categories', href: '/admin/categories', icon: 'folder' },
-  { name: 'Users', href: '/admin/users', icon: 'users' },
-  { name: 'Subscriptions', href: '/admin/subscriptions', icon: 'creditCard' },
+  // { name: 'Categories', href: '/admin/categories', icon: 'folder' },
+  // { name: 'Users', href: '/admin/users', icon: 'users' },
 ]
 
 // Check if current route is active

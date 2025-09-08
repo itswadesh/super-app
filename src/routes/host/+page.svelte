@@ -1043,29 +1043,47 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
           <div class="space-y-4">
             {#each recentOrders as order}
               <Card>
-                <CardContent class="pt-6">
+                <CardHeader>
                   <div class="flex items-center justify-between">
                     <div>
-                      <h3 class="font-semibold text-gray-900 dark:text-gray-100">{order.customerName}</h3>
-                      <p class="text-sm text-gray-600 dark:text-gray-400">{order.foodName} × {order.quantity}</p>
+                      <h3 class="font-semibold text-gray-900 dark:text-gray-100">Order #{order.orderNumber}</h3>
+                      <p class="text-sm text-gray-600 dark:text-gray-400">{order.customerName}</p>
                       <p class="text-xs text-gray-500 dark:text-gray-500">{order.orderTime}</p>
                     </div>
                     <div class="text-right">
-                      <p class="font-semibold">₹{order.totalAmount}</p>
                       <Badge variant={
                         order.status === 'preparing' ? 'default' :
                         order.status === 'ready' ? 'secondary' : 'outline'
                       }>
                         {order.status}
                       </Badge>
+                      <p class="font-semibold text-lg mt-1">₹{order.totalAmount}</p>
                     </div>
                   </div>
-                  <div class="flex space-x-2 mt-4">
-                    <!-- <Button size="sm" variant="outline">View Details</Button> -->
+                </CardHeader>
+
+                <CardContent class="space-y-4">
+                  <!-- Order Items -->
+                  <div>
+                    <h4 class="font-medium mb-2 text-sm text-gray-700 dark:text-gray-300">Order Items</h4>
+                    <div class="space-y-2">
+                      {#each order.items as item}
+                        <div class="flex justify-between items-center text-sm">
+                          <span class="text-gray-900 dark:text-gray-100">{item.foodName}</span>
+                          <span class="text-gray-600 dark:text-gray-400">× {item.quantity}</span>
+                        </div>
+                      {/each}
+                    </div>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="flex space-x-2 pt-4 border-t border-gray-200 dark:border-gray-600">
                     {#if order.status === 'preparing'}
-                      <Button size="sm">Mark as Ready</Button>
+                      <Button size="sm" class="flex-1">Mark as Ready</Button>
                     {:else if order.status === 'ready'}
-                      <Button size="sm">Mark as Delivered</Button>
+                      <Button size="sm" class="flex-1">Mark as Delivered</Button>
+                    {:else}
+                      <Button size="sm" variant="outline" class="flex-1">View Details</Button>
                     {/if}
                   </div>
                 </CardContent>

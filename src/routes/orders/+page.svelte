@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '$lib/
 import { Button } from '$lib/components/ui/button'
 import { Badge } from '$lib/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '$lib/components/ui/select'
 import { Clock, MapPin, Phone, Star, RefreshCw } from '@lucide/svelte'
 
 // Fetch data from Hono API
@@ -35,12 +36,45 @@ async function fetchOrders() {
   }
 }
 
+// Update order status
+async function updateOrderStatus(orderId: string, newStatus: string) {
+  try {
+    const response = await fetch(`/api/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status: newStatus }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to update order status')
+    }
+
+    // Refresh orders after update
+    await fetchOrders()
+  } catch (err) {
+    console.error('Error updating order status:', err)
+    // You might want to show a toast or alert here
+  }
+}
+
 // Fetch orders on component mount
 $effect(() => {
   fetchOrders()
 })
 
 let activeTab = $state('all')
+
+// Status options for the dropdown
+const statusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'preparing', label: 'Preparing' },
+  { value: 'ready', label: 'Ready' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'cancelled', label: 'Cancelled' },
+]
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -193,6 +227,7 @@ function filteredOrders() {
               <!-- Host Info -->
               <div class="bg-gray-50 p-3 rounded-lg">
                 <h4 class="font-medium mb-2">Host Information</h4>
+                {console.log(order.host)}
                 <div class="space-y-1 text-sm">
                   <div class="flex items-center">
                     <span class="font-medium mr-2">Name:</span>
@@ -215,7 +250,7 @@ function filteredOrders() {
                 <div class="space-y-2 text-sm">
                   <div class="flex items-start">
                     <MapPin class="w-4 h-4 mr-2 mt-0.5" />
-                    <span>{order.deliveryAddress}</span>
+                    <span>{JSON.parse(order.deliveryAddress)?.quarterNumber}</span>
                   </div>
                   <div class="flex items-center">
                     <Clock class="w-4 h-4 mr-2" />
@@ -237,20 +272,37 @@ function filteredOrders() {
 
               <!-- Action Buttons -->
               <div class="flex space-x-2 pt-4 border-t">
-                <Button variant="outline" size="sm">View Details</Button>
-                {#if order.status === 'delivered'}
-                  <Button variant="outline" size="sm">
-                    <Star class="w-4 h-4 mr-2" />
-                    Rate Order
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <RefreshCw class="w-4 h-4 mr-2" />
-                    Reorder
-                  </Button>
-                {:else if order.status && ['preparing', 'ready'].includes(order.status)}
-                  <Button size="sm">Track Order</Button>
-                {/if}
-              </div>
+                 <Select.Root
+                   type="single"
+                   value={order.status || 'pending'}
+                   onValueChange={(value) => updateOrderStatus(order.id, value)}
+                 >
+                   <Select.Trigger class="w-32 h-8">
+                     <Select.Value placeholder="Select status" />
+                   </Select.Trigger>
+                   <Select.Content>
+                     <Select.Group>
+                       {#each statusOptions as option}
+                         <Select.Item value={option.value}>
+                           {option.label}
+                         </Select.Item>
+                       {/each}
+                     </Select.Group>
+                   </Select.Content>
+                 </Select.Root>
+                 {#if order.status === 'delivered'}
+                   <Button variant="outline" size="sm">
+                     <Star class="w-4 h-4 mr-2" />
+                     Rate Order
+                   </Button>
+                   <Button variant="outline" size="sm">
+                     <RefreshCw class="w-4 h-4 mr-2" />
+                     Reorder
+                   </Button>
+                 {:else if order.status && ['preparing', 'ready'].includes(order.status)}
+                   <Button size="sm">Track Order</Button>
+                 {/if}
+               </div>
             </CardContent>
           </Card>
         {:else}
