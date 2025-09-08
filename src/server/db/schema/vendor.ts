@@ -20,6 +20,7 @@ export const Vendor = pgTable('vendors', {
   availableHours: varchar('available_hours'),
   deliveryRadius: varchar('delivery_radius'),
   businessLicense: varchar('business_license'), // file path/URL
+  businessName: varchar('business_name'),
   foodSafetyCertificate: varchar('food_safety_certificate'), // file path/URL
   idProof: varchar('id_proof').notNull(), // file path/URL
   address: varchar('address').notNull(),

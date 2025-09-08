@@ -36,6 +36,7 @@ interface Food {
   image: string
   rating: number
   isVegetarian: boolean
+  businessName: string
   host: {
     name: string
     location: string
@@ -170,7 +171,7 @@ let isCartDrawerOpen = $state(false)
 let isPaymentMode = $state(false)
 let isAddressMode = $state(false)
 let upiQrUrl = $state('')
-let quarterNumber = $state('')
+let qrno = $state('')
 let isPlacingOrder = $state(false)
 let orderPlaced = $state(false)
 let orderError = $state('')
@@ -229,8 +230,8 @@ $effect(() => {
 // Load saved quarter number from localStorage
 $effect(() => {
   const savedQuarterNumber = localStorage.getItem('userQuarterNumber')
-  if (savedQuarterNumber && !quarterNumber) {
-    quarterNumber = savedQuarterNumber
+  if (savedQuarterNumber && !qrno) {
+    qrno = savedQuarterNumber
   }
 })
 
@@ -370,7 +371,7 @@ function openCartDrawer() {
 
 // Order placement function
 async function placeOrder() {
-  if (!quarterNumber.trim()) {
+  if (!qrno.trim()) {
     orderError = 'Please enter a delivery address'
     return
   }
@@ -389,7 +390,7 @@ async function placeOrder() {
         total: item.price * item.quantity,
       })),
       deliveryAddress: {
-        quarterNumber: quarterNumber.trim(),
+        qrno: qrno.trim(),
       },
       totalAmount: cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
       paymentMethod: 'UPI',
@@ -478,7 +479,7 @@ function closeCartDrawer() {
   isPaymentMode = false
   isAddressMode = false
   upiQrUrl = ''
-  quarterNumber = ''
+  qrno = ''
   isPlacingOrder = false
   orderPlaced = false
   orderError = ''
@@ -507,9 +508,9 @@ function proceedToCheckout() {
 }
 
 function proceedToPayment() {
-  if (quarterNumber.trim()) {
+  if (qrno.trim()) {
     // Save address to localStorage
-    localStorage.setItem('userQuarterNumber', quarterNumber.trim())
+    localStorage.setItem('userQuarterNumber', qrno.trim())
     generateUPIQR()
   }
 }
@@ -722,7 +723,7 @@ function proceedToPayment() {
                   <input
                     id="quarter-number"
                     type="text"
-                    bind:value={quarterNumber}
+                    bind:value={qrno}
                     placeholder={localStorage.getItem('userQuarterNumber') ? "Quarter number (saved)" : "Enter your quarter number (e.g., Q-123)"}
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-400 focus:border-yellow-500 dark:focus:border-yellow-400 outline-none"
                   />
@@ -736,7 +737,7 @@ function proceedToPayment() {
                   </button>
                   <button
                     onclick={proceedToPayment}
-                    disabled={!quarterNumber.trim()}
+                    disabled={!qrno.trim()}
                     class="flex-1 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 disabled:from-gray-400 disabled:to-gray-500 text-white py-2 rounded-lg font-medium transition-colors disabled:cursor-not-allowed"
                   >
                     Proceed to Payment
@@ -891,7 +892,7 @@ function proceedToPayment() {
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1 line-clamp-1">{food.host.name}</h3>
 
               <!-- Cuisine Type -->
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{food.category} • {food.host.location}</p>
+              <!-- <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{food.category} • {food.host.location}</p> -->
 
               <!-- Rating and Reviews -->
               <div class="flex items-center gap-2 mb-3">
@@ -901,7 +902,7 @@ function proceedToPayment() {
                 </div>
                 <span class="text-sm text-gray-500 dark:text-gray-400">({food.totalRatings} reviews)</span>
                 <span class="text-gray-300 dark:text-gray-600">•</span>
-                <span class="text-sm text-gray-500 dark:text-gray-400">{food.preparationTime} mins</span>
+                <!-- <span class="text-sm text-gray-500 dark:text-gray-400">{food.preparationTime} mins</span> -->
               </div>
 
               <!-- Dish Name and Price -->

@@ -9,6 +9,7 @@ import { productRoutes } from './products'
 import { litekartStoreRoutes } from './litekart-stores'
 import { routes as foodRoutes } from './foods'
 import { routes as applicationRoutes } from './applications'
+import { ratingRoutes } from './ratings'
 import { getSessionTokenCookie, validateSessionToken } from '../db/auth'
 
 // Inner router for API paths
@@ -80,6 +81,7 @@ apiRouter.route('/categories', categoryRoutes)
 apiRouter.route('/litekart/stores', litekartStoreRoutes)
 apiRouter.route('/foods', foodRoutes)
 apiRouter.route('/applications', applicationRoutes)
+apiRouter.route('/ratings', ratingRoutes)
 
 // Global error handler for all API routes
 apiRouter.onError((err: any, c) => {

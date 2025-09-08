@@ -383,7 +383,7 @@ checkoutRoutes.post('/cod', authenticate, async (c) => {
       return c.json({ error: 'Items are required' }, 400)
     }
 
-    if (!deliveryAddress || !deliveryAddress.quarterNumber) {
+    if (!deliveryAddress || !deliveryAddress.qrno) {
       return c.json({ error: 'Delivery address is required' }, 400)
     }
 

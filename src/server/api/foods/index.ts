@@ -47,62 +47,62 @@ routes.get('/', optionalAuthenticate, async (c: Context) => {
     whereConditions.push(eq(Food.isAvailable, true))
     whereConditions.push(eq(Vendor.status, 'approved'))
 
-    // Debug: Check approved vendors
-    const approvedVendors = await db
-      .select({
-        id: Vendor.id,
-        userId: Vendor.userId,
-        status: Vendor.status,
-        fullName: Vendor.fullName,
-      })
-      .from(Vendor)
-      .where(eq(Vendor.status, 'approved'))
-    console.log('Approved vendors:', approvedVendors)
+    // // Debug: Check approved vendors
+    // const approvedVendors = await db
+    //   .select({
+    //     id: Vendor.id,
+    //     userId: Vendor.userId,
+    //     status: Vendor.status,
+    //     fullName: Vendor.fullName,
+    //   })
+    //   .from(Vendor)
+    //   .where(eq(Vendor.status, 'approved'))
+    // console.log('Approved vendors:', approvedVendors)
 
-    // Debug: Check all foods
-    const allFoods = await db
-      .select({
-        id: Food.id,
-        name: Food.name,
-        hostId: Food.hostId,
-        isAvailable: Food.isAvailable,
-      })
-      .from(Food)
-      .limit(50)
-    console.log('All foods in database:', allFoods)
+    // // Debug: Check all foods
+    // const allFoods = await db
+    //   .select({
+    //     id: Food.id,
+    //     name: Food.name,
+    //     hostId: Food.hostId,
+    //     isAvailable: Food.isAvailable,
+    //   })
+    //   .from(Food)
+    //   .limit(50)
+    // console.log('All foods in database:', allFoods)
 
-    // Debug: Check foods with vendor join
-    const foodsWithVendors = await db
-      .select({
-        foodId: Food.id,
-        foodName: Food.name,
-        hostId: Food.hostId,
-        isAvailable: Food.isAvailable,
-        vendorId: Vendor.id,
-        vendorUserId: Vendor.userId,
-        vendorStatus: Vendor.status,
-        vendorName: Vendor.fullName,
-      })
-      .from(Food)
-      .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
-      .limit(50)
-    console.log('Foods with vendor join:', foodsWithVendors)
+    // // Debug: Check foods with vendor join
+    // const foodsWithVendors = await db
+    //   .select({
+    //     foodId: Food.id,
+    //     foodName: Food.name,
+    //     hostId: Food.hostId,
+    //     isAvailable: Food.isAvailable,
+    //     vendorId: Vendor.id,
+    //     vendorUserId: Vendor.userId,
+    //     vendorStatus: Vendor.status,
+    //     vendorName: Vendor.fullName,
+    //   })
+    //   .from(Food)
+    //   .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
+    //   .limit(50)
+    // console.log('Foods with vendor join:', foodsWithVendors)
 
-    // Debug: Check if approved vendors have foods
-    if (approvedVendors.length > 0) {
-      for (const vendor of approvedVendors) {
-        const vendorFoods = await db
-          .select({
-            id: Food.id,
-            name: Food.name,
-            hostId: Food.hostId,
-            isAvailable: Food.isAvailable,
-          })
-          .from(Food)
-          .where(eq(Food.hostId, vendor.userId))
-        console.log(`Foods for vendor ${vendor.fullName} (${vendor.userId}):`, vendorFoods)
-      }
-    }
+    // // Debug: Check if approved vendors have foods
+    // if (approvedVendors.length > 0) {
+    //   for (const vendor of approvedVendors) {
+    //     const vendorFoods = await db
+    //       .select({
+    //         id: Food.id,
+    //         name: Food.name,
+    //         hostId: Food.hostId,
+    //         isAvailable: Food.isAvailable,
+    //       })
+    //       .from(Food)
+    //       .where(eq(Food.hostId, vendor.userId))
+    //     console.log(`Foods for vendor ${vendor.fullName} (${vendor.userId}):`, vendorFoods)
+    //   }
+    // }
 
     const foods = await db
       .select({
@@ -117,8 +117,7 @@ routes.get('/', optionalAuthenticate, async (c: Context) => {
         rating: Food.rating,
         totalRatings: Food.totalRatings,
         hostId: Food.hostId,
-        hostName: User.name,
-        hostAddress: Vendor.address,
+        hostName: Vendor.businessName,
         hostCity: Vendor.city,
         categoryName: Category.name,
       })
@@ -131,7 +130,7 @@ routes.get('/', optionalAuthenticate, async (c: Context) => {
       .limit(limit)
       .offset(offset)
 
-    console.log('Filtered foods result:', foods)
+    // console.log('Filtered foods result:', foods)
 
     // Transform the data to match the expected format
     const transformedFoods = foods.map((food) => ({
@@ -148,8 +147,7 @@ routes.get('/', optionalAuthenticate, async (c: Context) => {
       isMyFood: c.get('user')?.id === food.hostId,
       host: {
         name: food.hostName || 'Unknown Host',
-        rating: 0, // Vendor table doesn't have rating
-        location: `${food.hostAddress || 'Unknown Address'}, ${food.hostCity || 'Unknown City'}`,
+        rating: 0,
       },
     }))
 
@@ -178,7 +176,6 @@ routes.get('/', optionalAuthenticate, async (c: Context) => {
 
 // POST /api/foods - Create a new food
 routes.post('/', authenticate, async (c: Context) => {
-  // console.log('Received request body:......................', c.get('user'))
   try {
     const body = await c.req.json()
     const user = c.get('user')

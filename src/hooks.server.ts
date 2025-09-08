@@ -9,7 +9,6 @@ import type { Handle } from '@sveltejs/kit'
  * Combined handler for authentication and Cloudflare caching
  */
 export const handle: Handle = async ({ event, resolve }) => {
-  console.log(event.locals, '............')
   if (!event.url.pathname.startsWith('/api/')) {
     const { session, user } = await event.fetch('/api/auth/me').then((res) => res.json())
     if (session && user) {

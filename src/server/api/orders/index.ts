@@ -4,8 +4,15 @@ import { HTTPException } from 'hono/http-exception'
 import { db } from '../../db'
 import { Order, OrderItem, Food, User, Vendor } from '../../db/schema'
 import { authenticate } from '../../middlewares/auth'
+import type { User as UserType } from '../../db/schema'
 
-export const ordersRoutes = new Hono()
+// Define variables for Hono context
+type Variables = {
+  user: UserType
+  session: any // Add session type if needed
+}
+
+export const ordersRoutes = new Hono<{ Variables: Variables }>()
 
 ordersRoutes.get('/public', async (c) => {
   const { order_no } = c.req.query()
@@ -19,44 +26,54 @@ ordersRoutes.get('/public', async (c) => {
 
 // Get orders for a specific host
 ordersRoutes.get('/my', authenticate, async (c) => {
-  //  const sessionToken = getSessionTokenCookie(c)
-  //     const session = await validateSessionToken(sessionToken || '')
-  //     if (!session) {
-  //       return c.json({ error: 'Unauthorized' }, 401)
-  //     }
   const user = c.get('user')
   const hostId = user?.id
   const limit = parseInt(c.req.query('limit') || '10')
-  const orders = await db
+
+  // Get unique orders for the host
+  const ordersData = await db
     .select({
       id: Order.id,
+      orderNumber: Order.orderNumber,
       status: Order.status,
       totalAmount: Order.totalAmount,
       createdAt: Order.createdAt,
       buyerName: User.name,
-      foodName: Food.name,
-      quantity: OrderItem.quantity,
     })
     .from(Order)
-    .leftJoin(OrderItem, eq(Order.id, OrderItem.orderId))
-    .leftJoin(Food, eq(OrderItem.foodId, Food.id))
     .leftJoin(User, eq(Order.userId, User.id))
     .where(eq(Order.hostId, hostId))
     .orderBy(desc(Order.createdAt))
     .limit(limit)
 
-  // Transform orders for display
-  const recentOrders = orders.map((order) => ({
-    id: order.id,
-    customerName: order.buyerName || 'Unknown User',
-    foodName: order.foodName || 'Unknown Food',
-    quantity: order.quantity || 1,
-    totalAmount: parseFloat(order.totalAmount),
-    status: order.status,
-    orderTime: order.createdAt.toISOString(),
-  }))
+  // Get items for each order
+  const ordersWithItems = await Promise.all(
+    ordersData.map(async (order) => {
+      const items = await db
+        .select({
+          name: Food.name,
+          quantity: OrderItem.quantity,
+        })
+        .from(OrderItem)
+        .leftJoin(Food, eq(OrderItem.foodId, Food.id))
+        .where(eq(OrderItem.orderId, order.id))
 
-  return c.json(recentOrders)
+      return {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerName: order.buyerName || 'Unknown User',
+        totalAmount: parseFloat(order.totalAmount),
+        status: order.status,
+        orderTime: order.createdAt.toISOString(),
+        items: items.map((item) => ({
+          foodName: item.name || 'Unknown Food',
+          quantity: item.quantity || 1,
+        })),
+      }
+    })
+  )
+
+  return c.json(ordersWithItems)
 })
 
 // Get analytics/stats for a specific host

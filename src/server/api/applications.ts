@@ -64,6 +64,7 @@ routes.post('/', authenticate, async (c) => {
       .values({
         userId,
         fullName: fullName.trim(),
+        businessName: businessName.trim(),
         email: userEmail, // Use user's email from User table
         phone: phone.trim(),
         address: address.trim(),
