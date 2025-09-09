@@ -51,7 +51,7 @@ const _services = [
 const _promotions = [
   {
     id: 1,
-    title: 'Welcome to HomeFood',
+    title: 'Welcome to Misiki',
     description: 'Discover amazing homemade food from local chefs',
     color: 'promo1',
     buttonText: 'Explore Now',

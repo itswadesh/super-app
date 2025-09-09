@@ -90,7 +90,7 @@ function getStatusColor(status: string) {
 </script>
 
 <svelte:head>
-  <title>Admin Dashboard - HomeFood</title>
+  <title>Admin Dashboard - Misiki</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">

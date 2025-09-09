@@ -114,7 +114,7 @@ async function submitApplication() {
 </script>
 
 <svelte:head>
-  <title>Apply to Become a Chef - HomeFood</title>
+  <title>Apply to Become a Chef - Misiki</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 py-8">
@@ -125,7 +125,7 @@ async function submitApplication() {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
         </svg>
       </div>
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Become a HomeFood Chef</h1>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Become a Misiki Chef</h1>
       <p class="text-gray-600">Join our community of home chefs and start earning from your culinary passion</p>
     </div>
 
@@ -138,7 +138,7 @@ async function submitApplication() {
         </div>
         <h2 class="text-xl font-semibold text-green-800 mb-2">Application Submitted Successfully!</h2>
         <p class="text-green-700 mb-4">
-          Thank you for your interest in becoming a HomeFood chef. Your application has been received and is under review.
+          Thank you for your interest in becoming a Misiki chef. Your application has been received and is under review.
         </p>
         <p class="text-sm text-green-600">
           You will be redirected to your dashboard shortly...
@@ -241,7 +241,7 @@ async function submitApplication() {
               </label>
               <p class="text-xs text-gray-600 mt-1">
                 By submitting this application, I agree to follow all food safety guidelines,
-                maintain quality standards, and adhere to HomeFood's policies and procedures.
+                maintain quality standards, and adhere to Misiki's policies and procedures.
               </p>
               {#if formErrors.agreeToTerms}
                 <p class="text-red-500 text-sm mt-1">{formErrors.agreeToTerms}</p>

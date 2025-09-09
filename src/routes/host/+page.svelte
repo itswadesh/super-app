@@ -653,7 +653,7 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
 </script>
 
 <svelte:head>
-  <title>Chef Dashboard - HomeFood</title>
+  <title>Chef Dashboard - Misiki</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -737,7 +737,7 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
             <div class="flex-1">
               <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200">Ready to Start Selling?</h3>
               <p class="text-blue-700 dark:text-blue-300">
-                Apply to become a HomeFood chef and start sharing your delicious dishes with food lovers in your area.
+                Apply to become a Misiki chef and start sharing your delicious dishes with food lovers in your area.
               </p>
             </div>
           </div>

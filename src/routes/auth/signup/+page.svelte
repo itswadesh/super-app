@@ -80,19 +80,19 @@ async function handleSubmit() {
 </script>
 
 <svelte:head>
-  <title>Host Signup - HomeFood</title>
+  <title>Host Signup - Misiki</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
   <div class="sm:mx-auto sm:w-full sm:max-w-md">
     <div class="flex justify-center">
       <a href="/" class="flex items-center">
-        <span class="text-3xl font-bold text-green-700">HomeFood</span>
+        <span class="text-3xl font-bold text-green-700">Misiki</span>
       </a>
     </div>
 
     <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-      Become a HomeFood Host
+      Become a Misiki Host
     </h2>
 
     <p class="mt-2 text-center text-sm text-gray-600">

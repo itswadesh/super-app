@@ -490,7 +490,7 @@ function closeCartDrawer() {
 function generateUPIQR() {
   const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const upiId = 'misiki@icici' // Replace with actual UPI ID
-  const merchantName = 'HomeFood'
+  const merchantName = 'Misiki'
   const transactionId = `TXN${Date.now()}`
 
   // Generate UPI payment string
@@ -517,7 +517,7 @@ function proceedToPayment() {
 </script>
 
 <svelte:head>
-  <title>Browse Foods - HomeFood</title>
+  <title>Browse Foods - Misiki</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-700">
@@ -649,7 +649,7 @@ function proceedToPayment() {
                         Your food will be delivered between 6:00 PM - 9:30 PM today.
                       {/if}
                     </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-500 mb-4">Thank you for ordering with HomeFood!</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mb-4">Thank you for ordering with Misiki!</p>
                     {#if orderResult?.orders}
                     {#each orderResult.orders as order}
                     <div class="mt-4">

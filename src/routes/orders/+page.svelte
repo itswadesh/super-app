@@ -102,7 +102,7 @@ function filteredOrders() {
 </script>
 
 <svelte:head>
-  <title>My Orders - HomeFood</title>
+  <title>My Orders - Misiki</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50">
