@@ -747,20 +747,21 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
     {/if}
 
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Chef Dashboard</h1>
-        <p class="text-gray-600 dark:text-gray-400">Manage your culinary business</p>
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">Chef Dashboard</h1>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">Manage your culinary business</p>
         {#if myFoods.length > 0 && myFoods.some((f: any) => f.id?.startsWith('demo-'))}
-          <span class="inline-block mt-1 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
+          <span class="inline-block mt-2 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
             Demo Mode - Data saved locally
           </span>
         {/if}
       </div>
       {#if applicationStatus?.status === 'approved'}
-        <Button onclick={openAddFoodModal}>
+        <Button onclick={openAddFoodModal} class="w-full sm:w-auto min-h-[2.5rem]">
           <Plus class="w-4 h-4 mr-2" />
-          Add New Food
+          <span class="hidden sm:inline">Add New Food</span>
+          <span class="sm:hidden">Add Food</span>
         </Button>
       {/if}
     </div>
@@ -768,10 +769,29 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
 
     <!-- Main Content -->
     <Tabs value={currentTab} onValueChange={handleTabChange} class="w-full">
-      <TabsList class="grid w-full grid-cols-3">
-        <TabsTrigger value="foods">My Foods ({hostStats.totalFoods})</TabsTrigger>
-        <TabsTrigger value="orders">Orders ({hostStats.totalOrders})</TabsTrigger>
-        <TabsTrigger value="analytics">Analytics</TabsTrigger>
+      <TabsList class="grid w-full grid-cols-3 sm:grid-cols-3 gap-1 h-auto p-1">
+        <TabsTrigger value="foods" class="text-xs sm:text-sm py-2 px-1 sm:px-3 data-[state=active]:bg-white data-[state=active]:text-orange-600">
+          <div class="flex flex-col sm:flex-row items-center gap-0 sm:gap-2">
+            <span class="hidden sm:inline">My Foods</span>
+            <span class="sm:hidden">Foods</span>
+            <Badge variant="secondary" class="text-xs px-1 py-0 min-w-[1.2rem] h-4 flex items-center justify-center">
+              {hostStats.totalFoods}
+            </Badge>
+          </div>
+        </TabsTrigger>
+        <TabsTrigger value="orders" class="text-xs sm:text-sm py-2 px-1 sm:px-3 data-[state=active]:bg-white data-[state=active]:text-orange-600">
+          <div class="flex flex-col sm:flex-row items-center gap-0 sm:gap-2">
+            <span class="hidden sm:inline">Orders</span>
+            <span class="sm:hidden">Orders</span>
+            <Badge variant="secondary" class="text-xs px-1 py-0 min-w-[1.2rem] h-4 flex items-center justify-center">
+              {hostStats.totalOrders}
+            </Badge>
+          </div>
+        </TabsTrigger>
+        <TabsTrigger value="analytics" class="text-xs sm:text-sm py-2 px-1 sm:px-3 data-[state=active]:bg-white data-[state=active]:text-orange-600">
+          <span class="hidden sm:inline">Analytics</span>
+          <span class="sm:hidden">Stats</span>
+        </TabsTrigger>
       </TabsList>
 
       {#if isLoading}
@@ -782,11 +802,12 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
       {/if}
 
       <TabsContent value="foods" class="space-y-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">My Food Items</h2>
-          <Button variant="outline" onclick={openAddFoodModal}>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">My Food Items</h2>
+          <Button variant="outline" onclick={openAddFoodModal} class="w-full sm:w-auto min-h-[2.5rem]">
             <Plus class="w-4 h-4 mr-2" />
-            Add Food
+            <span class="hidden sm:inline">Add Food</span>
+            <span class="sm:hidden">Add</span>
           </Button>
         </div>
 
@@ -846,40 +867,40 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                   <p class="text-sm text-green-600 dark:text-green-400">These dishes are live and available for orders</p>
                 </div>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {#each myFoods.filter(f => f.status === 'available') as food}
                   <Card class="border-green-200 dark:border-green-800 shadow-md overflow-hidden">
                     <!-- Food Image -->
                     {#if food.image}
-                      <div class="relative h-32 overflow-hidden">
+                      <div class="relative h-32 sm:h-36 overflow-hidden">
                         <img
                           src={food.image}
                           alt={food.name}
                           class="w-full h-full object-cover"
                         />
                         <div class="absolute top-2 right-2">
-                          <Badge variant="default" class="bg-green-500 hover:bg-green-600">
+                          <Badge variant="default" class="bg-green-500 hover:bg-green-600 text-xs px-2 py-1">
                             Available
                           </Badge>
                         </div>
                       </div>
                     {/if}
-                    <CardHeader>
+                    <CardHeader class="pb-2">
                       <div class="flex items-center justify-between">
-                        <CardTitle class="text-lg">{food.name}</CardTitle>
+                        <CardTitle class="text-base sm:text-lg leading-tight">{food.name}</CardTitle>
                         {#if !food.image}
-                          <Badge variant="default" class="bg-green-500 hover:bg-green-600">
+                          <Badge variant="default" class="bg-green-500 hover:bg-green-600 text-xs px-2 py-1">
                             Available
                           </Badge>
                         {/if}
                       </div>
-                      <CardDescription>₹{food.price}</CardDescription>
+                      <CardDescription class="text-sm sm:text-base">₹{food.price}</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    <CardContent class="pt-0">
+                      <div class="flex items-center justify-between text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
                         <span>{food.orders} orders</span>
                         <div class="flex items-center">
-                          <Star class="w-4 h-4 fill-yellow-400 text-yellow-400 mr-1" />
+                          <Star class="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400 mr-1" />
                           <span>{food.rating}</span>
                         </div>
                       </div>
@@ -887,7 +908,7 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                         <Button
                           variant="outline"
                           size="sm"
-                          class="flex-1"
+                          class="flex-1 min-h-[2.5rem] text-sm"
                           onclick={() => openEditFoodModal(food)}
                         >
                           Edit
@@ -895,7 +916,7 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                         <Button
                           variant="outline"
                           size="sm"
-                          class="flex-1"
+                          class="flex-1 min-h-[2.5rem] text-sm"
                           onclick={() => toggleFoodAvailability(food.id, true)}
                         >
                           Disable
@@ -988,8 +1009,8 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
 
       <TabsContent value="orders" class="space-y-4">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Orders</h2>
-          <!-- <Button variant="outline">View All Orders</Button> -->
+          <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Orders</h2>
+          <!-- <Button variant="outline" class="hidden sm:flex">View All Orders</Button> -->
         </div>
 
         {#if recentOrders.length === 0}
@@ -1105,34 +1126,34 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
         {/if}
       </TabsContent>
 
-      <TabsContent value="analytics" class="space-y-6">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Analytics & Statistics</h2>
+      <TabsContent value="analytics" class="space-y-4 sm:space-y-6">
+        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">Analytics & Statistics</h2>
 
         <!-- Key Metrics - Sleek Design -->
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg p-6">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg p-4 sm:p-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
             <div class="text-center">
               <div class="flex items-center justify-center mb-2">
-                <ChefHat class="h-5 w-5 text-blue-600 mr-2" />
-                <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Total Foods</span>
+                <ChefHat class="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 mr-2" />
+                <span class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300">Total Foods</span>
               </div>
-              <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">{hostStats.totalFoods}</div>
+              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{hostStats.totalFoods}</div>
             </div>
 
             <div class="text-center">
               <div class="flex items-center justify-center mb-2">
-                <ShoppingCart class="h-5 w-5 text-green-600 mr-2" />
-                <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Active Orders</span>
+                <ShoppingCart class="h-4 w-4 sm:h-5 sm:w-5 text-green-600 mr-2" />
+                <span class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300">Active Orders</span>
               </div>
-              <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">{hostStats.activeOrders}</div>
+              <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{hostStats.activeOrders}</div>
             </div>
 
             <div class="text-center">
               <div class="flex items-center justify-center mb-2">
-                <TrendingUp class="h-5 w-5 text-purple-600 mr-2" />
-                <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Total Earnings</span>
+                <TrendingUp class="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 mr-2" />
+                <span class="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300">Total Earnings</span>
               </div>
-              <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">₹{hostStats.totalEarnings}</div>
+              <div class="text-xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">₹{hostStats.totalEarnings}</div>
             </div>
           </div>
         </div>
@@ -1244,12 +1265,12 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                   <img
                     src={imagePreview}
                     alt="Food preview"
-                    class="w-full h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                    class="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
                   />
                   <button
                     type="button"
                     onclick={removeEditImage}
-                    class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full transition-colors"
+                    class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-colors min-w-[2rem] min-h-[2rem] flex items-center justify-center"
                   >
                     <X class="w-4 h-4" />
                   </button>
@@ -1285,7 +1306,7 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label for="food-price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Price (₹) *
@@ -1297,7 +1318,7 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                   placeholder="250"
                   min="1"
                   step="0.01"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 outline-none"
+                  class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 outline-none text-base"
                   required
                 />
               </div>
@@ -1313,7 +1334,7 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                   placeholder="30"
                   min="5"
                   max="240"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 outline-none"
+                  class="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 outline-none text-base"
                 />
               </div>
             </div>
@@ -1348,25 +1369,27 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
           </div>
 
           <!-- Modal Footer -->
-          <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700">
             <Button
               variant="outline"
               onclick={closeAddFoodModal}
               disabled={isSubmitting}
+              class="w-full sm:w-auto min-h-[2.5rem] order-2 sm:order-1"
             >
               Cancel
             </Button>
             <Button
               onclick={submitNewFood}
               disabled={isSubmitting}
-              class="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white"
+              class="w-full sm:w-auto min-h-[2.5rem] bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white order-1 sm:order-2"
             >
               {#if isSubmitting}
                 <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                 Adding...
               {:else}
                 <Plus class="w-4 h-4 mr-2" />
-                Add Food Item
+                <span class="hidden sm:inline">Add Food Item</span>
+                <span class="sm:hidden">Add Item</span>
               {/if}
             </Button>
           </div>
@@ -1435,12 +1458,12 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                   <img
                     src={imagePreview}
                     alt="Food preview"
-                    class="w-full h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                    class="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
                   />
                   <button
                     type="button"
                     onclick={removeImage}
-                    class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full transition-colors"
+                    class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-colors min-w-[2rem] min-h-[2rem] flex items-center justify-center"
                   >
                     <X class="w-4 h-4" />
                   </button>
@@ -1539,18 +1562,19 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
           </div>
 
           <!-- Modal Footer -->
-          <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700">
             <Button
               variant="outline"
               onclick={closeEditFoodModal}
               disabled={isSubmitting}
+              class="w-full sm:w-auto min-h-[2.5rem] order-2 sm:order-1"
             >
               Cancel
             </Button>
             <Button
               onclick={submitEditFood}
               disabled={isSubmitting}
-              class="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white"
+              class="w-full sm:w-auto min-h-[2.5rem] bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white order-1 sm:order-2"
             >
               {#if isSubmitting}
                 <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
@@ -1559,7 +1583,8 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                 </svg>
-                Update Food Item
+                <span class="hidden sm:inline">Update Food Item</span>
+                <span class="sm:hidden">Update Item</span>
               {/if}
             </Button>
           </div>
@@ -1610,18 +1635,19 @@ async function toggleFoodAvailability(foodId: string, currentStatus: boolean) {
           </div>
 
           <!-- Modal Footer -->
-          <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700">
             <Button
               variant="outline"
               onclick={closeApplicationModal}
               disabled={isSubmitting}
+              class="w-full sm:w-auto min-h-[2.5rem] order-2 sm:order-1"
             >
               Cancel
             </Button>
             <Button
               onclick={submitApplication}
               disabled={isSubmitting || !applicationForm.businessName.trim()}
-              class="bg-blue-600 hover:bg-blue-700 text-white"
+              class="w-full sm:w-auto min-h-[2.5rem] bg-blue-600 hover:bg-blue-700 text-white order-1 sm:order-2"
             >
               {#if isSubmitting}
                 <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>

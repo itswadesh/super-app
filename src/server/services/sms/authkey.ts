@@ -3,7 +3,13 @@ import { env } from 'process'
 
 const objToQueryString = (params: any) => {
   return Object.keys(params)
-    .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
+    .map((k) => {
+      // Don't URL encode sms and fb1voice parameters
+      if (k === 'sms' || k === 'fb1voice') {
+        return `${encodeURIComponent(k)}=${params[k]}`
+      }
+      return `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`
+    })
     .join('&')
 }
 
