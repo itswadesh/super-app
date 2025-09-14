@@ -48,7 +48,7 @@ const EnvSchema = z.object({
   OPENAI_API_KEY: z.string().optional() || '',
   NIMBUS_API_EMAIL: z.string().optional() || '',
   NIMBUS_API_PASSWORD: z.string().optional() || '',
-  PUBLIC_DOMAIN: z.string().optional() || 'township.halkpt.in',
+  PUBLIC_DOMAIN: z.string().optional() || 'misiki.in',
 })
 export type EnvSchema = z.infer<typeof EnvSchema>
 

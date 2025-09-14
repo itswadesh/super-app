@@ -23,7 +23,7 @@ Thumbs.db
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
-# SQLite
+# Database files (if any local development databases are created)
 *.db
 .trae
 env-text.text

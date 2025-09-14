@@ -173,7 +173,7 @@ async function navigateWithSheetClose(path: string) {
         <!-- Logo and Brand -->
         <div class="flex items-center">
           <a href="/" class="flex items-center">
-            <img src="/logo.png" class="h-8 w-8" alt="Sunabeda Logo" />
+            <img src="/logo.jpg" class="h-8 w-8" alt="Misiki Logo" />
             <span class="ml-1 text-xl font-light text-gray-500 dark:text-gray-300 hidden sm:inline transition-colors duration-200">
               | Super App
             </span>
@@ -252,7 +252,7 @@ async function navigateWithSheetClose(path: string) {
       <SheetHeader class="mb-6">
         <SheetTitle>
           <a href="/" class="flex items-center" onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/'); }}>
-            <img src="/logo.png" class="h-8 w-8" alt="Sunabeda Logo" />
+            <img src="/logo.jpg" class="h-8 w-8" alt="Misiki Logo" />
             <span class="ml-1 text-xl font-light text-gray-500 dark:text-gray-300">| Super App</span>
           </a>
         </SheetTitle>
