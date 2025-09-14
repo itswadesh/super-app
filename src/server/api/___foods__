@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono'
 import { db } from '../db'
-import { Food, Category, User, Vendor } from '../db/schema'
+import { Product, Category, User, Vendor } from '../db/schema'
 import { eq, and, like, or, desc, sql } from 'drizzle-orm'
 import { authenticate } from '../middlewares'
 
@@ -31,45 +31,45 @@ routes.get('/', async (c) => {
 
     if (search) {
       whereConditions.push(
-        or(like(Food.name, `%${search}%`), like(Food.description, `%${search}%`))
+        or(like(Product.name, `%${search}%`), like(Product.description, `%${search}%`))
       )
     }
 
     if (category && category !== 'all') {
-      whereConditions.push(eq(Food.categoryId, category))
+      whereConditions.push(eq(Product.categoryId, category))
     }
 
     if (vegetarian !== undefined) {
       const isVeg = vegetarian === 'true'
-      whereConditions.push(eq(Food.isVegetarian, isVeg))
+      whereConditions.push(eq(Product.isVegetarian, isVeg))
     }
 
-    whereConditions.push(eq(Food.isAvailable, true))
+    whereConditions.push(eq(Product.isAvailable, true))
 
     const foods = await db
       .select({
-        id: Food.id,
-        name: Food.name,
-        description: Food.description,
-        price: Food.price,
-        image: Food.image,
-        categoryId: Food.categoryId,
-        isVegetarian: Food.isVegetarian,
-        preparationTime: Food.preparationTime,
-        rating: Food.rating,
-        totalRatings: Food.totalRatings,
-        hostId: Food.hostId,
+        id: Product.id,
+        name: Product.name,
+        description: Product.description,
+        price: Product.price,
+        image: Product.image,
+        categoryId: Product.categoryId,
+        isVegetarian: Product.isVegetarian,
+        preparationTime: Product.preparationTime,
+        rating: Product.rating,
+        totalRatings: Product.totalRatings,
+        hostId: Product.hostId,
         hostName: User.name,
         hostAddress: Vendor.address,
         hostCity: Vendor.city,
         categoryName: Category.name,
       })
-      .from(Food)
-      .leftJoin(User, eq(Food.hostId, User.id))
-      .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
-      .leftJoin(Category, eq(Food.categoryId, Category.id))
+      .from(Product)
+      .leftJoin(User, eq(Product.hostId, User.id))
+      .leftJoin(Vendor, eq(Product.hostId, Vendor.userId))
+      .leftJoin(Category, eq(Product.categoryId, Category.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(desc(Food.createdAt))
+      .orderBy(desc(Product.createdAt))
       .limit(limit)
       .offset(offset)
 
@@ -96,7 +96,7 @@ routes.get('/', async (c) => {
     // Get total count for pagination
     const totalResult = await db
       .select({ count: sql<number>`count(*)` })
-      .from(Food)
+      .from(Product)
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
 
     const total = totalResult[0]?.count || 0
@@ -137,24 +137,24 @@ routes.get('/my', authenticate, async (c) => {
 const hostId = c.get('user')?.id
   const foods = await db
     .select({
-      id: Food.id,
-      name: Food.name,
-      description: Food.description,
-      price: Food.price,
-      image: Food.image,
-      categoryId: Food.categoryId,
-      isVegetarian: Food.isVegetarian,
-      preparationTime: Food.preparationTime,
-      isAvailable: Food.isAvailable,
-      rating: Food.rating,
-      totalRatings: Food.totalRatings,
-      createdAt: Food.createdAt,
+      id: Product.id,
+      name: Product.name,
+      description: Product.description,
+      price: Product.price,
+      image: Product.image,
+      categoryId: Product.categoryId,
+      isVegetarian: Product.isVegetarian,
+      preparationTime: Product.preparationTime,
+      isAvailable: Product.isAvailable,
+      rating: Product.rating,
+      totalRatings: Product.totalRatings,
+      createdAt: Product.createdAt,
       categoryName: Category.name,
     })
-    .from(Food)
-    .leftJoin(Category, eq(Food.categoryId, Category.id))
-    .where(eq(Food.hostId, hostId))
-    .orderBy(desc(Food.createdAt))
+    .from(Product)
+    .leftJoin(Category, eq(Product.categoryId, Category.id))
+    .where(eq(Product.hostId, hostId))
+    .orderBy(desc(Product.createdAt))
 
   const transformedFoods = foods.map((food) => ({
     id: food.id,
@@ -180,30 +180,30 @@ routes.get('/:id', async (c) => {
 
   const foods = await db
     .select({
-      id: Food.id,
-      name: Food.name,
-      description: Food.description,
-      price: Food.price,
-      image: Food.image,
-      categoryId: Food.categoryId,
-      isVegetarian: Food.isVegetarian,
-      preparationTime: Food.preparationTime,
-      rating: Food.rating,
-      totalRatings: Food.totalRatings,
-      hostId: Food.hostId,
+      id: Product.id,
+      name: Product.name,
+      description: Product.description,
+      price: Product.price,
+      image: Product.image,
+      categoryId: Product.categoryId,
+      isVegetarian: Product.isVegetarian,
+      preparationTime: Product.preparationTime,
+      rating: Product.rating,
+      totalRatings: Product.totalRatings,
+      hostId: Product.hostId,
       hostName: User.name,
       hostAddress: Vendor.address,
       hostCity: Vendor.city,
       categoryName: Category.name,
     })
-    .from(Food)
-    .leftJoin(User, eq(Food.hostId, User.id))
-    .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
-    .leftJoin(Category, eq(Food.categoryId, Category.id))
-    .where(eq(Food.id, id))
+    .from(Product)
+    .leftJoin(User, eq(Product.hostId, User.id))
+    .leftJoin(Vendor, eq(Product.hostId, Vendor.userId))
+    .leftJoin(Category, eq(Product.categoryId, Category.id))
+    .where(eq(Product.id, id))
 
   if (foods.length === 0) {
-    return c.json({ error: 'Food not found' }, 404)
+    return c.json({ error: 'Product not found' }, 404)
   }
 
   const food = foods[0]
@@ -281,18 +281,18 @@ const hostId = c.get('user')?.id
     .replace(/^-|-$/g, '')
 
   // Ensure slug is unique
-  let existingFood = await db.select({ id: Food.id }).from(Food).where(eq(Food.slug, slug)).limit(1)
+  let existingFood = await db.select({ id: Product.id }).from(Product).where(eq(Product.slug, slug)).limit(1)
 
   let counter = 1
   const originalSlug = slug
   while (existingFood.length > 0) {
     slug = `${originalSlug}-${counter}`
-    existingFood = await db.select({ id: Food.id }).from(Food).where(eq(Food.slug, slug)).limit(1)
+    existingFood = await db.select({ id: Product.id }).from(Product).where(eq(Product.slug, slug)).limit(1)
     counter++
   }
 
   const newFood = await db
-    .insert(Food)
+    .insert(Product)
     .values({
       hostId,
       name,
@@ -317,9 +317,9 @@ routes.put('/:id', async (c) => {
   const body = await c.req.json()
 
   // Check ownership
-  const food = await db.select({ hostId: Food.hostId }).from(Food).where(eq(Food.id, id)).limit(1)
+  const food = await db.select({ hostId: Product.hostId }).from(Product).where(eq(Product.id, id)).limit(1)
   if (food.length === 0) {
-    return c.json({ error: 'Food not found' }, 404)
+    return c.json({ error: 'Product not found' }, 404)
   }
   if (c.req.user?.id !== food[0].hostId) {
     return c.json({ error: 'Unauthorized' }, 403)
@@ -369,10 +369,10 @@ routes.put('/:id', async (c) => {
 
   updateData.updatedAt = new Date()
 
-  const updatedFood = await db.update(Food).set(updateData).where(eq(Food.id, id)).returning()
+  const updatedFood = await db.update(Product).set(updateData).where(eq(Product.id, id)).returning()
 
   if (updatedFood.length === 0) {
-    return c.json({ error: 'Food not found' }, 404)
+    return c.json({ error: 'Product not found' }, 404)
   }
 
   return c.json(updatedFood[0])
@@ -383,21 +383,21 @@ routes.delete('/:id', async (c) => {
   const id = c.req.param('id')
 
   // Check ownership
-  const food = await db.select({ hostId: Food.hostId }).from(Food).where(eq(Food.id, id)).limit(1)
+  const food = await db.select({ hostId: Product.hostId }).from(Product).where(eq(Product.id, id)).limit(1)
   if (food.length === 0) {
-    return c.json({ error: 'Food not found' }, 404)
+    return c.json({ error: 'Product not found' }, 404)
   }
   if (c.req.user?.id !== food[0].hostId) {
     return c.json({ error: 'Unauthorized' }, 403)
   }
 
-  const deletedFood = await db.delete(Food).where(eq(Food.id, id)).returning()
+  const deletedFood = await db.delete(Product).where(eq(Product.id, id)).returning()
 
   if (deletedFood.length === 0) {
-    return c.json({ error: 'Food not found' }, 404)
+    return c.json({ error: 'Product not found' }, 404)
   }
 
-  return c.json({ message: 'Food deleted successfully' })
+  return c.json({ message: 'Product deleted successfully' })
 })
 
 // Toggle food availability
@@ -407,9 +407,9 @@ routes.patch('/:id/availability', async (c) => {
   const { isAvailable } = body
 
   // Check ownership
-  const food = await db.select({ hostId: Food.hostId }).from(Food).where(eq(Food.id, id)).limit(1)
+  const food = await db.select({ hostId: Product.hostId }).from(Product).where(eq(Product.id, id)).limit(1)
   if (food.length === 0) {
-    return c.json({ error: 'Food not found' }, 404)
+    return c.json({ error: 'Product not found' }, 404)
   }
   if (c.req.user?.id !== food[0].hostId) {
     return c.json({ error: 'Unauthorized' }, 403)
@@ -420,16 +420,16 @@ routes.patch('/:id/availability', async (c) => {
   }
 
   const updatedFood = await db
-    .update(Food)
+    .update(Product)
     .set({
       isAvailable,
       updatedAt: new Date(),
     })
-    .where(eq(Food.id, id))
+    .where(eq(Product.id, id))
     .returning()
 
   if (updatedFood.length === 0) {
-    return c.json({ error: 'Food not found' }, 404)
+    return c.json({ error: 'Product not found' }, 404)
   }
 
   return c.json(updatedFood[0])

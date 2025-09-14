@@ -12,6 +12,7 @@ export const Vendor = pgTable('vendors', {
     .references(() => User.id)
     .unique(),
   fullName: varchar('full_name').notNull(),
+  img: varchar('img'),
   email: varchar('email').notNull(),
   phone: varchar('phone').notNull(),
   experience: varchar('experience'),
@@ -21,6 +22,15 @@ export const Vendor = pgTable('vendors', {
   deliveryRadius: varchar('delivery_radius'),
   businessLicense: varchar('business_license'), // file path/URL
   businessName: varchar('business_name'),
+  avatar: varchar('avatar'),
+  bio: varchar('bio'),
+  qualifications: varchar('qualifications'), // JSON string
+  achievements: varchar('achievements'), // JSON string
+  website: varchar('website'),
+  twitter: varchar('twitter'),
+  linkedin: varchar('linkedin'),
+  instagram: varchar('instagram'),
+  joinedDate: timestamp('joined_date'),
   foodSafetyCertificate: varchar('food_safety_certificate'), // file path/URL
   idProof: varchar('id_proof').notNull(), // file path/URL
   address: varchar('address').notNull(),

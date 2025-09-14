@@ -16,6 +16,7 @@ export const Order = pgTable('orders', {
     .references(() => User.id),
   orderNumber: varchar('order_number').notNull().unique(),
   status: varchar('status').default('pending'), // 'pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'
+  comment: varchar('comment'),
   totalAmount: decimal('total_amount', { precision: 10, scale: 2 }).notNull(),
   deliveryFee: decimal('delivery_fee', { precision: 10, scale: 2 }).default('0.00'),
   taxAmount: decimal('tax_amount', { precision: 10, scale: 2 }).default('0.00'),

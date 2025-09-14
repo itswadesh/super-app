@@ -1,15 +1,15 @@
-import { and, asc, desc, ilike, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import type { Context } from 'hono'
 import { CONFIG } from '../../../../config'
 import { db } from '../../../../db'
 import { getSessionTokenCookie, validateSessionToken } from '../../../../db/auth'
-import { Author } from '../../../../db/schema'
-import type { ListAuthorsQuery, ListAuthorsResponse } from '../types'
+import { Coupon } from '../../../../db/schema'
+import type { ListCouponsQuery, ListCouponsResponse } from '../types'
 
 /**
- * List authors with filtering, sorting, and pagination
+ * List coupons with filtering, sorting, and pagination
  */
-export async function listAuthors(c: Context): Promise<Response> {
+export async function listCoupons(c: Context): Promise<Response> {
   try {
     // Validate session
     const sessionToken = getSessionTokenCookie(c)
@@ -20,13 +20,14 @@ export async function listAuthors(c: Context): Promise<Response> {
     }
 
     // Parse query parameters with default values
-    const query = c.req.query() as unknown as ListAuthorsQuery
+    const query = c.req.query() as unknown as ListCouponsQuery
     const {
       page = '1',
       pageSize: pageSizeParam,
       search,
-      sortBy = 'name',
-      sortOrder = 'asc',
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      isActive,
     } = query
 
     // Validate and parse pagination parameters
@@ -39,15 +40,22 @@ export async function listAuthors(c: Context): Promise<Response> {
     // Build the WHERE conditions
     const conditions = []
 
-    // Search by name or bio
+    // Search by coupon code or description
     if (search) {
-      conditions.push(or(ilike(Author.name, `%${search}%`), ilike(Author.bio, `%${search}%`)))
+      conditions.push(
+        or(ilike(Coupon.couponCode, `%${search}%`), ilike(Coupon.description, `%${search}%`))
+      )
+    }
+
+    // Filter by active status
+    if (isActive !== undefined) {
+      conditions.push(eq(Coupon.isActive, isActive === 'true'))
     }
 
     // Count total matching records
     const countResult = await db
       .select({ count: sql<number>`count(*)` })
-      .from(Author)
+      .from(Coupon)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
 
     const total = countResult[0]?.count || 0
@@ -55,7 +63,24 @@ export async function listAuthors(c: Context): Promise<Response> {
 
     // Apply sorting
     const orderBy = []
-    const sortColumn = sortBy in Author ? Author[sortBy as keyof typeof Author] : Author.name
+    const allowedSortFields = [
+      'id',
+      'couponCode',
+      'discount',
+      'discountType',
+      'maxDiscount',
+      'isActive',
+      'validFrom',
+      'validTo',
+      'usageLimit',
+      'usageCount',
+      'description',
+      'createdAt',
+      'updatedAt',
+    ]
+    const sortColumn = (
+      allowedSortFields.includes(sortBy) ? Coupon[sortBy as keyof typeof Coupon] : Coupon.createdAt
+    ) as any
 
     if (sortOrder === 'asc') {
       orderBy.push(asc(sortColumn))
@@ -64,22 +89,20 @@ export async function listAuthors(c: Context): Promise<Response> {
     }
 
     // Fetch paginated results
-    const authors = await db
+    const coupons = await db
       .select()
-      .from(Author)
+      .from(Coupon)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(...orderBy)
       .limit(pageSize)
       .offset(offset)
 
     // Format the response
-    const response: ListAuthorsResponse = {
-      data: authors.map((author) => ({
-        ...author,
-        qualifications: author.qualifications ? JSON.parse(author.qualifications) : [],
-        achievements: author.achievements ? JSON.parse(author.achievements) : [],
-        createdAt: new Date(author.createdAt).toISOString(),
-        updatedAt: new Date(author.updatedAt).toISOString(),
+    const response: ListCouponsResponse = {
+      data: coupons.map((coupon) => ({
+        ...coupon,
+        createdAt: new Date(coupon.createdAt).toISOString(),
+        updatedAt: new Date(coupon.updatedAt).toISOString(),
       })),
       pagination: {
         page: pageNumber,
@@ -91,7 +114,7 @@ export async function listAuthors(c: Context): Promise<Response> {
 
     return c.json(response)
   } catch (error) {
-    console.error('Error listing authors:', error)
+    console.error('Error listing coupons:', error)
     return c.json({ error: 'Internal server error' }, 500)
   }
 }

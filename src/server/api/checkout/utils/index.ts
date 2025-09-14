@@ -114,7 +114,7 @@ export const placeOrder = async ({
       .from(Coupon)
       .where(and(eq(Coupon.couponCode, couponCode), eq(Coupon.isActive, true)))
     if (coupon.length > 0) {
-      const discount = coupon[0].discount || 0
+      const discount = parseFloat(coupon[0].discount) || 0
       if (coupon[0].discountType === 'percentage') {
         discountedAmount = Math.round((totalAmount - (totalAmount * discount) / 100) * 100) / 100
       } else {

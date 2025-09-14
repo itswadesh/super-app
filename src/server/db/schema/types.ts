@@ -14,7 +14,7 @@ export type ErrorOccurrence = InferSelect<typeof import('./error-log').ErrorOccu
 export type ErrorNote = InferSelect<typeof import('./error-log').ErrorNote>
 
 // Food
-export type Food = InferSelect<typeof import('./food').Food>
+export type Product = InferSelect<typeof import('./product').Product>
 
 // Food Rating
 export type FoodRating = InferSelect<typeof import('./food-rating').FoodRating>

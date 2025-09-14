@@ -2,7 +2,7 @@ import { and, eq, sql, like, or, desc } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { db } from '../../db'
-import { Food, Category, User, Vendor } from '../../db/schema'
+import { Product, Category, User, Vendor } from '../../db/schema'
 import { authenticate, optionalAuthenticate } from '../../middlewares/auth'
 
 export const routes = new Hono()
@@ -31,20 +31,20 @@ routes.get('/', optionalAuthenticate, async (c: Context) => {
 
     if (search) {
       whereConditions.push(
-        or(like(Food.name, `%${search}%`), like(Food.description, `%${search}%`))
+        or(like(Product.title, `%${search}%`), like(Product.description, `%${search}%`))
       )
     }
 
     if (category && category !== 'all') {
-      whereConditions.push(eq(Food.categoryId, category))
+      whereConditions.push(eq(Product.categoryId, category))
     }
 
     if (vegetarian !== undefined) {
       const isVeg = vegetarian === 'true'
-      whereConditions.push(eq(Food.isVegetarian, isVeg))
+      whereConditions.push(eq(Product.isVegetarian, isVeg))
     }
 
-    whereConditions.push(eq(Food.isAvailable, true))
+    whereConditions.push(eq(Product.isAvailable, true))
     whereConditions.push(eq(Vendor.status, 'approved'))
 
     // // Debug: Check approved vendors
@@ -62,29 +62,29 @@ routes.get('/', optionalAuthenticate, async (c: Context) => {
     // // Debug: Check all foods
     // const allFoods = await db
     //   .select({
-    //     id: Food.id,
-    //     name: Food.name,
-    //     hostId: Food.hostId,
-    //     isAvailable: Food.isAvailable,
+    //     id: Product.id,
+    //     name: Product.name,
+    //     hostId: Product.hostId,
+    //     isAvailable: Product.isAvailable,
     //   })
-    //   .from(Food)
+    //   .from(Product)
     //   .limit(50)
     // console.log('All foods in database:', allFoods)
 
     // // Debug: Check foods with vendor join
     // const foodsWithVendors = await db
     //   .select({
-    //     foodId: Food.id,
-    //     foodName: Food.name,
-    //     hostId: Food.hostId,
-    //     isAvailable: Food.isAvailable,
+    //     foodId: Product.id,
+    //     foodName: Product.name,
+    //     hostId: Product.hostId,
+    //     isAvailable: Product.isAvailable,
     //     vendorId: Vendor.id,
     //     vendorUserId: Vendor.userId,
     //     vendorStatus: Vendor.status,
     //     vendorName: Vendor.fullName,
     //   })
-    //   .from(Food)
-    //   .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
+    //   .from(Product)
+    //   .leftJoin(Vendor, eq(Product.hostId, Vendor.userId))
     //   .limit(50)
     // console.log('Foods with vendor join:', foodsWithVendors)
 
@@ -93,40 +93,40 @@ routes.get('/', optionalAuthenticate, async (c: Context) => {
     //   for (const vendor of approvedVendors) {
     //     const vendorFoods = await db
     //       .select({
-    //         id: Food.id,
-    //         name: Food.name,
-    //         hostId: Food.hostId,
-    //         isAvailable: Food.isAvailable,
+    //         id: Product.id,
+    //         name: Product.name,
+    //         hostId: Product.hostId,
+    //         isAvailable: Product.isAvailable,
     //       })
-    //       .from(Food)
-    //       .where(eq(Food.hostId, vendor.userId))
+    //       .from(Product)
+    //       .where(eq(Product.hostId, vendor.userId))
     //     console.log(`Foods for vendor ${vendor.fullName} (${vendor.userId}):`, vendorFoods)
     //   }
     // }
 
     const foods = await db
       .select({
-        id: Food.id,
-        name: Food.name,
-        description: Food.description,
-        price: Food.price,
-        image: Food.image,
-        categoryId: Food.categoryId,
-        isVegetarian: Food.isVegetarian,
-        preparationTime: Food.preparationTime,
-        rating: Food.rating,
-        totalRatings: Food.totalRatings,
-        hostId: Food.hostId,
+        id: Product.id,
+        name: Product.title,
+        description: Product.description,
+        price: Product.price,
+        image: Product.image,
+        categoryId: Product.categoryId,
+        isVegetarian: Product.isVegetarian,
+        preparationTime: Product.preparationTime,
+        rating: Product.rating,
+        totalRatings: Product.totalRatings,
+        hostId: Product.hostId,
         hostName: Vendor.businessName,
         hostCity: Vendor.city,
         categoryName: Category.name,
       })
-      .from(Food)
-      .leftJoin(User, eq(Food.hostId, User.id))
-      .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
-      .leftJoin(Category, eq(Food.categoryId, Category.id))
+      .from(Product)
+      .leftJoin(User, eq(Product.hostId, User.id))
+      .leftJoin(Vendor, eq(Product.hostId, Vendor.userId))
+      .leftJoin(Category, eq(Product.categoryId, Category.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(desc(Food.createdAt))
+      .orderBy(desc(Product.createdAt))
       .limit(limit)
       .offset(offset)
 
@@ -154,10 +154,10 @@ routes.get('/', optionalAuthenticate, async (c: Context) => {
     // Get total count for pagination
     const totalResult = await db
       .select({ count: sql<number>`count(*)` })
-      .from(Food)
-      .leftJoin(User, eq(Food.hostId, User.id))
-      .leftJoin(Vendor, eq(Food.hostId, Vendor.userId))
-      .leftJoin(Category, eq(Food.categoryId, Category.id))
+      .from(Product)
+      .leftJoin(User, eq(Product.hostId, User.id))
+      .leftJoin(Vendor, eq(Product.hostId, Vendor.userId))
+      .leftJoin(Category, eq(Product.categoryId, Category.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
 
     const total = +totalResult[0]?.count || 0
@@ -215,42 +215,46 @@ routes.post('/', authenticate, async (c: Context) => {
     }
 
     // Check if slug already exists
-    const existingFood = await db.select().from(Food).where(eq(Food.slug, slug)).limit(1)
+    const existingFood = await db.select().from(Product).where(eq(Product.slug, slug)).limit(1)
 
     if (existingFood.length > 0) {
-      return c.json({ error: 'Food with this name already exists' }, 409)
+      return c.json({ error: 'Product with this name already exists' }, 409)
     }
 
     // If categoryId is provided, look up the category UUID from the slug
     let categoryUuid = undefined
-    console.log('Checking categoryId condition:', {
-      categoryId,
-      isEmptyString: categoryId === '',
-      trimmed: categoryId?.trim(),
-      isTruthy: !!categoryId,
-      trimTruthy: !!categoryId?.trim(),
-    })
+
+    // Log available categories for debugging
+    const availableCategories = await db
+      .select({ id: Category.id, name: Category.name, slug: Category.slug })
+      .from(Category)
+      .where(eq(Category.isActive, true))
+      .limit(10)
+    console.log('📋 DEBUG: Available categories:', availableCategories)
 
     if (categoryId && typeof categoryId === 'string' && categoryId.trim().length > 0) {
-      // console.log('CategoryId is valid, looking up UUID for slug:', categoryId)
+      console.log('✅ DEBUG: CategoryId is valid, looking up UUID for slug:', categoryId)
       const category = await db
         .select()
         .from(Category)
         .where(eq(Category.slug, categoryId))
         .limit(1)
+      console.log('🔎 DEBUG: Category lookup result:', category)
       if (category.length === 0) {
+        console.log('❌ DEBUG: Category not found for slug:', categoryId)
         return c.json({ error: 'Category not found' }, 404)
       }
       categoryUuid = category[0].id
-      // console.log('Found category UUID:', categoryUuid)
+      console.log('🎯 DEBUG: Found category UUID:', categoryUuid)
     } else {
-      console.log('CategoryId is empty or invalid, will omit from insert')
+      console.log('ℹ️  INFO: No category selected (optional), proceeding without category')
     }
 
     // Create the food
     const insertData: any = {
       hostId,
-      name,
+      title: name,
+      titleEnglish: name,
       slug,
       description: description || null,
       price: price.toString(),
@@ -264,7 +268,7 @@ routes.post('/', authenticate, async (c: Context) => {
     if (categoryUuid) {
       insertData.categoryId = categoryUuid
     }
-    const newFood = await db.insert(Food).values(insertData).returning()
+    const newFood = await db.insert(Product).values(insertData).returning()
 
     return c.json(newFood[0], 201)
   } catch (error) {
@@ -317,31 +321,34 @@ routes.get('/my', authenticate, async (c: Context) => {
       return c.json({ error: 'User not authenticated' }, 401)
     }
 
+    // console.log('Debug: hostId:', hostId)
+    // console.log('Debug: Product.title exists:', !!Product.title)
+
     const foods = await db
       .select({
-        id: Food.id,
-        hostId: Food.hostId,
-        name: Food.name,
-        slug: Food.slug,
-        description: Food.description,
-        price: Food.price,
-        image: Food.image,
-        categoryId: Food.categoryId,
-        ingredients: Food.ingredients,
-        allergens: Food.allergens,
-        preparationTime: Food.preparationTime,
-        servingSize: Food.servingSize,
-        isAvailable: Food.isAvailable,
-        isVegetarian: Food.isVegetarian,
-        isVegan: Food.isVegan,
-        rating: Food.rating,
-        totalRatings: Food.totalRatings,
-        createdAt: Food.createdAt,
-        updatedAt: Food.updatedAt,
+        id: Product.id,
+        hostId: Product.hostId,
+        name: Product.title,
+        slug: Product.slug,
+        description: Product.description,
+        price: Product.price,
+        image: Product.image,
+        categoryId: Product.categoryId,
+        ingredients: Product.ingredients,
+        allergens: Product.allergens,
+        preparationTime: Product.preparationTime,
+        servingSize: Product.servingSize,
+        isAvailable: Product.isAvailable,
+        isVegetarian: Product.isVegetarian,
+        isVegan: Product.isVegan,
+        rating: Product.rating,
+        totalRatings: Product.totalRatings,
+        createdAt: Product.createdAt,
+        updatedAt: Product.updatedAt,
       })
-      .from(Food)
-      .where(eq(Food.hostId, hostId))
-      .orderBy(Food.createdAt)
+      .from(Product)
+      .where(eq(Product.hostId, hostId))
+      .orderBy(Product.createdAt)
 
     return c.json(foods, 200)
   } catch (error) {
@@ -360,16 +367,16 @@ routes.put('/:id', authenticate, async (c: Context) => {
     const body = await c.req.json()
 
     if (!id) {
-      return c.json({ error: 'Food ID is required' }, 400)
+      return c.json({ error: 'Product ID is required' }, 400)
     }
 
     const { name, description, price, categoryId, isVegetarian, preparationTime, image } = body
 
     // Check if food exists
-    const existingFood = await db.select().from(Food).where(eq(Food.id, id)).limit(1)
+    const existingFood = await db.select().from(Product).where(eq(Product.id, id)).limit(1)
 
     if (existingFood.length === 0) {
-      return c.json({ error: 'Food not found' }, 404)
+      return c.json({ error: 'Product not found' }, 404)
     }
 
     // If categoryId is provided, look up the category UUID from the slug
@@ -386,6 +393,7 @@ routes.put('/:id', authenticate, async (c: Context) => {
         }
         categoryUuid = category[0].id
       } else {
+        console.log('ℹ️  INFO: No category selected (optional), setting categoryId to null')
         categoryUuid = null // Explicitly set to null for empty category
       }
     }
@@ -396,7 +404,8 @@ routes.put('/:id', authenticate, async (c: Context) => {
     }
 
     if (name !== undefined) {
-      updateData.name = name
+      updateData.title = name
+      updateData.titleEnglish = name
       updateData.slug = generateSlug(name)
     }
     if (description !== undefined) updateData.description = description
@@ -407,7 +416,11 @@ routes.put('/:id', authenticate, async (c: Context) => {
     if (image !== undefined) updateData.image = image
 
     // Update the food
-    const updatedFood = await db.update(Food).set(updateData).where(eq(Food.id, id)).returning()
+    const updatedFood = await db
+      .update(Product)
+      .set(updateData)
+      .where(eq(Product.id, id))
+      .returning()
 
     return c.json(updatedFood[0], 200)
   } catch (error) {
@@ -423,7 +436,7 @@ routes.patch('/:id/availability', authenticate, async (c: Context) => {
     const body = await c.req.json()
 
     if (!id) {
-      return c.json({ error: 'Food ID is required' }, 400)
+      return c.json({ error: 'Product ID is required' }, 400)
     }
 
     const { isAvailable } = body
@@ -433,20 +446,20 @@ routes.patch('/:id/availability', authenticate, async (c: Context) => {
     }
 
     // Check if food exists
-    const existingFood = await db.select().from(Food).where(eq(Food.id, id)).limit(1)
+    const existingFood = await db.select().from(Product).where(eq(Product.id, id)).limit(1)
 
     if (existingFood.length === 0) {
-      return c.json({ error: 'Food not found' }, 404)
+      return c.json({ error: 'Product not found' }, 404)
     }
 
     // Update availability
     const updatedFood = await db
-      .update(Food)
+      .update(Product)
       .set({
         isAvailable,
         updatedAt: sql`NOW()`,
       })
-      .where(eq(Food.id, id))
+      .where(eq(Product.id, id))
       .returning()
 
     return c.json(updatedFood[0], 200)
@@ -465,13 +478,13 @@ routes.get('/:id', async (c: Context) => {
     const id = c.req.param('id')
 
     if (!id) {
-      return c.json({ error: 'Food ID is required' }, 400)
+      return c.json({ error: 'Product ID is required' }, 400)
     }
 
-    const foods = await db.select().from(Food).where(eq(Food.id, id)).limit(1)
+    const foods = await db.select().from(Product).where(eq(Product.id, id)).limit(1)
 
     if (foods.length === 0) {
-      return c.json({ error: 'Food not found' }, 404)
+      return c.json({ error: 'Product not found' }, 404)
     }
 
     return c.json(foods[0], 200)

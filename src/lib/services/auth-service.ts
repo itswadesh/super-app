@@ -36,14 +36,6 @@ interface LoginResponse {
 }
 
 /**
- * Interface for OTP verification input
- */
-interface VerifyOtpInput {
-  phone: string
-  otp: string
-}
-
-/**
  * Auth Service for making authentication-related API calls
  */
 export const authService = {
@@ -57,7 +49,7 @@ export const authService = {
 
   /**
    * Verify OTP and login the user
-   * @param phone Phone number for verification
+   * @param phone Phone number for verification (10 digits, no country code)
    * @param otp OTP code entered by user
    */
   verifyOtp(phone: string, otp: string): Promise<LoginResponse> {

@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import { nanoid } from 'nanoid'
 import { z } from 'zod'
 import { db } from '../../db'
-import { Order, OrderItem, Food, Payment, User } from '../../db/schema' // Coupon schema might be needed if validateCouponUtil returns full Coupon object
+import { Order, OrderItem, Product, Payment, User } from '../../db/schema' // Coupon schema might be needed if validateCouponUtil returns full Coupon object
 import { afterOrderConfirmation, placeOrder } from './utils' // Assuming placeOrder is in utils
 import { capturePhonepe } from './phonepe/capture'
 import { phonepeCheckout } from './phonepe/checkout'
@@ -399,8 +399,8 @@ checkoutRoutes.post('/cod', authenticate, async (c) => {
     const foodIds = items.map((item: any) => item.id || item.foodId)
 
     // Query foods to get hostId and price for each foodId
-    const foods = await db.query.Food.findMany({
-      where: inArray(Food.id, foodIds),
+    const foods = await db.query.Product.findMany({
+      where: inArray(Product.id, foodIds),
       columns: { id: true, hostId: true, price: true },
     })
 

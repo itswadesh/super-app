@@ -29,9 +29,10 @@ routes.post('/', authenticate, async (c) => {
       return c.json({ error: 'Address is required' }, 400)
     }
 
+    console.log(c.get('user'))
     // TODO: Get actual user ID from authentication
     const userId = c.get('user')?.id
-
+    console.log(userId)
     // Check if user already has a pending or approved application
     const existingApplication = await db
       .select()

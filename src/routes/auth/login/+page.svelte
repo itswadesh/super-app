@@ -127,7 +127,7 @@ async function verifyOTP() {
     isLoading = true
     try {
       // For mock login, use any OTP or empty OTP
-      const result = await authService.verifyOtp(`+91${phoneNumber}`, '0000')
+      const result = await authService.verifyOtp(phoneNumber, '0000')
 
       if (result.success) {
         goto(redirectUrl)
@@ -156,7 +156,7 @@ async function verifyOTP() {
     // In a real app, you would validate this against an API
     const enteredOtp = otp.join('')
     // Use auth service to verify OTP
-    const result = await authService.verifyOtp(`+91${phoneNumber}`, enteredOtp)
+    const result = await authService.verifyOtp(phoneNumber, enteredOtp)
 
     if (result.success) {
       // OTP validation successful - redirect user

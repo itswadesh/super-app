@@ -65,30 +65,35 @@ let darkMode = $state(false)
 // Toggle dark mode
 function toggleDarkMode() {
   darkMode = !darkMode
-  if (darkMode) {
-    document.documentElement.classList.add('dark')
-    localStorage.setItem('theme', 'dark')
-  } else {
-    document.documentElement.classList.remove('dark')
-    localStorage.setItem('theme', 'light')
+  if (browser) {
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+      localStorage.setItem('theme', 'dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.setItem('theme', 'light')
+    }
   }
 }
 
 // Initialize theme from localStorage or system preference
 onMount(() => {
-  const savedTheme = localStorage.getItem('theme')
-  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-
-  if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-    document.documentElement.classList.add('dark')
-    darkMode = true
-  }
-
-  // Check for auth redirect cookie and open login modal if needed
   if (browser) {
+    const savedTheme = localStorage.getItem('theme')
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+
+    if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+      document.documentElement.classList.add('dark')
+      darkMode = true
+    }
+
+    // Check for auth redirect cookie and open login modal if needed
     const pathname = window.location.pathname
     const isProtectedRoute =
-      !pathname.startsWith('/api/') && pathname !== '/' && pathname !== '/foods'
+      !pathname.startsWith('/api/') &&
+      pathname !== '/' &&
+      pathname !== '/foods' &&
+      pathname !== '/host/apply'
     const isAuthenticated = page.data?.user?.id
 
     if (isProtectedRoute && !isAuthenticated) {

@@ -1,5 +1,5 @@
 import { db } from '.'
-import { Category, User, Vendor, Food } from './schema'
+import { Category, User, Vendor, Product } from './schema'
 
 // Helper function to generate unique IDs
 const generateId = () => crypto.randomUUID()
@@ -137,7 +137,7 @@ async function seedTestFoods(userId: string, categories: any[]) {
 
   try {
     for (const food of testFoods) {
-      await db.insert(Food).values(food)
+      await db.insert(Product).values(food)
     }
     console.log(`${testFoods.length} test foods inserted.`)
     return testFoods

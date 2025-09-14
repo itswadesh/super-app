@@ -1,6 +1,6 @@
 import { pgTable, varchar, integer, timestamp, decimal } from 'drizzle-orm/pg-core'
 import { Order } from './order'
-import { Food } from './food'
+import { Product } from './product'
 import { generateEntityId } from '../../utils'
 
 export const OrderItem = pgTable('order_items', {
@@ -13,7 +13,7 @@ export const OrderItem = pgTable('order_items', {
     .references(() => Order.id),
   foodId: varchar('food_id')
     .notNull()
-    .references(() => Food.id),
+    .references(() => Product.id),
   quantity: integer('quantity').notNull(),
   unitPrice: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
   totalPrice: decimal('total_price', { precision: 10, scale: 2 }).notNull(),

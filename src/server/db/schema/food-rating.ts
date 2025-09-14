@@ -1,5 +1,5 @@
 import { pgTable, integer, timestamp, varchar } from 'drizzle-orm/pg-core'
-import { Food } from './food'
+import { Product } from './product'
 import { User } from './user'
 import { Order } from './order'
 
@@ -10,7 +10,7 @@ export const FoodRating = pgTable('food_ratings', {
   id: varchar('id').primaryKey().$defaultFn(generateId),
   foodId: varchar('food_id')
     .notNull()
-    .references(() => Food.id),
+    .references(() => Product.id),
   userId: varchar('user_id')
     .notNull()
     .references(() => User.id),

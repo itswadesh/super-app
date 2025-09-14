@@ -24,27 +24,13 @@ import { goto } from '$app/navigation'
 import { page } from '$app/stores'
 import { onMount } from 'svelte'
 import type { PageData } from './$types'
+import type { ProductItem } from '$lib/types/food'
 
 interface Props {
   data: PageData
 }
 
-interface Food {
-  id: string
-  name: string
-  price: number
-  image: string
-  rating: number
-  isVegetarian: boolean
-  businessName: string
-  host: {
-    name: string
-    location: string
-  }
-  category: string
-  totalRatings: number
-  preparationTime: number
-}
+// Using ProductItem from backend types
 
 interface Category {
   id: string
@@ -54,7 +40,7 @@ interface Category {
 let { data }: Props = $props()
 
 // Client-side reactive state
-let foods = $state<Food[]>([])
+let foods = $state<ProductItem[]>([])
 let categories = $state<Category[]>([])
 let total = $state(0)
 let currentPage = $state(data?.initialPage || 1)
@@ -164,7 +150,7 @@ let shouldRefocus = $state(false)
 let cart = $state<Record<string, number>>({})
 
 // Ordered items for success screen
-let orderedItems = $state<(Food & { quantity: number })[]>([])
+let orderedItems = $state<(ProductItem & { quantity: number })[]>([])
 
 // Drawer state
 let isCartDrawerOpen = $state(false)

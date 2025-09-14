@@ -117,51 +117,51 @@ async function submitApplication() {
   <title>Apply to Become a Chef - Misiki</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50 py-8">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
   <div class="container mx-auto px-4 max-w-2xl">
     <div class="text-center mb-8">
-      <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="w-16 h-16 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
         </svg>
       </div>
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">Become a Misiki Chef</h1>
-      <p class="text-gray-600">Join our community of home chefs and start earning from your culinary passion</p>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Become a Misiki Chef</h1>
+      <p class="text-gray-600 dark:text-gray-400">Join our community of home chefs and start earning from your culinary passion</p>
     </div>
 
     {#if submitSuccess}
-      <div class="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-6 text-center">
+        <div class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h2 class="text-xl font-semibold text-green-800 mb-2">Application Submitted Successfully!</h2>
-        <p class="text-green-700 mb-4">
+        <h2 class="text-xl font-semibold text-green-800 dark:text-green-200 mb-2">Application Submitted Successfully!</h2>
+        <p class="text-green-700 dark:text-green-300 mb-4">
           Thank you for your interest in becoming a Misiki chef. Your application has been received and is under review.
         </p>
-        <p class="text-sm text-green-600">
+        <p class="text-sm text-green-600 dark:text-green-400">
           You will be redirected to your dashboard shortly...
         </p>
       </div>
     {:else}
-      <div class="bg-white rounded-lg shadow-lg">
-        <div class="p-6 border-b border-gray-200">
-          <h2 class="text-xl font-semibold text-gray-900">Chef Application Form</h2>
-          <p class="text-gray-600 mt-1">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Chef Application Form</h2>
+          <p class="text-gray-600 dark:text-gray-400 mt-1">
             Please fill out all the required information below
           </p>
         </div>
 
         <form on:submit|preventDefault={submitApplication} class="p-6 space-y-4">
           {#if submitError}
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+            <div class="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
               {submitError}
             </div>
           {/if}
 
           <div>
-            <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="fullName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Full Name *
             </label>
             <input
@@ -169,7 +169,7 @@ async function submitApplication() {
               type="text"
               bind:value={formData.fullName}
               placeholder="Enter your full name"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 outline-none"
               required
             />
             {#if formErrors.fullName}
@@ -178,7 +178,7 @@ async function submitApplication() {
           </div>
 
           <div>
-            <label for="businessName" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="businessName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Business Name (Display Name) *
             </label>
             <input
@@ -186,7 +186,7 @@ async function submitApplication() {
               type="text"
               bind:value={formData.businessName}
               placeholder="e.g., John's Home Kitchen"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 outline-none"
               required
             />
             {#if formErrors.businessName}
@@ -195,7 +195,7 @@ async function submitApplication() {
           </div>
 
           <div>
-            <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Business Phone Number *
             </label>
             <input
@@ -203,7 +203,7 @@ async function submitApplication() {
               type="tel"
               bind:value={formData.phone}
               placeholder="+91 9876543210"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 outline-none"
               required
             />
             {#if formErrors.phone}
@@ -212,7 +212,7 @@ async function submitApplication() {
           </div>
 
           <div>
-            <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
+            <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Address *
             </label>
             <textarea
@@ -220,7 +220,7 @@ async function submitApplication() {
               bind:value={formData.address}
               placeholder="House number, street, landmark"
               rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none resize-none"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-400 focus:border-orange-500 dark:focus:border-orange-400 outline-none resize-none"
               required
             ></textarea>
             {#if formErrors.address}
@@ -236,10 +236,10 @@ async function submitApplication() {
               class="mt-1"
             />
             <div>
-              <label for="agreeToTerms" class="text-sm font-medium text-gray-700">
+              <label for="agreeToTerms" class="text-sm font-medium text-gray-700 dark:text-gray-300">
                 I agree to the Terms and Conditions *
               </label>
-              <p class="text-xs text-gray-600 mt-1">
+              <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
                 By submitting this application, I agree to follow all food safety guidelines,
                 maintain quality standards, and adhere to Misiki's policies and procedures.
               </p>

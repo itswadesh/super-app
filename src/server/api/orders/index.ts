@@ -2,7 +2,7 @@ import { eq, desc } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { db } from '../../db'
-import { Order, OrderItem, Food, User, Vendor } from '../../db/schema'
+import { Order, OrderItem, Product, User, Vendor } from '../../db/schema'
 import { authenticate } from '../../middlewares/auth'
 import type { User as UserType } from '../../db/schema'
 import { formatDateTimeHumanReadable } from '../../../lib/utils/format'
@@ -52,11 +52,11 @@ ordersRoutes.get('/my', authenticate, async (c) => {
     ordersData.map(async (order) => {
       const items = await db
         .select({
-          name: Food.name,
+          name: Product.title,
           quantity: OrderItem.quantity,
         })
         .from(OrderItem)
-        .leftJoin(Food, eq(OrderItem.foodId, Food.id))
+        .leftJoin(Product, eq(OrderItem.foodId, Product.id))
         .where(eq(OrderItem.orderId, order.id))
 
       return {
@@ -67,7 +67,7 @@ ordersRoutes.get('/my', authenticate, async (c) => {
         status: order.status,
         orderTime: formatDateTimeHumanReadable(order.createdAt),
         items: items.map((item) => ({
-          foodName: item.name || 'Unknown Food',
+          foodName: item.name || 'Unknown Product',
           quantity: item.quantity || 1,
         })),
       }
@@ -85,13 +85,13 @@ ordersRoutes.get('/my/analytics', authenticate, async (c) => {
   // Get foods for the host
   const foods = await db
     .select({
-      id: Food.id,
-      isAvailable: Food.isAvailable,
-      rating: Food.rating,
-      totalRatings: Food.totalRatings,
+      id: Product.id,
+      isAvailable: Product.isAvailable,
+      rating: Product.rating,
+      totalRatings: Product.totalRatings,
     })
-    .from(Food)
-    .where(eq(Food.hostId, hostId))
+    .from(Product)
+    .where(eq(Product.hostId, hostId))
 
   // Get orders for the host
   const orders = await db
@@ -166,13 +166,13 @@ ordersRoutes.get('/user-orders', authenticate, async (c) => {
       ordersData.map(async (order) => {
         const items = await db
           .select({
-            name: Food.name,
+            name: Product.title,
             quantity: OrderItem.quantity,
             unitPrice: OrderItem.unitPrice,
             totalPrice: OrderItem.totalPrice,
           })
           .from(OrderItem)
-          .leftJoin(Food, eq(OrderItem.foodId, Food.id))
+          .leftJoin(Product, eq(OrderItem.foodId, Product.id))
           .where(eq(OrderItem.orderId, order.id))
 
         return {

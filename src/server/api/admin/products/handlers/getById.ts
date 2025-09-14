@@ -2,7 +2,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { Context } from 'hono'
 import { db } from '../../../../db'
 import { getSessionTokenCookie, validateSessionToken } from '../../../../db/auth'
-import { Product, Author, Category } from '../../../../db/schema'
+import { Product, Category, User } from '../../../../db/schema'
 import type { ProductResponse } from '../types'
 
 // Helper function to format date from SQLite timestamp to ISO string
@@ -47,19 +47,13 @@ export async function getProductById(c: Context): Promise<Response> {
         // Product fields
         id: Product.id,
         title: Product.title,
-        titleEnglish: Product.titleEnglish,
         slug: Product.slug,
         description: Product.description,
         categoryId: Product.categoryId,
-        authorId: Product.authorId,
-        difficulty: Product.difficulty,
-        estimatedTime: Product.estimatedTime,
-        thumbnailUrl: Product.thumbnailUrl,
+        hostId: Product.hostId,
+        thumbnail: Product.thumbnail,
         images: Product.images,
         type: Product.type,
-        fileUrl: Product.fileUrl,
-        language: Product.language,
-        isPaid: Product.isPaid,
         isActive: Product.isActive,
         isFeatured: Product.isFeatured,
         rank: Product.rank,
@@ -70,11 +64,10 @@ export async function getProductById(c: Context): Promise<Response> {
         createdAt: Product.createdAt,
         updatedAt: Product.updatedAt,
         // Related author data
-        author: {
-          id: Author.id,
-          name: Author.name,
-          avatar: Author.avatar,
-          bio: Author.bio,
+        host: {
+          id: User.id,
+          name: User.name,
+          avatar: User.avatar,
         },
         // Related category data
         category: {
@@ -85,7 +78,7 @@ export async function getProductById(c: Context): Promise<Response> {
         },
       })
       .from(Product)
-      .leftJoin(Author, eq(Product.authorId, Author.id))
+      .leftJoin(User, eq(Product.hostId, User.id))
       .leftJoin(Category, eq(Product.categoryId, Category.id))
       .where(eq(Product.id, id))
       .limit(1)
@@ -114,15 +107,12 @@ export async function getProductById(c: Context): Promise<Response> {
       title: result.title,
       description: result.description || undefined,
       slug: result.slug,
-      thumbnailUrl: result.thumbnailUrl || undefined,
-      isPaid: Boolean(result.isPaid),
+      thumbnail: result.thumbnail || undefined,
       hasAccess: true, // Admins always have access
-      authorId: result.authorId || undefined,
+      authorId: result.hostId || undefined,
       categoryId: result.categoryId || undefined,
-      language: result.language || 'en',
       type: result.type as 'video' | 'note' | 'quiz' | undefined,
       fileUrl: result.fileUrl || undefined,
-      difficulty: result.difficulty as 'Beginner' | 'Intermediate' | 'Advanced' | undefined,
       estimatedTime: result.estimatedTime || undefined,
       isActive: Boolean(result.isActive),
       isFeatured: Boolean(result.isFeatured),
@@ -135,11 +125,11 @@ export async function getProductById(c: Context): Promise<Response> {
       createdAt: formatDate(result.createdAt as unknown as number),
       updatedAt: formatDate(result.updatedAt as unknown as number),
       // Include related data if available
-      ...(result.author && {
+      ...(result.host && {
         author: {
-          id: result.author.id,
-          name: result.author.name,
-          avatar: result.author.avatar || undefined,
+          id: result.host.id,
+          name: result.host.name,
+          avatar: result.host.avatar || undefined,
         },
       }),
       ...(result.category && {
@@ -164,48 +154,5 @@ export async function getProductById(c: Context): Promise<Response> {
       },
       500
     )
-  }
-}
-
-function mapToProductResponse(product: {
-  id: string
-  title: string
-  description: string | null
-  slug: string
-  thumbnailUrl: string | null
-  isPaid: boolean
-  authorId: string | null
-  categoryId: string | null
-  language: string | null
-  youtubeId: string | null
-  productUrl: string | null
-  duration: number | null
-  quality: string | null
-  views: number | null
-  createdAt: Date | string
-  updatedAt: Date | string
-}): ProductResponse {
-  // Helper to safely convert date to ISO string
-  const toIsoString = (date: Date | string): string =>
-    date instanceof Date ? date.toISOString() : new Date(date).toISOString()
-
-  return {
-    id: product.id,
-    title: product.title,
-    description: product.description || undefined,
-    slug: product.slug,
-    thumbnailUrl: product.thumbnailUrl || undefined,
-    isPaid: product.isPaid,
-    hasAccess: false, // Default value, adjust based on your auth logic
-    authorId: product.authorId || undefined,
-    categoryId: product.categoryId || undefined,
-    language: product.language || undefined,
-    youtubeId: product.youtubeId || undefined,
-    productUrl: product.productUrl || undefined,
-    duration: product.duration || undefined,
-    quality: product.quality || undefined,
-    views: product.views || 0,
-    createdAt: toIsoString(product.createdAt),
-    updatedAt: toIsoString(product.updatedAt),
   }
 }

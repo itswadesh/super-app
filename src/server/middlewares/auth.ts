@@ -25,7 +25,6 @@ import { getSessionTokenCookie, validateSessionToken } from '../db/auth'
  */
 export const authenticate = async (c: Context, next: Next) => {
   const sessionToken = getSessionTokenCookie(c)
-
   if (!sessionToken) {
     return c.json({ error: 'No session token provided' }, 401)
   }
@@ -74,9 +73,9 @@ export const optionalAuthenticate = async (c: Context, next: Next) => {
 }
 
 /**
-* Admin authentication middleware
-* Requires authentication and admin role
-*/
+ * Admin authentication middleware
+ * Requires authentication and admin role
+ */
 export const authenticateAdmin = async (c: Context, next: Next) => {
   const sessionToken = getSessionTokenCookie(c)
 

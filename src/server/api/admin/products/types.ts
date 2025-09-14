@@ -11,7 +11,7 @@ export interface ProductResponse {
   titleEnglish?: string
   description?: string
   slug: string
-  thumbnailUrl?: string
+  thumbnail?: string
 
   // Relations
   authorId?: string

@@ -15,8 +15,11 @@ export const getOtp = async ({ phone }: { phone: string }) => {
     throw { status: 400, message: 'Phone number is required.' }
   }
 
+  // console.log('getOtp called with phone:', phone)
+
   // Check if user exists with this phone number
   const existingUsers = await db.select().from(User).where(eq(User.phone, phone))
+  // console.log('Existing users found:', existingUsers.length)
   const now = new Date()
 
   // Check cooldown for existing users
@@ -27,7 +30,7 @@ export const getOtp = async ({ phone }: { phone: string }) => {
       const timeSinceLastRequest = now.getTime() - lastRequestTime
 
       if (timeSinceLastRequest < OTP_COOLDOWN_MS) {
-        console.log('Cooldown triggered for', phone)
+        // console.log('Cooldown triggered for', phone)
         const remainingTime = Math.ceil((OTP_COOLDOWN_MS - timeSinceLastRequest) / 1000)
         throw {
           status: 429,

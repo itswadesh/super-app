@@ -16,7 +16,7 @@ const handleRequest = async ({ request, locals }: { request: Request; locals: an
       .clone()
       .json()
       .catch(() => ({}))
-    console.error(`${method} ${request.url} Error:`)
+    console.log(`${method} ${request.url} Error: `, JSON.stringify(error))
   }
   return response
 }

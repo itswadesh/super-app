@@ -1,7 +1,12 @@
-import type { FoodItem, CategoryItem, FoodFilters, FoodListResponse } from '$lib/types/food'
+import type {
+  ProductItem,
+  CategoryItem,
+  ProductFilters,
+  ProductListResponse,
+} from '$lib/types/food'
 
 // Mock data - replace with actual database queries
-const mockFoods: FoodItem[] = [
+const mockFoods: ProductItem[] = [
   {
     id: '1',
     name: 'Homemade Butter Chicken',
@@ -11,13 +16,13 @@ const mockFoods: FoodItem[] = [
     host: {
       name: 'Priya Sharma',
       rating: 4.8,
-      location: 'Mumbai'
+      location: 'Mumbai',
     },
     category: 'Indian',
     isVegetarian: false,
     preparationTime: 30,
     rating: 4.5,
-    totalRatings: 24
+    totalRatings: 24,
   },
   {
     id: '2',
@@ -28,13 +33,13 @@ const mockFoods: FoodItem[] = [
     host: {
       name: 'Ahmed Khan',
       rating: 4.9,
-      location: 'Delhi'
+      location: 'Delhi',
     },
     category: 'Indian',
     isVegetarian: true,
     preparationTime: 45,
     rating: 4.7,
-    totalRatings: 31
+    totalRatings: 31,
   },
   {
     id: '3',
@@ -45,13 +50,13 @@ const mockFoods: FoodItem[] = [
     host: {
       name: 'Maria Rossi',
       rating: 4.6,
-      location: 'Bangalore'
+      location: 'Bangalore',
     },
     category: 'Italian',
     isVegetarian: false,
     preparationTime: 25,
     rating: 4.3,
-    totalRatings: 18
+    totalRatings: 18,
   },
   {
     id: '4',
@@ -62,13 +67,13 @@ const mockFoods: FoodItem[] = [
     host: {
       name: 'Rajesh Kumar',
       rating: 4.7,
-      location: 'Pune'
+      location: 'Pune',
     },
     category: 'Indian',
     isVegetarian: true,
     preparationTime: 35,
     rating: 4.6,
-    totalRatings: 42
+    totalRatings: 42,
   },
   {
     id: '5',
@@ -79,14 +84,14 @@ const mockFoods: FoodItem[] = [
     host: {
       name: 'Giovanni Bianchi',
       rating: 4.5,
-      location: 'Hyderabad'
+      location: 'Hyderabad',
     },
     category: 'Italian',
     isVegetarian: true,
     preparationTime: 20,
     rating: 4.4,
-    totalRatings: 27
-  }
+    totalRatings: 27,
+  },
 ]
 
 const mockCategories: CategoryItem[] = [
@@ -94,7 +99,7 @@ const mockCategories: CategoryItem[] = [
   { id: 'indian', name: 'Indian' },
   { id: 'italian', name: 'Italian' },
   { id: 'chinese', name: 'Chinese' },
-  { id: 'mexican', name: 'Mexican' }
+  { id: 'mexican', name: 'Mexican' },
 ]
 
 export async function getFoodCategories(): Promise<CategoryItem[]> {
@@ -103,36 +108,31 @@ export async function getFoodCategories(): Promise<CategoryItem[]> {
   return mockCategories
 }
 
-export async function listFoods(filters: FoodFilters = {}): Promise<FoodListResponse> {
-  const {
-    search = '',
-    category = 'all',
-    vegetarian,
-    page = 1,
-    limit = 20
-  } = filters
+export async function listFoods(filters: ProductFilters = {}): Promise<ProductListResponse> {
+  const { search = '', category = 'all', vegetarian, page = 1, limit = 20 } = filters
 
   let filteredFoods = [...mockFoods]
 
   // Apply search filter
   if (search) {
     const searchLower = search.toLowerCase()
-    filteredFoods = filteredFoods.filter(food =>
-      food.name.toLowerCase().includes(searchLower) ||
-      food.description.toLowerCase().includes(searchLower)
+    filteredFoods = filteredFoods.filter(
+      (food) =>
+        food.name.toLowerCase().includes(searchLower) ||
+        food.description.toLowerCase().includes(searchLower)
     )
   }
 
   // Apply category filter
   if (category && category !== 'all') {
-    filteredFoods = filteredFoods.filter(food =>
-      food.category.toLowerCase() === category.toLowerCase()
+    filteredFoods = filteredFoods.filter(
+      (food) => food.category.toLowerCase() === category.toLowerCase()
     )
   }
 
   // Apply vegetarian filter
   if (vegetarian !== undefined) {
-    filteredFoods = filteredFoods.filter(food => food.isVegetarian === vegetarian)
+    filteredFoods = filteredFoods.filter((food) => food.isVegetarian === vegetarian)
   }
 
   // Apply pagination
@@ -146,12 +146,12 @@ export async function listFoods(filters: FoodFilters = {}): Promise<FoodListResp
     categories: mockCategories,
     total,
     page,
-    pageSize: limit
+    pageSize: limit,
   }
 }
 
-export async function getFoodById(id: string): Promise<FoodItem | null> {
+export async function getFoodById(id: string): Promise<ProductItem | null> {
   // TODO: Replace with actual database query
   // const food = await db.select().from(foodsTable).where(eq(foodsTable.id, id)).limit(1)
-  return mockFoods.find(food => food.id === id) || null
+  return mockFoods.find((food) => food.id === id) || null
 }

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { db } from '../db'
-import { FoodRating, HostRating, Food, Vendor, User } from '../db/schema'
+import { FoodRating, HostRating, Product, Vendor, User } from '../db/schema'
 import { eq, and, sql, avg } from 'drizzle-orm'
 import { authenticate } from '../middlewares/auth'
 
@@ -22,9 +22,9 @@ ratingRoutes.post('/food', authenticate, async (c) => {
     }
 
     // Check if food exists
-    const food = await db.select().from(Food).where(eq(Food.id, foodId)).limit(1)
+    const food = await db.select().from(Product).where(eq(Product.id, foodId)).limit(1)
     if (food.length === 0) {
-      return c.json({ error: 'Food not found' }, 404)
+      return c.json({ error: 'Product not found' }, 404)
     }
 
     // Check if user already rated this food for this order
@@ -132,7 +132,7 @@ ratingRoutes.get('/food/:foodId', async (c) => {
     const foodId = c.req.param('foodId')
 
     if (!foodId) {
-      return c.json({ error: 'Food ID is required' }, 400)
+      return c.json({ error: 'Product ID is required' }, 400)
     }
 
     const ratings = await db
@@ -201,21 +201,21 @@ async function updateFoodRating(foodId: string) {
 
     // Update food with new rating
     await db
-      .update(Food)
+      .update(Product)
       .set({
         rating: avgRating.toFixed(2),
         totalRatings: count,
         updatedAt: sql`NOW()`,
       })
-      .where(eq(Food.id, foodId))
+      .where(eq(Product.id, foodId))
 
     console.log(`Updated food ${foodId} rating to ${avgRating.toFixed(2)} (${count} ratings)`)
 
     // Update vendor rating after food rating changes
     const food = await db
-      .select({ hostId: Food.hostId })
-      .from(Food)
-      .where(eq(Food.id, foodId))
+      .select({ hostId: Product.hostId })
+      .from(Product)
+      .where(eq(Product.id, foodId))
       .limit(1)
     if (food.length > 0) {
       await updateVendorRating(food[0].hostId)
@@ -231,11 +231,11 @@ async function updateVendorRating(vendorUserId: string) {
     // Get all foods for this vendor and calculate weighted average
     const foodsResult = await db
       .select({
-        rating: Food.rating,
-        totalRatings: Food.totalRatings,
+        rating: Product.rating,
+        totalRatings: Product.totalRatings,
       })
-      .from(Food)
-      .where(eq(Food.hostId, vendorUserId))
+      .from(Product)
+      .where(eq(Product.hostId, vendorUserId))
 
     if (foodsResult.length === 0) {
       console.log(`No foods found for vendor ${vendorUserId}`)

@@ -1,4 +1,4 @@
-export interface FoodItem {
+export interface ProductItem {
   id: string
   name: string
   description: string
@@ -21,7 +21,7 @@ export interface CategoryItem {
   name: string
 }
 
-export interface FoodFilters {
+export interface ProductFilters {
   search?: string
   category?: string
   vegetarian?: boolean
@@ -29,8 +29,8 @@ export interface FoodFilters {
   limit?: number
 }
 
-export interface FoodListResponse {
-  foods: FoodItem[]
+export interface ProductListResponse {
+  foods: ProductItem[]
   categories: CategoryItem[]
   total: number
   page: number

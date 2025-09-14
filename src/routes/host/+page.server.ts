@@ -32,24 +32,29 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
     }
 
     // Get host's foods using API
-    let myFoods = []
+    let myFoods: any[] = []
     try {
       const foodsResponse = await fetch('/api/foods/my')
       if (foodsResponse.ok) {
         const foodsData = await foodsResponse.json()
-        myFoods = foodsData.map((food: any) => ({
-          id: food.id,
-          name: food.name,
-          description: food.description,
-          price: parseFloat(food.price),
-          image: food.image,
-          categoryId: food.categoryId,
-          isVegetarian: food.isVegetarian,
-          preparationTime: food.preparationTime,
-          status: food.isAvailable ? 'available' : 'unavailable',
-          orders: Math.floor(Math.random() * 20), // TODO: Calculate from actual order data
-          rating: food.rating ? parseFloat(food.rating) : 0,
-        }))
+        // Check if foodsData is an array before mapping
+        if (Array.isArray(foodsData)) {
+          myFoods = foodsData.map((food: any) => ({
+            id: food.id,
+            name: food.name,
+            description: food.description,
+            price: parseFloat(food.price),
+            image: food.image,
+            categoryId: food.categoryId,
+            isVegetarian: food.isVegetarian,
+            preparationTime: food.preparationTime,
+            status: food.isAvailable ? 'available' : 'unavailable',
+            orders: Math.floor(Math.random() * 20), // TODO: Calculate from actual order data
+            rating: food.rating ? parseFloat(food.rating) : 0,
+          }))
+        } else {
+          console.error('Expected array from foods API, got:', foodsData)
+        }
       }
     } catch (error) {
       console.error('Error fetching foods:', error)

@@ -1,15 +1,15 @@
-import type { Author } from '../../../db/schema'
+import type { Vendor } from '../../../db/schema'
 
-export interface AuthorResponse
-  extends Omit<Author, 'qualifications' | 'achievements' | 'createdAt' | 'updatedAt'> {
+export interface VendorResponse
+  extends Omit<Vendor, 'qualifications' | 'achievements' | 'createdAt' | 'updatedAt'> {
   qualifications: string[]
   achievements: string[]
   createdAt: string
   updatedAt: string
 }
 
-export interface CreateAuthorRequest {
-  name: string
+export interface CreateVendorRequest {
+  businessName: string
   avatar?: string
   bio?: string
   qualifications?: string[]
@@ -20,18 +20,18 @@ export interface CreateAuthorRequest {
   instagram?: string
 }
 
-export interface UpdateAuthorRequest extends Partial<CreateAuthorRequest> {}
+export interface UpdateVendorRequest extends Partial<CreateVendorRequest> {}
 
-export interface ListAuthorsQuery {
+export interface ListVendorsQuery {
   page?: string
   pageSize?: string
   search?: string
-  sortBy?: keyof AuthorResponse
+  sortBy?: keyof VendorResponse
   sortOrder?: 'asc' | 'desc'
 }
 
-export interface ListAuthorsResponse {
-  data: AuthorResponse[]
+export interface ListVendorsResponse {
+  data: VendorResponse[]
   pagination: {
     page: number
     pageSize: number

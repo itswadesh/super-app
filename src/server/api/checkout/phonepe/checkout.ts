@@ -1,12 +1,8 @@
 import { and, eq, gte, lte, sql } from 'drizzle-orm'
-import type { PaymentResponse } from '../utils/phonepe/phonepe-types'
-import { PhonePeWrapper } from '../utils/phonepe/phonepe-wrapper'
 import { placeOrder } from '../utils'
 import db from '../../../db'
 import { Coupon, Plan } from '../../../db/schema'
 import { parsePhoneNumber } from '../../../utils'
-import { createPostPaymentChecksumHeader } from '../utils/phonepe/utils'
-import axios from 'axios'
 import { phonepeApi } from './api-request'
 
 export const phonepeCheckout = async ({ phone, planId, totalAmount, couponCode, origin }: any) => {
@@ -35,16 +31,18 @@ export const phonepeCheckout = async ({ phone, planId, totalAmount, couponCode, 
     })
 
     if (coupon) {
+      const discountValue = parseFloat(coupon.discount)
+      const maxDiscountValue = coupon.maxDiscount ? parseFloat(coupon.maxDiscount) : null
       if (coupon.discountType === 'percentage') {
-        const discountAmount = (totalAmount * coupon.discount) / 100
+        const discountAmount = (totalAmount * discountValue) / 100
         // Apply max discount cap if available
         finalAmount =
-          coupon.maxDiscount && discountAmount > coupon.maxDiscount
-            ? totalAmount - coupon.maxDiscount
+          maxDiscountValue && discountAmount > maxDiscountValue
+            ? totalAmount - maxDiscountValue
             : totalAmount - discountAmount
       } else {
         // Fixed discount
-        finalAmount = totalAmount - coupon.discount
+        finalAmount = totalAmount - discountValue
       }
 
       // Ensure amount doesn't go below 0
@@ -95,17 +93,17 @@ export const phonepeCheckout = async ({ phone, planId, totalAmount, couponCode, 
   } catch (error: unknown) {
     console.error(
       'PhonePe Checkout Error:',
-      error.response?.data,
-      PHONEPE_MERCHANT_ACCOUNT,
-      PHONEPE_SALT,
-      PHONEPE_MODE
+      (error as any)?.response?.data,
+      process.env.PHONEPE_MERCHANT_ACCOUNT,
+      process.env.PHONEPE_SALT,
+      process.env.PHONEPE_MODE
     )
 
     const errorMessage =
       error instanceof Error
         ? error.message
         : typeof error === 'object' && error !== null && 'message' in error
-          ? String(error.message)
+          ? String((error as any).message)
           : 'Payment processing failed'
 
     throw {

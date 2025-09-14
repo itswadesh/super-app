@@ -2,11 +2,10 @@ import { error, json } from '@sveltejs/kit'
 import { and, desc, eq, gte, ilike, inArray, lte, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { Context } from 'hono'
-import { nanoid } from 'nanoid'
 import { CONFIG } from '../../config'
 import { db } from '../../db'
 import { getSessionTokenCookie, validateSessionToken } from '../../db/auth'
-import { Author, Category, Product } from '../../db/schema'
+import { Category, Product, User } from '../../db/schema'
 
 export const productRoutes = new Hono()
 
@@ -26,17 +25,17 @@ productRoutes
           id: Product.id,
           title: Product.title,
           slug: Product.slug,
-          thumbnailUrl: Product.thumbnailUrl,
+          thumbnailUrl: Product.thumbnail,
           categoryName: Category.name,
           categoryId: Category.id,
           categorySlug: Category.slug,
-          authorId: Product.authorId,
-          authorName: Author.name,
-          authorAvatarUrl: Author.avatar,
+          vendorId: Product.hostId,
+          vendorName: User.name,
+          vendorAvatarUrl: User.avatar,
         })
         .from(Product)
         .leftJoin(Category, eq(Product.categoryId, Category.id))
-        .leftJoin(Author, eq(Product.authorId, Author.id))
+        .leftJoin(User, eq(Product.hostId, User.id))
         .where(eq(Product.slug, productId))
 
       if (products.length === 0) {
@@ -96,7 +95,7 @@ productRoutes
 
     if (authors) {
       const authorsArray = authors.split(',')
-      conditions.push(inArray(Product.authorId, authorsArray))
+      conditions.push(inArray(Product.hostId, authorsArray))
     }
 
     if (categories) {
@@ -111,15 +110,14 @@ productRoutes
         .select({
           id: Product.id,
           title: Product.title,
-          thumbnailUrl: Product.thumbnailUrl,
+          thumbnailUrl: Product.thumbnail,
           slug: Product.slug,
-          isPaid: Product.isPaid,
-          author: Author,
+          author: User,
           category: Category,
           type: Product.type,
         })
         .from(Product)
-        .leftJoin(Author, eq(Product.authorId, Author.id))
+        .leftJoin(User, eq(Product.hostId, User.id))
         .leftJoin(Category, eq(Product.categoryId, Category.id))
         .where(where)
         .limit(new_PageSize)
@@ -135,7 +133,7 @@ productRoutes
     // Transform the data to include hasAccess property
     const transformedData = data.map((item) => ({
       ...item,
-      hasAccess: session.user?.role === 'user' || item.isPaid == false,
+      hasAccess: session.user?.role === 'user',
     }))
 
     const rawResponse = {

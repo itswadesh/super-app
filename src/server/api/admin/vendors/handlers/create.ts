@@ -2,13 +2,13 @@ import { eq } from 'drizzle-orm'
 import type { Context } from 'hono'
 import { db } from '../../../../db'
 import { getSessionTokenCookie, validateSessionToken } from '../../../../db/auth'
-import { Author } from '../../../../db/schema'
-import type { CreateAuthorRequest } from '../types'
+import { Vendor } from '../../../../db/schema'
+import type { CreateVendorRequest } from '../types'
 
 /**
- * Create a new author
+ * Create a new vendor
  */
-export async function createAuthor(c: Context): Promise<Response> {
+export async function createVendor(c: Context): Promise<Response> {
   try {
     // Validate session
     const sessionToken = getSessionTokenCookie(c)
@@ -19,24 +19,29 @@ export async function createAuthor(c: Context): Promise<Response> {
     }
 
     // Parse and validate request body
-    const data = await c.req.json<CreateAuthorRequest>()
+    const data = await c.req.json<CreateVendorRequest>()
 
-    if (!data.name) {
-      return c.json({ error: 'Name is required' }, 400)
+    if (!data.businessName) {
+      return c.json({ error: 'Business Name is required' }, 400)
     }
 
-    // Check if author with the same name already exists
-    const existingAuthor = await db.select().from(Author).where(eq(Author.name, data.name)).get()
+    // Check if vendor with the same name already exists
+    const result = await db
+      .select()
+      .from(Vendor)
+      .where(eq(Vendor.businessName, data.businessName))
+      .limit(1)
+    const existingVendor = result[0]
 
-    if (existingAuthor) {
-      return c.json({ error: 'An author with this name already exists' }, 409)
+    if (existingVendor) {
+      return c.json({ error: 'A vendor with this name already exists' }, 409)
     }
 
-    // Create the new author
+    // Create the new vendor
     const now = new Date()
-    const newAuthor = {
+    const newVendor = {
       id: crypto.randomUUID(),
-      name: data.name,
+      businessName: data.businessName,
       avatar: data.avatar || null,
       bio: data.bio || null,
       qualifications: data.qualifications ? JSON.stringify(data.qualifications) : '[]',
@@ -51,16 +56,16 @@ export async function createAuthor(c: Context): Promise<Response> {
     }
 
     // Insert into database
-    await db.insert(Author).values(newAuthor)
+    await db.insert(Vendor).values(newVendor)
 
-    // Return the created author
+    // Return the created vendor
     return c.json(
       {
-        ...newAuthor,
-        qualifications: JSON.parse(newAuthor.qualifications),
-        achievements: JSON.parse(newAuthor.achievements),
-        createdAt: newAuthor.createdAt.toISOString(),
-        updatedAt: newAuthor.updatedAt.toISOString(),
+        ...newVendor,
+        qualifications: JSON.parse(newVendor.qualifications),
+        achievements: JSON.parse(newVendor.achievements),
+        createdAt: newVendor.createdAt.toISOString(),
+        updatedAt: newVendor.updatedAt.toISOString(),
       },
       201
     )

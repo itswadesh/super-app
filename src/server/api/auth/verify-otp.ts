@@ -12,13 +12,17 @@ export const verifyOtp = async ({ phone, otp }: { phone: string; otp: string }) 
     throw { status: 400, message: 'Phone number and OTP are required.' }
   }
 
-  const results = await db
+  // console.log('verifyOtp called with phone:', phone, 'otp:', otp)
+
+  const [existingUser] = await db
     .select()
     .from(User)
     .where(and(eq(User.phone, phone), eq(User.otp, otp)))
 
-  const existingUser = results.at(0)
+  // console.log('DB query result - existingUser:', !!existingUser)
+
   if (!existingUser) {
+    // console.log('No user found with matching phone and OTP')
     return {
       success: false,
       message: 'Invalid OTP',
@@ -26,15 +30,17 @@ export const verifyOtp = async ({ phone, otp }: { phone: string; otp: string }) 
   }
   // Create session for the user
   const sessionToken = generateSessionToken()
-  const session = await createSession(sessionToken, existingUser?.id)
+  // console.log(existingUser.id, sessionToken)
+  const session = await createSession(sessionToken, existingUser.id)
+  // console.log(session)
   return {
     success: true,
     message: 'Login successful',
     token: sessionToken,
     expiresAt: session.expiresAt,
     user: {
-      id: existingUser?.id,
-      phone: existingUser?.phone,
+      id: existingUser.id,
+      phone: existingUser.phone,
     },
   }
 }

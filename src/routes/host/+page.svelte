@@ -383,7 +383,7 @@ async function loadCategories() {
       categories = data.filter((cat: any) => cat.id !== 'all')
     }
   } catch (error) {
-    console.error('Failed to load categories:', error)
+    // console.error('🍽️ FRONTEND: Failed to load categories:', error)
   }
 }
 
@@ -436,8 +436,6 @@ async function submitNewFood() {
       preparationTime: newFood.preparationTime,
       image: imageUrl,
     }
-
-    console.log('Sending food data:', foodData)
 
     let response
     try {
