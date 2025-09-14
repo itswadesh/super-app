@@ -78,7 +78,7 @@ async function seedTestApplication(userId: string) {
     email: 'test@example.com',
     phone: '+918249028220',
     address: 'Test Address',
-    city: 'Bangalore',
+    city: 'Sunabeda',
     idProof: 'test-proof',
     status: 'approved' as const, // Set to approved for testing
   }

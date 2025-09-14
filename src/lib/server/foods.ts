@@ -50,7 +50,7 @@ const mockFoods: ProductItem[] = [
     host: {
       name: 'Maria Rossi',
       rating: 4.6,
-      location: 'Bangalore',
+      location: 'Sunabeda',
     },
     category: 'Italian',
     isVegetarian: false,

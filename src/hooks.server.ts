@@ -3,6 +3,7 @@
  * This ensures static assets are cached efficiently by Cloudflare
  */
 import type { Handle } from '@sveltejs/kit'
+import { dev } from '$app/environment'
 // import * as auth from './server/db/auth.js';
 
 /**
@@ -54,16 +55,31 @@ export const handle: Handle = async ({ event, resolve }) => {
     // If assets are in _app directory (common in SvelteKit)
     path.startsWith('/_app/')
   ) {
-    // Set a long cache time for static assets (1 year)
-    response.headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+    if (dev) {
+      // Disable caching in development mode
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+      response.headers.set('Pragma', 'no-cache')
+      response.headers.set('Expires', '0')
+    } else {
+      // Set a long cache time for static assets (1 year) in production
+      response.headers.set('Cache-Control', 'public, max-age=31536000, immutable')
+    }
   }
   // For HTML and other dynamic content, use a shorter cache with validation
   // Skip caching for API endpoints and admin routes
-  else if (!path.startsWith('/api/') && !path.startsWith('/admin/')) {
-    response.headers.set(
-      'Cache-Control',
-      'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
-    )
+  else if (!path.startsWith('/api/') && !path.startsWith('/admin')) {
+    if (dev) {
+      // Disable caching in development mode
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+      response.headers.set('Pragma', 'no-cache')
+      response.headers.set('Expires', '0')
+    } else {
+      // Use caching in production
+      response.headers.set(
+        'Cache-Control',
+        'public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800'
+      )
+    }
   }
 
   return response

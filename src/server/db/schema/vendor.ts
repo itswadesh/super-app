@@ -34,7 +34,7 @@ export const Vendor = pgTable('vendors', {
   foodSafetyCertificate: varchar('food_safety_certificate'), // file path/URL
   idProof: varchar('id_proof').notNull(), // file path/URL
   address: varchar('address').notNull(),
-  city: varchar('city').default('Bangalore'),
+  city: varchar('city').default('Sunabeda'),
   pincode: varchar('pincode'),
   bankAccountNumber: varchar('bank_account_number'),
   bankName: varchar('bank_name'),
