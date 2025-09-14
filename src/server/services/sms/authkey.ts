@@ -3,31 +3,19 @@ import { env } from 'process'
 
 const objToQueryString = (params: any) => {
   return Object.keys(params)
-    .map((k) => {
-      // Don't URL encode sms and fb1voice parameters
-      if (k === 'sms' || k === 'fb1voice') {
-        return `${encodeURIComponent(k)}=${params[k]}`
-      }
-      return `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`
-    })
+    .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
     .join('&')
 }
 
 export const authKeyMessage = async ({ phone, otp }: { phone: string; otp: string }) => {
   try {
     // Template with placeholders that will be replaced
-    const template = `{#hash#} Hi, {#otp#} is your OTP to login to {#website#}`
+    const template = `<#> Hi, {#otp#} is your OTP to login to {#website#} -MISIKI`
 
     // Replace placeholders with actual values
-    const msg = template
-      .replace('{#hash#}', '<#>')
-      .replace('{#otp#}', otp)
-      .replace('{#website#}', 'LRNR')
+    const msg = template.replace('{#otp#}', otp).replace('{#website#}', 'MISIKI')
 
-    const voice = template
-      .replace('{#hash#}', '<#>')
-      .replace('{#otp#}', otp)
-      .replace('{#website#}', 'LRNR')
+    const voice = template.replace('{#otp#}', otp).replace('{#website#}', 'MISIKI')
 
     phone = phone.replace('+91', '')
 
