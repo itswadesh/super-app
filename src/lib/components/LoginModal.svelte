@@ -125,7 +125,23 @@ function updatePhoneError() {
 // Handle phone number input
 function handlePhoneInput(e: Event) {
   const target = e.target as HTMLInputElement
-  phoneNumber = target.value
+  let value = target.value
+
+  // Extract only numeric digits from the input
+  const numericValue = value.replace(/\D/g, '')
+
+  // Handle pasted content with country code (13 digits total)
+  if (numericValue.length === 13) {
+    // Remove country code (first 3 digits) and keep last 10 digits
+    phoneNumber = numericValue.slice(-10)
+  } else if (numericValue.length > 10) {
+    // For other cases with more than 10 digits, take the last 10
+    phoneNumber = numericValue.slice(-10)
+  } else {
+    // For 10 or fewer digits, use as is
+    phoneNumber = numericValue
+  }
+
   updatePhoneError()
 }
 
@@ -449,10 +465,11 @@ async function resendOTP() {
               bind:this={phoneInput}
               bind:value={phoneNumber}
               oninput={handlePhoneInput}
+              onpaste={handlePhoneInput}
               class="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white pl-16 pr-10 py-3 text-base focus:border-indigo-500 focus:ring-indigo-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400 sm:text-sm transition-colors duration-200"
               placeholder="Enter your mobile number"
               inputmode="numeric"
-              maxlength="10"
+              maxlength="13"
               disabled={isLoading}
             />
           </div>
