@@ -21,7 +21,14 @@ export const handle: Handle = async ({ event, resolve }) => {
   // Route protection: set redirect cookie if not authenticated and route is protected
   const pathname = event.url.pathname
   const isProtectedRoute =
-    !pathname.startsWith('/api/') && pathname !== '/' && pathname !== '/foods'
+    !pathname.startsWith('/api/') &&
+    pathname !== '/' &&
+    pathname !== '/foods' &&
+    pathname !== '/terms' &&
+    pathname !== '/privacy' &&
+    pathname !== '/shipping' &&
+    pathname !== '/refund' &&
+    pathname !== '/contact'
   const isAuthenticated = event.locals.user && event.locals.session
 
   if (isProtectedRoute && !isAuthenticated) {

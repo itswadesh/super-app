@@ -545,7 +545,7 @@ async function resendOTP() {
           <p class="text-xs text-gray-500 dark:text-gray-400">
             By clicking send OTP, you are accepting our{' '}
             <a
-              href="/legal/terms-and-conditions"
+              href="/terms"
               class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 underline"
               onclick={(e) => {
                 e.preventDefault();
@@ -554,6 +554,18 @@ async function resendOTP() {
               }}
             >
               terms and conditions
+            </a>
+            {' '}and{' '}
+            <a
+              href="/privacy"
+              class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 underline"
+              onclick={(e) => {
+                e.preventDefault();
+                loginModal.close();
+                goto('/privacy');
+              }}
+            >
+              privacy policy
             </a>
           </p>
         </div>
