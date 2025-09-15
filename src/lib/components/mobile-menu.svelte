@@ -69,7 +69,7 @@ async function handleLogout() {
 
 function isNavItemVisible(item: NavItem): boolean {
   const isAuthenticated = !!user
-  const isAdmin = user?.isAdmin
+  const isAdmin = user?.role === 'admin'
 
   if (item.requiresAuth && !isAuthenticated) return false
   if (item.requiresNoAuth && isAuthenticated) return false
@@ -132,7 +132,7 @@ function isNavItemVisible(item: NavItem): boolean {
             </Button>
           {/if}
         {/each}
-        {#if user?.isAdmin}
+        {#if user?.role === 'admin'}
           {#each adminNavItems as item}
             {#if isNavItemVisible(item)}
                <Button

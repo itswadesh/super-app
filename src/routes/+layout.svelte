@@ -260,14 +260,16 @@ async function navigateWithSheetClose(path: string) {
       
       <nav class="flex flex-col space-y-1 flex-grow overflow-y-auto">
         <!-- Add your mobile navigation links here -->
-        
-        <a 
-          href="/admin" 
-          class="px-3 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
-          onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/admin'); }}
-        >
-          Admin
-        </a>
+
+        {#if page.data?.user?.id && page.data?.user?.role === 'admin'}
+          <a
+            href="/admin"
+            class="px-3 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+            onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/admin'); }}
+          >
+            Admin
+          </a>
+        {/if}
       
       </nav>
 
