@@ -1,8 +1,8 @@
-# Super App API Server - Hono Integration
+# Misiki API Server - Hono Integration
 
 ## Overview
 
-This document explains the architecture and setup of the Hono server integration with the Super App platform. The Hono server provides a high-performance API layer that complements the SvelteKit frontend application.
+This document explains the architecture and setup of the Hono server integration with the Misiki platform. The Hono server provides a high-performance API layer that complements the SvelteKit frontend application.
 
 ## Architecture
 
@@ -69,4 +69,4 @@ The Hono API server can be deployed to any Node.js hosting environment. Ensure t
 
 ---
 
-For more information about Super App, visit [superapp.in](https://superapp.in).
+For more information about Misiki, visit [misiki.in](https://misiki.in).

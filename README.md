@@ -1,4 +1,4 @@
-# Super App
+# Misiki
 
 ## Developing
 Copy .env.example -> .env

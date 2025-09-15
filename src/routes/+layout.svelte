@@ -160,7 +160,7 @@ async function navigateWithSheetClose(path: string) {
 </script>
 
 <svelte:head>
-  <title>Super App</title>
+  <title>Misiki</title>
 </svelte:head>
 
 <div class="min-h-screen">
@@ -175,7 +175,7 @@ async function navigateWithSheetClose(path: string) {
           <a href="/" class="flex items-center">
             <img src="/logo.jpg" class="h-8 w-8" alt="Misiki Logo" />
             <span class="ml-1 text-xl font-light text-gray-500 dark:text-gray-300 hidden sm:inline transition-colors duration-200">
-              Super App
+              Misiki
             </span>
           </a>
         </div>
@@ -253,7 +253,7 @@ async function navigateWithSheetClose(path: string) {
         <SheetTitle>
           <a href="/" class="flex items-center" onclick={(e) => { e.preventDefault(); navigateWithSheetClose('/'); }}>
             <img src="/logo.jpg" class="h-8 w-8" alt="Misiki Logo" />
-            <span class="ml-1 text-xl font-light text-gray-500 dark:text-gray-300">Super App</span>
+            <span class="ml-1 text-xl font-light text-gray-500 dark:text-gray-300">Misiki</span>
           </a>
         </SheetTitle>
       </SheetHeader>

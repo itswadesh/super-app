@@ -61,7 +61,7 @@ apiRouter.use('*', async (c, next) => {
 apiRouter.get('/', (c) => {
   return c.json({
     status: 'ok',
-    message: 'Super App API is running',
+    message: 'Misiki API is running',
     timestamp: new Date().toISOString(),
   })
 })

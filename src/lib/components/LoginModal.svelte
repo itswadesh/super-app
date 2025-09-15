@@ -395,7 +395,7 @@ async function resendOTP() {
     >
       <Dialog.Header class="text-center">
         <Dialog.Title class="text-xl font-semibold text-gray-900 dark:text-white">
-          {showOtpVerification ? 'Verify Your Phone Number' : 'Login to Super App'}
+          {showOtpVerification ? 'Verify Your Phone Number' : 'Login to Misiki'}
         </Dialog.Title>
         {#if !showOtpVerification}
           <Dialog.Description class="mt-1 text-sm text-gray-500 dark:text-gray-400">

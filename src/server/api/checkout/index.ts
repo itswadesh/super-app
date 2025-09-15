@@ -212,7 +212,7 @@ checkoutRoutes.post('/checkout/razorpay', async (c) => {
       key_id: process.env.RAZORPAY_KEY_ID,
       order_id: rzOrder.id,
       amount: rzOrder.amount,
-      name: 'Super App Checkout',
+      name: 'Misiki Checkout',
       description: `Order ${newOrder.id}`,
       receipt_db_order_id: newOrder.id,
     })

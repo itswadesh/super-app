@@ -196,14 +196,14 @@ async function resendOTP() {
 </script>
 
 <svelte:head>
-  <title>Login - Super App</title>
+  <title>Login - Misiki</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
   <div class="sm:mx-auto sm:w-full sm:max-w-md">
     <div class="flex justify-center">
       <a href="/" class="flex items-center">
-        <span class="text-3xl font-bold text-indigo-700">Super App</span>
+        <span class="text-3xl font-bold text-indigo-700">Misiki</span>
         <span class="ml-1 text-xl font-light text-gray-500">|</span>
       </a>
     </div>
@@ -280,7 +280,7 @@ async function resendOTP() {
               <div class="w-full border-t border-gray-300"></div>
             </div>
             <div class="relative flex justify-center text-sm">
-              <span class="px-2 bg-white text-gray-500">Using Super App for the first time?</span>
+              <span class="px-2 bg-white text-gray-500">Using Misiki for the first time?</span>
             </div>
           </div>
 

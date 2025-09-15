@@ -1,4 +1,4 @@
-// Super App subscription plans configuration
+// Misiki subscription plans configuration
 export type PlanType = {
   id: string
   name: string

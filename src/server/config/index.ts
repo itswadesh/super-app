@@ -1,5 +1,5 @@
 /**
- * Super App API Server Configuration
+ * Misiki API Server Configuration
  *
  * This file contains environment-specific configuration for the Hono API server.
  */
@@ -29,7 +29,7 @@ export const CONFIG = {
   cors: {
     origin:
       env.NODE_ENV === 'production'
-        ? ['https://superapp.in']
+        ? ['https://misiki.in']
         : ['http://localhost:5173', 'http://localhost:4173'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
@@ -38,7 +38,7 @@ export const CONFIG = {
 
   // Application info
   app: {
-    name: 'Super App API',
+    name: 'Misiki API',
     version: '2.0.0',
   },
   sessionCookieName: 'auth-session',
