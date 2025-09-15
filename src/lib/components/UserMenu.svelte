@@ -104,14 +104,14 @@ onMount(() => {
         </p>
       </div>
 
-      <a
+      <!-- <a
         href="/my/profile"
         onclick={() => (isMenuOpen = false)}
         class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
         role="menuitem"
       >
         Your Profile
-      </a>
+      </a> -->
       <!-- <a href="/orders" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
         Your Orders
       </a>

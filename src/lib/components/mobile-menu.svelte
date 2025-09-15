@@ -39,17 +39,11 @@ interface NavItem {
   adminOnly?: boolean
 }
 
-const mainNavItems: NavItem[] = [
-  { href: '/quiz', label: 'Quizzes', icon: BookOpenCheck },
-  { href: '/note', label: 'Notes', icon: FileText },
-  { href: '/demo', label: 'Demo', icon: MessageSquare },
-]
+const mainNavItems: NavItem[] = [{ href: '/demo', label: 'Demo', icon: MessageSquare }]
 
 const userNavItems: NavItem[] = [
-  { href: '/my/profile', label: 'Profile', icon: User, requiresAuth: true },
-  { href: '/my-quizzes', label: 'My Quizzes', icon: BookOpenCheck, requiresAuth: true },
+  // { href: '/my/profile', label: 'Profile', icon: User, requiresAuth: true },
   { href: '/user-preferences', label: 'Preferences', icon: Settings, requiresAuth: true },
-  { href: '/subscription', label: 'Subscription', icon: CreditCard, requiresAuth: true },
 ]
 
 const authNavItems: NavItem[] = [
